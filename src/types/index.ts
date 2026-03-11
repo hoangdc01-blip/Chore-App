@@ -1,21 +1,27 @@
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom'
 
 export type CalendarViewMode = 'month' | 'week'
 
-export interface TeamMember {
+export type AppView = 'calendar' | 'dashboard'
+
+export interface FamilyMember {
   id: string
   name: string
   color: string
+  avatar?: string
 }
 
 export interface Chore {
   id: string
   name: string
+  description?: string
   assigneeId: string
   startDate: string
   startTime?: string
   recurrence: RecurrenceType
+  customDays?: number[]
   endDate?: string
+  points: number
 }
 
 export interface ChoreOccurrence {
@@ -23,9 +29,20 @@ export interface ChoreOccurrence {
   date: string
   chore: Chore
   isCompleted: boolean
+  isSkipped: boolean
 }
 
 export type CompletionRecord = Record<string, boolean>
+export type SkippedRecord = Record<string, boolean>
+
+export interface KidStats {
+  memberId: string
+  totalPoints: number
+  completedCount: number
+  totalCount: number
+  completionRate: number
+  currentStreak: number
+}
 
 export const MEMBER_COLORS = [
   { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', dot: 'bg-blue-500' },
@@ -39,3 +56,5 @@ export const MEMBER_COLORS = [
 ] as const
 
 export type MemberColor = typeof MEMBER_COLORS[number]
+
+export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const

@@ -11,9 +11,11 @@ import { format } from 'date-fns'
 
 interface CalendarViewProps {
   viewMode: CalendarViewMode
+  searchQuery: string
+  hiddenMemberIds: Set<string>
 }
 
-export default function CalendarView({ viewMode }: CalendarViewProps) {
+export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogDate, setDialogDate] = useState<string | undefined>()
@@ -35,8 +37,16 @@ export default function CalendarView({ viewMode }: CalendarViewProps) {
       start = startOfWeek(currentDate, { weekStartsOn: 0 })
       end = endOfWeek(currentDate, { weekStartsOn: 0 })
     }
-    return getOccurrencesForRange(start, end)
-  }, [currentDate, viewMode, getOccurrencesForRange])
+    let results = getOccurrencesForRange(start, end)
+    if (hiddenMemberIds.size > 0) {
+      results = results.filter((occ) => !hiddenMemberIds.has(occ.chore.assigneeId))
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      results = results.filter((occ) => occ.chore.name.toLowerCase().includes(q))
+    }
+    return results
+  }, [currentDate, viewMode, getOccurrencesForRange, searchQuery, hiddenMemberIds])
 
   const handlePrev = () => {
     setCurrentDate((d) => (viewMode === 'month' ? subMonths(d, 1) : subWeeks(d, 1)))

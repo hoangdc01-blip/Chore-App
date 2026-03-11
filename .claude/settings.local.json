@@ -4,7 +4,10 @@
       "Bash(cd \"/c/AI APP/CHORES APP\" && npm create vite@latest . -- --template react-ts 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && echo y | npm create vite@latest . -- --template react-ts 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && npx --yes create-vite@latest . --template react-ts 2>&1)",
-      "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc --noEmit 2>&1)"
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc -b --pretty 2>&1 | grep -v \"vite.config\")",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm install --save-dev @types/node 2>&1)"
     ]
   }
 }

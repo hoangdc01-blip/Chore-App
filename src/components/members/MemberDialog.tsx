@@ -20,13 +20,13 @@ export default function MemberDialog() {
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="New member name"
-        className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+        placeholder="New kid's name"
+        className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
       />
       <button
         type="submit"
-        className="rounded-md bg-primary px-2 py-1.5 text-primary-foreground hover:bg-primary/90 transition-colors"
-        title="Add member"
+        className="rounded-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+        title="Add kid"
       >
         <Plus size={16} />
       </button>

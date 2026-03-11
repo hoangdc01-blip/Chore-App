@@ -17,6 +17,21 @@ export function expandRecurrence(chore: Chore, rangeStart: Date, rangeEnd: Date)
   const rEnd = startOfDay(rangeEnd)
   const effectiveEnd = chore.endDate ? startOfDay(parseISO(chore.endDate)) : rEnd
 
+  // Custom days: iterate day-by-day and include matching days of week
+  if (chore.recurrence === 'custom' && chore.customDays?.length) {
+    const allowedDays = new Set(chore.customDays)
+    const dates: Date[] = []
+    let current = isBefore(start, rStart) ? rStart : start
+
+    while (!isAfter(current, rEnd) && !isAfter(current, effectiveEnd)) {
+      if (allowedDays.has(current.getDay())) {
+        dates.push(current)
+      }
+      current = addDays(current, 1)
+    }
+    return dates
+  }
+
   const increment = incrementMap[chore.recurrence]
 
   if (!increment) {

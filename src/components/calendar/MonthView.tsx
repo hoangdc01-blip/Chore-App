@@ -3,7 +3,8 @@ import { getMonthDays } from '../../lib/calendar'
 import type { ChoreOccurrence } from '../../types'
 import DayCell from './DayCell'
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAYS_LONG = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 interface MonthViewProps {
   currentDate: Date
@@ -25,12 +26,13 @@ export default function MonthView({ currentDate, occurrences, onDayClick, onChor
   return (
     <div className="flex-1 flex flex-col">
       <div className="grid grid-cols-7">
-        {WEEKDAYS.map((day) => (
+        {WEEKDAYS_LONG.map((day, i) => (
           <div
             key={day}
-            className="border border-border px-2 py-1.5 text-xs font-semibold text-muted-foreground text-center bg-muted/50"
+            className="border border-border px-1 sm:px-2 py-1 sm:py-1.5 text-xs font-semibold text-muted-foreground text-center bg-muted/50"
           >
-            {day}
+            <span className="sm:hidden">{WEEKDAYS_SHORT[i]}</span>
+            <span className="hidden sm:inline">{day}</span>
           </div>
         ))}
       </div>

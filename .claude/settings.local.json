@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm create vite@latest . -- --template react-ts 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && echo y | npm create vite@latest . -- --template react-ts 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx --yes create-vite@latest . --template react-ts 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc --noEmit 2>&1)"
+    ]
+  }
+}

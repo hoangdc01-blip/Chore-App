@@ -7,7 +7,31 @@
       "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc --noEmit 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && npx tsc -b --pretty 2>&1 | grep -v \"vite.config\")",
-      "Bash(cd \"/c/AI APP/CHORES APP\" && npm install --save-dev @types/node 2>&1)"
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm install --save-dev @types/node 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && rm public/index.html && rmdir public 2>/dev/null; npm run build && npx firebase-tools deploy --only hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build && npx firebase-tools deploy --only hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && node -e \"\nconst { initializeApp } = require\\('firebase/app'\\);\nconst { getFirestore, collection, getDocs, writeBatch, doc } = require\\('firebase/firestore'\\);\nconst app = initializeApp\\({\n  apiKey: 'AIzaSyAXwR_fU_rjkpaL8yMpCSWHGfMhvtu8k7Q',\n  projectId: 'chore-app-5be59',\n}\\);\nconst db = getFirestore\\(app\\);\nasync function clearAll\\(\\) {\n  for \\(const col of ['members', 'chores', 'completions', 'skipped']\\) {\n    const snap = await getDocs\\(collection\\(db, col\\)\\);\n    if \\(snap.empty\\) { console.log\\(col + ': empty'\\); continue; }\n    const batch = writeBatch\\(db\\);\n    snap.docs.forEach\\(d => batch.delete\\(d.ref\\)\\);\n    await batch.commit\\(\\);\n    console.log\\(col + ': deleted ' + snap.size + ' docs'\\);\n  }\n}\nclearAll\\(\\).then\\(\\(\\) => { console.log\\('Done — Firestore is clean'\\); process.exit\\(0\\); }\\);\n\" 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && node -e \"\nconst { initializeApp } = require\\('firebase/app'\\);\nconst { getFirestore, collection, getDocs, writeBatch } = require\\('firebase/firestore'\\);\nconst app = initializeApp\\({ apiKey: 'AIzaSyAXwR_fU_rjkpaL8yMpCSWHGfMhvtu8k7Q', projectId: 'chore-app-5be59' }\\);\nconst db = getFirestore\\(app\\);\nasync function clearAll\\(\\) {\n  for \\(const col of ['members', 'chores', 'completions', 'skipped']\\) {\n    const snap = await getDocs\\(collection\\(db, col\\)\\);\n    if \\(snap.empty\\) { console.log\\(col + ': empty'\\); continue; }\n    const batch = writeBatch\\(db\\);\n    snap.docs.forEach\\(d => batch.delete\\(d.ref\\)\\);\n    await batch.commit\\(\\);\n    console.log\\(col + ': deleted ' + snap.size + ' docs'\\);\n  }\n}\nclearAll\\(\\).then\\(\\(\\) => { console.log\\('Done'\\); process.exit\\(0\\); }\\);\n\" 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm install canvas-confetti 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm install -D @types/canvas-confetti 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx firebase-tools deploy --only hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 && npx firebase-tools deploy --only hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 | tail -30)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx firebase-tools deploy --only hosting 2>&1 | tail -15)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 | tail -15)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npx firebase-tools deploy --only hosting 2>&1 | tail -10)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 | tail -20)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run dev)",
+      "Bash(start http://localhost:5173/)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build && npx firebase deploy --only hosting)",
+      "Bash(firebase --version 2>/dev/null || npm list -g firebase-tools 2>/dev/null)",
+      "Bash(npm install:*)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && firebase deploy --only hosting)",
+      "Bash(start https://chore-app-5be59.web.app)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && firebase deploy --only firestore:rules,hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && firebase deploy --only firestore 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 && firebase deploy --only hosting 2>&1)",
+      "Bash(cd \"/c/AI APP/CHORES APP\" && find src -name '*.tsx' -exec sed -i 's/\\\\blg:/xl:/g' {} +)"
     ]
   }
 }

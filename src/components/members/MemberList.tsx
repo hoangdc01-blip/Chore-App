@@ -30,7 +30,7 @@ export default function MemberList({ hiddenMemberIds, onToggleMember }: MemberLi
           return (
             <li
               key={member.id}
-              className={`flex items-center justify-between rounded-md px-2 py-2 sm:py-1.5 hover:bg-muted group ${hiddenMemberIds.has(member.id) ? 'opacity-50' : ''}`}
+              className={`flex items-center justify-between rounded-md px-2 py-2 xl:py-1.5 hover:bg-muted group ${hiddenMemberIds.has(member.id) ? 'opacity-50' : ''}`}
             >
               <button
                 onClick={() => onToggleMember(member.id)}
@@ -38,16 +38,16 @@ export default function MemberList({ hiddenMemberIds, onToggleMember }: MemberLi
                 title={hiddenMemberIds.has(member.id) ? 'Show chores' : 'Hide chores'}
               >
                 {member.avatar ? (
-                  <img src={member.avatar} alt={member.name} className="h-7 w-7 sm:h-6 sm:w-6 rounded-full object-cover shrink-0" />
+                  <img src={member.avatar} alt={member.name} className="h-7 w-7 xl:h-6 xl:w-6 rounded-full object-cover shrink-0" />
                 ) : (
-                  <span className={`inline-flex items-center justify-center h-7 w-7 sm:h-6 sm:w-6 rounded-full shrink-0 ${color.dot} text-white text-[11px] sm:text-[10px] font-bold`}>
+                  <span className={`inline-flex items-center justify-center h-7 w-7 xl:h-6 xl:w-6 rounded-full shrink-0 ${color.dot} text-white text-[11px] xl:text-[10px] font-bold`}>
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 )}
                 <span className="text-sm truncate">{member.name}</span>
                 {hiddenMemberIds.has(member.id) && <EyeOff size={12} className="shrink-0 text-muted-foreground" />}
               </button>
-              <div className="flex items-center gap-1.5 sm:gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1.5 xl:gap-1 shrink-0 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => setEditingMember(member)}
                   className="text-muted-foreground hover:text-foreground p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"

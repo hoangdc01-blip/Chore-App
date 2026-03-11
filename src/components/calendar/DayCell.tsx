@@ -25,15 +25,15 @@ export default function DayCell({
   return (
     <div
       onClick={() => onDayClick(day)}
-      className={`border border-border p-0.5 sm:p-1 cursor-pointer hover:bg-accent/50 transition-colors ${
-        isWeekView ? 'min-h-[120px] sm:min-h-[200px]' : 'min-h-[60px] sm:min-h-[80px] md:min-h-[100px]'
-      } ${!inMonth && !isWeekView ? 'bg-muted/30' : ''}`}
+      className={`border border-border p-1 cursor-pointer hover:bg-accent/50 transition-colors ${
+        isWeekView ? 'min-h-[200px]' : 'min-h-[100px]'
+      } ${today ? 'bg-primary/5' : !inMonth && !isWeekView ? 'bg-muted/30' : ''}`}
     >
-      <div className="flex justify-between items-start mb-0.5 sm:mb-1">
+      <div className="flex justify-between items-start mb-1">
         <span
-          className={`text-xs font-medium leading-none ${
+          className={`text-sm font-semibold leading-none ${
             today
-              ? 'bg-primary text-primary-foreground rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center'
+              ? 'bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center'
               : !inMonth && !isWeekView
                 ? 'text-muted-foreground'
                 : 'text-foreground'
@@ -48,6 +48,7 @@ export default function DayCell({
             key={`${occ.choreId}-${occ.date}`}
             occurrence={occ}
             onClick={() => onChoreClick(occ)}
+            compact={true}
           />
         ))}
       </div>

@@ -14,6 +14,8 @@ import {
   setSkipped,
   removeSkipped,
 } from '../lib/firestore-sync'
+import { useMemberStore } from './member-store'
+import { showToast } from './toast-store'
 
 interface ChoreState {
   chores: Chore[]
@@ -42,17 +44,17 @@ export const useChoreStore = create<ChoreState>()(
       addChore: (choreData) => {
         const chore: Chore = { ...choreData, id: generateId() }
         set({ chores: [...get().chores, chore] })
-        saveChoreDoc(chore).catch(console.error)
+        saveChoreDoc(chore).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       removeChore: (id) => {
         set({ chores: get().chores.filter((c) => c.id !== id) })
-        deleteChoreDoc(id).catch(console.error)
+        deleteChoreDoc(id).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       removeChoresByMember: (memberId) => {
         set({ chores: get().chores.filter((c) => c.assigneeId !== memberId) })
-        deleteChoresByMemberDocs(memberId).catch(console.error)
+        deleteChoresByMemberDocs(memberId).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       updateChore: (id, updates) => {
@@ -61,19 +63,25 @@ export const useChoreStore = create<ChoreState>()(
             c.id === id ? { ...c, ...updates } : c
           ),
         })
-        updateChoreDoc(id, updates).catch(console.error)
+        updateChoreDoc(id, updates).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       toggleCompletion: (choreId, memberId, date) => {
         const key = makeKey(choreId, memberId, date)
         const completions = { ...get().completions }
-        const newValue = !completions[key]
-        completions[key] = newValue
+        const wasComplete = !!completions[key]
+        completions[key] = !wasComplete
         set({ completions })
-        if (newValue) {
-          setCompletion(key, choreId, memberId, date).catch(console.error)
+
+        // Update member points balance in Firestore
+        const chore = get().chores.find((c) => c.id === choreId)
+        const pts = Number(chore?.points) || 1
+        useMemberStore.getState().adjustPoints(memberId, wasComplete ? -pts : pts)
+
+        if (!wasComplete) {
+          setCompletion(key, choreId, memberId, date).catch(() => showToast('Sync failed. Please try again.', 'error'))
         } else {
-          removeCompletion(key).catch(console.error)
+          removeCompletion(key).catch(() => showToast('Sync failed. Please try again.', 'error'))
         }
       },
 
@@ -84,9 +92,9 @@ export const useChoreStore = create<ChoreState>()(
         skipped[key] = newValue
         set({ skipped })
         if (newValue) {
-          setSkipped(key, choreId, memberId, date).catch(console.error)
+          setSkipped(key, choreId, memberId, date).catch(() => showToast('Sync failed. Please try again.', 'error'))
         } else {
-          removeSkipped(key).catch(console.error)
+          removeSkipped(key).catch(() => showToast('Sync failed. Please try again.', 'error'))
         }
       },
 

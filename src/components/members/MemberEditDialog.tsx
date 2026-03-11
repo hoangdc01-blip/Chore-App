@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Camera } from 'lucide-react'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
-import { type FamilyMember, MEMBER_COLORS } from '../../types'
+import type { FamilyMember } from '../../types'
 import { resizeImageToDataURL } from '../../lib/image'
 
 interface MemberEditDialogProps {
@@ -56,7 +56,7 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] sm:max-w-sm mx-4"
+        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -73,9 +73,9 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
               className="relative group"
             >
               {avatar ? (
-                <img src={avatar} alt={name} className="h-24 w-24 sm:h-20 sm:w-20 rounded-full object-cover" />
+                <img src={avatar} alt={name} className="h-24 w-24 xl:h-20 xl:w-20 rounded-full object-cover" />
               ) : (
-                <div className={`h-24 w-24 sm:h-20 sm:w-20 rounded-full ${color.dot} flex items-center justify-center text-white text-2xl font-bold`}>
+                <div className={`h-24 w-24 xl:h-20 xl:w-20 rounded-full ${color.dot} flex items-center justify-center text-white text-2xl font-bold`}>
                   {name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -95,24 +95,6 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {MEMBER_COLORS.map((c, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setColorIndex(i)}
-                  className={`h-9 w-9 sm:h-7 sm:w-7 rounded-full ${c.dot} transition-all ${
-                    colorIndex === i
-                      ? 'ring-2 ring-ring ring-offset-2'
-                      : 'hover:ring-2 hover:ring-ring/50 hover:ring-offset-1'
-                  }`}
-                />
-              ))}
-            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

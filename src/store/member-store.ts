@@ -6,7 +6,9 @@ import { useChoreStore } from './chore-store'
 import {
   saveMember as saveMemberDoc,
   deleteMemberDoc,
+  updateMemberDoc,
 } from '../lib/firestore-sync'
+import { showToast } from './toast-store'
 
 export const DEFAULT_KIDS = [
   { name: 'Bap', color: '0' },
@@ -18,9 +20,10 @@ export const DEFAULT_KIDS = [
 interface MemberState {
   members: FamilyMember[]
   _initialized: boolean
-  addMember: (name: string, avatar?: string) => void
+  addMember: (name: string, avatar?: string, color?: string) => void
   removeMember: (id: string) => void
   updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string }) => void
+  adjustPoints: (memberId: string, delta: number) => void
 }
 
 export const useMemberStore = create<MemberState>()(
@@ -28,22 +31,22 @@ export const useMemberStore = create<MemberState>()(
     (set, get) => ({
       members: [],
       _initialized: false,
-      addMember: (name: string, avatar?: string) => {
+      addMember: (name: string, avatar?: string, color?: string) => {
         const members = get().members
-        const colorIndex = members.length % MEMBER_COLORS.length
         const newMember: FamilyMember = {
           id: generateId(),
           name,
-          color: String(colorIndex),
+          color: color ?? String(members.length % MEMBER_COLORS.length),
           avatar,
+          points: 0,
         }
         set({ members: [...members, newMember] })
-        saveMemberDoc(newMember).catch(console.error)
+        saveMemberDoc(newMember).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
       removeMember: (id: string) => {
         useChoreStore.getState().removeChoresByMember(id)
         set({ members: get().members.filter((m) => m.id !== id) })
-        deleteMemberDoc(id).catch(console.error)
+        deleteMemberDoc(id).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
       updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string }) => {
         const members = get().members.map((m) =>
@@ -53,7 +56,20 @@ export const useMemberStore = create<MemberState>()(
         // Save full member to Firestore (not just partial) to handle case where initial save failed
         const updated = members.find((m) => m.id === id)
         if (updated) {
-          saveMemberDoc(updated).catch(console.error)
+          saveMemberDoc(updated).catch(() => showToast('Sync failed. Please try again.', 'error'))
+        }
+      },
+
+      adjustPoints: (memberId: string, delta: number) => {
+        const members = get().members.map((m) =>
+          m.id === memberId ? { ...m, points: Math.max(0, (m.points ?? 0) + delta) } : m
+        )
+        set({ members })
+        const member = members.find((m) => m.id === memberId)
+        if (member) {
+          updateMemberDoc(memberId, { points: member.points }).catch(() =>
+            showToast('Sync failed. Please try again.', 'error')
+          )
         }
       },
     }),
@@ -75,12 +91,7 @@ export const useMemberStore = create<MemberState>()(
   )
 )
 
-// Seed default kids on first ever run (local only — Firestore seeding handled in App.tsx)
-const initState = useMemberStore.getState()
-if (!initState._initialized && initState.members.length === 0) {
-  DEFAULT_KIDS.forEach((kid) => useMemberStore.getState().addMember(kid.name))
-  useMemberStore.setState({ _initialized: true })
-}
+// Default seeding is handled in App.tsx after Firestore check
 
 export function getMemberColor(member: FamilyMember) {
   const index = parseInt(member.color, 10)

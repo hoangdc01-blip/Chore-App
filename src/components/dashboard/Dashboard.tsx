@@ -29,7 +29,7 @@ export default function Dashboard() {
   const memberMap = new Map(members.map((m) => [m.id, m]))
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 xl:p-6 space-y-4 xl:space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Dashboard</h2>
         <div className="flex gap-1 rounded-lg bg-muted p-1">
@@ -56,9 +56,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <Leaderboard members={members} stats={stats} />
+      <Leaderboard members={members} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {stats.map((stat) => {
           const member = memberMap.get(stat.memberId)
           if (!member) return null

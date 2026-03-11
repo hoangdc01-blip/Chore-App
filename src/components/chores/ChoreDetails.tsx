@@ -4,6 +4,7 @@ import type { ChoreOccurrence } from '../../types'
 import { DAY_LABELS } from '../../types'
 import { useChoreStore } from '../../store/chore-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
+import { fireConfetti } from '../../lib/confetti'
 
 interface ChoreDetailsProps {
   occurrence: ChoreOccurrence | null
@@ -53,13 +54,22 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
   }
 
   const handleToggle = () => {
+    if (!occurrence.isCompleted) {
+      fireConfetti()
+    }
     toggleCompletion(occurrence.choreId, occurrence.chore.assigneeId, occurrence.date)
+    onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setConfirmDelete(false); onClose() }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); onClose() }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <div
-        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] sm:max-w-sm mx-4"
+        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -71,6 +81,7 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
         <div className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className={`text-lg font-medium ${occurrence.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+              {occurrence.chore.emoji && <span className="mr-1.5">{occurrence.chore.emoji}</span>}
               {occurrence.chore.name}
             </p>
             <span className="inline-flex items-center gap-1 text-sm text-amber-600 font-medium">

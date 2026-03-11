@@ -1,4 +1,4 @@
-import { format, subDays, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import type { Chore, CompletionRecord, SkippedRecord, KidStats } from '../types'
 import { expandRecurrence } from './recurrence'
 
@@ -28,7 +28,7 @@ export function computeKidStats(
       totalCount++
       if (completions[key]) {
         completedCount++
-        totalPoints += chore.points
+        totalPoints += (Number(chore.points) || 1)
       }
     }
   }
@@ -108,4 +108,8 @@ export function getWeekRange(): { start: Date; end: Date } {
 export function getMonthRange(): { start: Date; end: Date } {
   const now = new Date()
   return { start: startOfMonth(now), end: endOfMonth(now) }
+}
+
+export function getAllTimeRange(): { start: Date; end: Date } {
+  return { start: new Date(2020, 0, 1), end: endOfDay(new Date()) }
 }

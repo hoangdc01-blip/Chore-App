@@ -3,8 +3,10 @@ import { X } from 'lucide-react'
 import { format } from 'date-fns'
 import { useChoreStore } from '../../store/chore-store'
 import { useMemberStore } from '../../store/member-store'
+import { showToast } from '../../store/toast-store'
 import type { Chore, RecurrenceType } from '../../types'
 import { DAY_LABELS } from '../../types'
+import EmojiPicker from '../ui/EmojiPicker'
 
 interface ChoreDialogProps {
   open: boolean
@@ -26,7 +28,8 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
   const [startTime, setStartTime] = useState('')
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none')
   const [customDays, setCustomDays] = useState<number[]>([])
-  const [points, setPoints] = useState(1)
+  const [pointsStr, setPointsStr] = useState('')
+  const [emoji, setEmoji] = useState('')
 
   useEffect(() => {
     if (editChore) {
@@ -37,7 +40,8 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
       setStartTime(editChore.startTime ?? '')
       setRecurrence(editChore.recurrence)
       setCustomDays(editChore.customDays ?? [])
-      setPoints(editChore.points ?? 1)
+      setPointsStr(String(editChore.points ?? 1))
+      setEmoji(editChore.emoji ?? '')
     } else {
       setName('')
       setDescription('')
@@ -46,7 +50,8 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
       setStartTime(defaultTime ?? '')
       setRecurrence('none')
       setCustomDays([])
-      setPoints(1)
+      setPointsStr('')
+      setEmoji('')
     }
   }, [editChore, defaultDate, defaultTime, open, members])
 
@@ -78,17 +83,20 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
     const choreData = {
       name: name.trim(),
       description: description.trim() || undefined,
+      emoji: emoji || undefined,
       assigneeId,
       startDate,
       startTime: startTime || undefined,
       recurrence,
       customDays: recurrence === 'custom' ? customDays : undefined,
-      points: Math.max(1, points),
+      points: Math.max(1, parseInt(pointsStr) || 1),
     }
     if (editChore) {
       updateChore(editChore.id, choreData)
+      showToast('Chore updated!', 'success')
     } else {
       addChore(choreData)
+      showToast('Chore added!', 'success')
     }
     onClose()
   }
@@ -96,7 +104,7 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] sm:max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-md mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -120,6 +128,13 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
 
           <div>
             <label className="block text-sm font-medium mb-1">
+              Icon <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <EmojiPicker value={emoji} onChange={setEmoji} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
               Description <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
             <textarea
@@ -131,7 +146,7 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">Assign To</label>
               {members.length === 0 ? (
@@ -153,16 +168,21 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
             <div>
               <label className="block text-sm font-medium mb-1">Points</label>
               <input
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(parseInt(e.target.value) || 1)}
-                min={1}
+                type="text"
+                inputMode="numeric"
+                value={pointsStr}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || /^[1-9]\d*$/.test(v)) setPointsStr(v)
+                }}
+                onBlur={() => { if (!pointsStr || parseInt(pointsStr) < 1) setPointsStr('1') }}
+                placeholder="Enter points"
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">Start Date</label>
               <input
@@ -239,7 +259,7 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || !assigneeId || (timeRequired && !startTime) || (recurrence === 'custom' && customDays.length === 0)}
+              disabled={!name.trim() || !assigneeId || !pointsStr || (timeRequired && !startTime) || (recurrence === 'custom' && customDays.length === 0)}
               className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors min-h-[44px]"
             >
               {editChore ? 'Save' : 'Add Chore'}

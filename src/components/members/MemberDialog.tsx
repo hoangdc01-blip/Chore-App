@@ -1,35 +1,145 @@
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, X, Camera } from 'lucide-react'
 import { useMemberStore } from '../../store/member-store'
+import { MEMBER_COLORS } from '../../types'
+import { resizeImageToDataURL } from '../../lib/image'
 
 export default function MemberDialog() {
-  const [name, setName] = useState('')
   const addMember = useMemberStore((s) => s.addMember)
+  const members = useMemberStore((s) => s.members)
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [colorIndex, setColorIndex] = useState(0)
+  const [avatar, setAvatar] = useState<string | undefined>()
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setName('')
+      setColorIndex(members.length % MEMBER_COLORS.length)
+      setAvatar(undefined)
+    }
+  }, [open, members.length])
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
+  const color = MEMBER_COLORS[colorIndex] ?? MEMBER_COLORS[0]
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const dataUrl = await resizeImageToDataURL(file)
+    setAvatar(dataUrl)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    addMember(trimmed)
-    setName('')
+    addMember(trimmed, avatar, String(colorIndex))
+    setOpen(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mt-2">
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="New kid's name"
-        className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
-      />
+    <>
       <button
-        type="submit"
-        className="rounded-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-        title="Add kid"
+        onClick={() => setOpen(true)}
+        className="flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] w-full mt-2"
       >
         <Plus size={16} />
+        Add Kid
       </button>
-    </form>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>
+          <div
+            className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="font-semibold">Add Kid</h3>
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="relative group"
+                >
+                  {avatar ? (
+                    <img src={avatar} alt={name || 'Avatar'} className="h-24 w-24 xl:h-20 xl:w-20 rounded-full object-cover" />
+                  ) : (
+                    <div className={`h-24 w-24 xl:h-20 xl:w-20 rounded-full ${color.dot} flex items-center justify-center text-white text-2xl font-bold`}>
+                      {name ? name.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera size={20} className="text-white" />
+                  </div>
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Kid's name"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Color</label>
+                <div className="flex gap-2 flex-wrap">
+                  {MEMBER_COLORS.map((c, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setColorIndex(i)}
+                      className={`h-9 w-9 xl:h-7 xl:w-7 rounded-full ${c.dot} transition-all ${
+                        colorIndex === i
+                          ? 'ring-2 ring-ring ring-offset-2'
+                          : 'hover:ring-2 hover:ring-ring/50 hover:ring-offset-1'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!name.trim()}
+                  className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors min-h-[44px]"
+                >
+                  Add
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

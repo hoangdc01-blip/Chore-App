@@ -7,9 +7,10 @@ import {
   query,
   where,
   writeBatch,
+  onSnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { FamilyMember, Chore, CompletionRecord, SkippedRecord } from '../types'
+import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, Reward, Redemption } from '../types'
 
 // Strip undefined values — Firestore rejects them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +107,22 @@ export async function removeSkipped(key: string): Promise<void> {
   await deleteDoc(doc(db, 'skipped', key))
 }
 
+// ── Rewards ──
+
+export async function saveReward(reward: Reward): Promise<void> {
+  await setDoc(doc(db, 'rewards', reward.id), clean(reward))
+}
+
+export async function deleteRewardDoc(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'rewards', id))
+}
+
+// ── Redemptions ──
+
+export async function saveRedemption(redemption: Redemption): Promise<void> {
+  await setDoc(doc(db, 'redemptions', redemption.id), clean(redemption))
+}
+
 // ── Bulk fetch ──
 
 export async function fetchAllData(): Promise<{
@@ -121,4 +138,115 @@ export async function fetchAllData(): Promise<{
     fetchSkipped(),
   ])
   return { members, chores, completions, skipped }
+}
+
+// ── Real-time listeners ──
+
+export function subscribeToAll(onData: (data: {
+  members: FamilyMember[]
+  chores: Chore[]
+  completions: CompletionRecord
+  skipped: SkippedRecord
+  rewards: Reward[]
+  redemptions: Redemption[]
+}) => void): () => void {
+  let members: FamilyMember[] = []
+  let chores: Chore[] = []
+  let completions: CompletionRecord = {}
+  let skipped: SkippedRecord = {}
+  let rewards: Reward[] = []
+  let redemptions: Redemption[] = []
+  let initialLoad = 0
+  const TOTAL_COLLECTIONS = 6
+
+  const notify = () => {
+    if (initialLoad < TOTAL_COLLECTIONS) return
+    onData({ members, chores, completions, skipped, rewards, redemptions })
+  }
+
+  const unsub1 = onSnapshot(collection(db, 'members'), (snap) => {
+    members = snap.docs.map((d) => {
+      const data = d.data()
+      return { ...data, points: Number(data.points) || 0 } as FamilyMember
+    })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  const unsub2 = onSnapshot(collection(db, 'chores'), (snap) => {
+    chores = snap.docs.map((d) => {
+      const data = d.data()
+      return { ...data, points: Number(data.points) || 1 } as Chore
+    })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  const unsub3 = onSnapshot(collection(db, 'completions'), (snap) => {
+    completions = {}
+    snap.docs.forEach((d) => { completions[d.id] = true })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  const unsub4 = onSnapshot(collection(db, 'skipped'), (snap) => {
+    skipped = {}
+    snap.docs.forEach((d) => { skipped[d.id] = true })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  const unsub5 = onSnapshot(collection(db, 'rewards'), (snap) => {
+    rewards = snap.docs.map((d) => d.data() as Reward)
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  const unsub6 = onSnapshot(collection(db, 'redemptions'), (snap) => {
+    redemptions = snap.docs.map((d) => d.data() as Redemption)
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  })
+
+  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6() }
+}
+
+// ── Bulk push (local → Firestore) ──
+
+export async function pushAllData(
+  members: FamilyMember[],
+  chores: Chore[],
+  completions: CompletionRecord,
+  skipped: SkippedRecord,
+): Promise<void> {
+  const batch = writeBatch(db)
+
+  for (const member of members) {
+    batch.set(doc(db, 'members', member.id), clean(member))
+  }
+  for (const chore of chores) {
+    batch.set(doc(db, 'chores', chore.id), clean(chore))
+  }
+  for (const [key, value] of Object.entries(completions)) {
+    if (!value) continue
+    const parts = key.split(':')
+    batch.set(doc(db, 'completions', key), {
+      choreId: parts[0],
+      memberId: parts[1],
+      date: parts[2],
+      done: true,
+    })
+  }
+  for (const [key, value] of Object.entries(skipped)) {
+    if (!value) continue
+    const parts = key.split(':')
+    batch.set(doc(db, 'skipped', key), {
+      choreId: parts[0],
+      memberId: parts[1],
+      date: parts[2],
+      skipped: true,
+    })
+  }
+
+  await batch.commit()
 }

@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // PIN config: anyone can read (needed to verify PIN before auth),
+    // only authenticated users can write (to change PIN)
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // All app data: only authenticated users can read/write
+    match /members/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /chores/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /completions/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /skipped/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /rewards/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /redemptions/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

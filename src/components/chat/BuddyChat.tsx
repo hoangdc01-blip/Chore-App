@@ -5,12 +5,14 @@ import { useMemberStore } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
+import ChoreConfirmCard from './ChoreConfirmCard'
 
 const QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
+  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
 ]
 
 function ChatBubble({ message, isUser }: { message: ChatMessage; isUser: boolean }) {
@@ -94,6 +96,10 @@ export default function BuddyChat() {
     sendMessageStreaming,
     cancelGeneration,
     clearMessages,
+    pendingChoreAction,
+    pendingChoreMessageIndex,
+    acceptChoreAction,
+    cancelChoreAction,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -315,9 +321,12 @@ export default function BuddyChat() {
           </div>
         )}
 
-        {messages
-          .filter((m) => m.role !== 'system')
-          .map((msg, i, arr) => {
+        {(() => {
+          const visible = messages.filter((m) => m.role !== 'system')
+          return visible.map((msg, i, arr) => {
+            // Find original index in unfiltered messages array
+            // so pendingChoreMessageIndex (which references the full array) matches correctly
+            const originalIndex = messages.indexOf(msg)
             const isLastAssistant =
               msg.role === 'assistant' &&
               i === arr.length - 1 &&
@@ -325,7 +334,7 @@ export default function BuddyChat() {
               !isStreaming &&
               lastResponseTimeMs != null
             return (
-              <div key={i}>
+              <div key={originalIndex}>
                 <ChatBubble message={msg} isUser={msg.role === 'user'} />
                 {isLastAssistant && (
                   <div className="flex justify-start mb-3 ml-10">
@@ -334,9 +343,19 @@ export default function BuddyChat() {
                     </span>
                   </div>
                 )}
+                {msg.role === 'assistant' &&
+                  pendingChoreAction &&
+                  pendingChoreMessageIndex === originalIndex && (
+                    <ChoreConfirmCard
+                      action={pendingChoreAction}
+                      onAccept={acceptChoreAction}
+                      onCancel={cancelChoreAction}
+                    />
+                )}
               </div>
             )
-          })}
+          })
+        })()}
 
         {isLoading && !isStreaming && <TypingIndicator />}
 

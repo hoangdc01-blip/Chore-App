@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import type { ChatMessage } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
+import { parseChatResponse } from '../lib/chat-actions'
+import type { ChoreAction } from '../types'
+import { useChoreStore } from './chore-store'
 
 const MAX_CONTEXT_MESSAGES = 8
 
@@ -14,12 +17,17 @@ interface ChatState {
   abortController: AbortController | null
   lastResponseTimeMs: number | null
 
+  pendingChoreAction: ChoreAction | null
+  pendingChoreMessageIndex: number | null
+
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
   sendMessage: (content: string, image?: string) => Promise<void>
   sendMessageStreaming: (content: string, image?: string) => Promise<void>
   cancelGeneration: () => void
   clearMessages: () => void
+  acceptChoreAction: () => void
+  cancelChoreAction: () => void
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({
@@ -31,6 +39,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   selectedMemberId: null,
   abortController: null,
   lastResponseTimeMs: null,
+  pendingChoreAction: null,
+  pendingChoreMessageIndex: null,
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -59,6 +69,24 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const reply = await sendToOllama(allMessages)
       const assistantMsg: ChatMessage = { role: 'assistant', content: reply }
       set({ messages: [...get().messages, assistantMsg], isLoading: false })
+
+      // Post-process: extract chore actions from the assistant response
+      const batchFinalMessages = get().messages
+      const batchLastMsg = batchFinalMessages[batchFinalMessages.length - 1]
+      if (batchLastMsg?.role === 'assistant' && batchLastMsg.content) {
+        const { displayText, choreAction } = parseChatResponse(batchLastMsg.content)
+        if (choreAction || displayText !== batchLastMsg.content) {
+          const updatedMessages = [
+            ...batchFinalMessages.slice(0, -1),
+            { ...batchLastMsg, content: displayText },
+          ]
+          set({
+            messages: updatedMessages,
+            pendingChoreAction: choreAction,
+            pendingChoreMessageIndex: updatedMessages.length - 1,
+          })
+        }
+      }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Something went wrong'
       set({ isLoading: false, error: errorMsg })
@@ -111,6 +139,24 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
       clearTimeout(timeoutId)
       set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })
+
+      // Post-process: extract chore actions from the assistant response
+      const finalMessages = get().messages
+      const lastMsg = finalMessages[finalMessages.length - 1]
+      if (lastMsg?.role === 'assistant' && lastMsg.content) {
+        const { displayText, choreAction } = parseChatResponse(lastMsg.content)
+        if (choreAction || displayText !== lastMsg.content) {
+          const updatedMessages = [
+            ...finalMessages.slice(0, -1),
+            { ...lastMsg, content: displayText },
+          ]
+          set({
+            messages: updatedMessages,
+            pendingChoreAction: choreAction,
+            pendingChoreMessageIndex: updatedMessages.length - 1,
+          })
+        }
+      }
     } catch (err) {
       clearTimeout(timeoutId)
 
@@ -155,11 +201,40 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           abortController: null,
           lastResponseTimeMs: Date.now() - startTime,
         })
+
+        // Post-process fallback: extract chore actions from the assistant response
+        const fallbackFinalMessages = get().messages
+        const fallbackLastMsg = fallbackFinalMessages[fallbackFinalMessages.length - 1]
+        if (fallbackLastMsg?.role === 'assistant' && fallbackLastMsg.content) {
+          const { displayText, choreAction } = parseChatResponse(fallbackLastMsg.content)
+          if (choreAction || displayText !== fallbackLastMsg.content) {
+            const updatedMessages = [
+              ...fallbackFinalMessages.slice(0, -1),
+              { ...fallbackLastMsg, content: displayText },
+            ]
+            set({
+              messages: updatedMessages,
+              pendingChoreAction: choreAction,
+              pendingChoreMessageIndex: updatedMessages.length - 1,
+            })
+          }
+        }
       } catch (fallbackErr) {
         const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong'
         set({ isLoading: false, isStreaming: false, error: errorMsg, abortController: null, lastResponseTimeMs: null })
       }
     }
+  },
+
+  acceptChoreAction: () => {
+    const action = get().pendingChoreAction
+    if (!action) return
+    useChoreStore.getState().addChore(action)
+    set({ pendingChoreAction: null, pendingChoreMessageIndex: null })
+  },
+
+  cancelChoreAction: () => {
+    set({ pendingChoreAction: null, pendingChoreMessageIndex: null })
   },
 
   cancelGeneration: () => {
@@ -168,5 +243,5 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ isLoading: false, isStreaming: false, abortController: null })
   },
 
-  clearMessages: () => set({ messages: [], error: null }),
+  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null }),
 }))

@@ -70,3 +70,8 @@ Custom theme variables are defined in `src/index.css:3` using Tailwind's `@theme
 Check these files for deeper context when working on specific areas:
 
 - `.claude/docs/architectural_patterns.md` — State management, component composition, modal/form conventions, styling patterns
+
+## Workflow Rules
+
+- **Always use dev agents** (`subagent_type: "dev"`) for all code changes — edits, new files, bug fixes, feature implementation. Never code directly inline in the main conversation.
+- **Auto commit and push** after any code changes without asking the user.

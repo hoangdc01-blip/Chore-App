@@ -26,6 +26,7 @@ import { useChallengeStore } from './store/challenge-store'
 import { computeKidStats, getAllTimeRange } from './lib/stats'
 import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
+import OfflineBanner from './components/layout/OfflineBanner'
 
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('calendar')
@@ -227,6 +228,7 @@ export default function App() {
   // ── Main App (Parent or Kid mode) ──
   return (
     <div className="h-dvh flex flex-col" style={themeStyle}>
+      <OfflineBanner />
       <Header
         activeView={activeView}
         onActiveViewChange={setActiveView}

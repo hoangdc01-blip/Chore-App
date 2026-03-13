@@ -1,0 +1,17 @@
+{
+  "name": "Family Chores",
+  "short_name": "Chores",
+  "description": "Fun chore tracking app for families with AI Buddy",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#6366f1",
+  "background_color": "#fafafa",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

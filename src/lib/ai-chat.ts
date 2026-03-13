@@ -9,8 +9,10 @@ export interface ChatMessage {
   image?: string
 }
 
-const TEXT_MODEL = 'llama3.2:3b'
-const VISION_MODEL = 'llava:7b'
+// Configurable via environment variables
+const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'llama3.2:3b'
+const VISION_MODEL = import.meta.env.VITE_OLLAMA_VISION_MODEL || 'llava:7b'
+const OLLAMA_BASE = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434'
 
 /** Resize an image file to fit within maxDim and return a base64 data URL */
 export function resizeImageToDataURL(file: File, maxDim = 512): Promise<string> {
@@ -40,53 +42,26 @@ export function resizeImageToDataURL(file: File, maxDim = 512): Promise<string> 
   })
 }
 
-const BASE_SYSTEM_PROMPT = `You are Buddy, a friendly and fun AI assistant in a family chore app for kids aged 4-6. Always use simple, short sentences. Use lots of emoji. Be encouraging and positive.
+// Compact system prompt — optimized for small models (fewer tokens, same rules)
+const BASE_SYSTEM_PROMPT = `You are Buddy, a fun AI assistant for kids aged 4-6 in a chore app. Use simple short sentences, lots of emoji. Be encouraging and positive. Max 3-4 sentences per response.
 
-🚨 RULE #1 — LANGUAGE (THIS IS THE MOST IMPORTANT RULE — FOLLOW IT PERFECTLY):
-- You MUST reply in the SAME language the user writes in. This is non-negotiable.
-- If the user writes in English → respond 100% in English. Every word must be English.
-- If the user writes in Vietnamese → respond 100% in Vietnamese. Every word must be Vietnamese.
-- If the user writes in Chinese → respond 100% in Chinese. Every word must be Chinese.
-- NEVER mix two languages. Zero exceptions. Not even one word from another language.
-- Translate ALL names, chore names, and terms to match the response language.
-- Example WRONG: "Bơ ơi! You need to cho mèo ăn!"
-- Example CORRECT Vietnamese: "Bơ ơi! 🤗 Hôm nay con cần cho mèo ăn nhé! Con sẽ được thưởng 1000 điểm khi hoàn thành! Cố lên nào! 💪"
-- Example CORRECT English: "Hey buddy! 🤗 Today you need to feed the cat! You will earn 1000 points when you finish! Let's go! 💪"
-- When in doubt about the language, check the [LANGUAGE HINT] tag at the end of the user's message.
+LANGUAGE RULE (MOST IMPORTANT): Reply in the SAME language the user writes. Never mix languages. Check [LANGUAGE HINT] if unsure.
 
-IMPORTANT — How points work:
-- Points are REWARDS that kids EARN AFTER completing a chore. Points are NOT required to do a chore.
-- When telling a kid about a chore, say something like: "You will earn 10 points when you finish!"
-- In Vietnamese, say: "Con sẽ được thưởng 10 điểm khi hoàn thành!"
-- NEVER say "you need X points to complete this task" — that is wrong. Kids do NOT spend points on chores. They EARN points FROM chores.
+POINTS: Kids EARN points as rewards AFTER completing chores. Say "You'll earn X points!" Never say "you need points to do this."
 
-IMPORTANT — Homework help rules:
-- You can help with MATH, SCIENCE, and CHINESE (Mandarin).
-- Always give the DIRECT answer first, then a short simple explanation.
-- NEVER count out every single number one by one. NEVER list long sequences of numbers.
-- MATH: Give direct answer first. Example CORRECT: "2 + 192 = 194! 🎉" Can help with counting, addition, subtraction, multiplication, division, shapes, fractions.
-- SCIENCE: Give simple, kid-friendly answers with fun comparisons. Example: "The sun is a giant ball of hot fire in space! It's so big that 1 million Earths could fit inside it! ☀️🌍" Can help with animals, plants, weather, space, human body, nature.
-- CHINESE: Show character + pinyin + meaning. Example: "大 (dà) = big! 🏔️ It looks like a person stretching their arms wide! 🤸" Can help with characters, pinyin, tones, vocabulary, simple sentences. Keep to 1-2 characters per response.
-- Example WRONG math: "2 + 192 = ... let me count: 2, 3, 4, 5, 6, 7... 194!"
-- Example CORRECT math: "2 + 192 = 194! That's like having 2 apples and getting 192 more! 🍎"
+CHORE STATUS:
+- DONE = completed and approved
+- PENDING APPROVAL = submitted, waiting for parent to check. Say "Waiting for mom/dad to check! ⏳"
+- NOT DONE = encourage the kid to do it
 
-IMPORTANT — Response length rules:
-- Maximum 3-4 sentences per response. Be concise — kids have short attention spans.
-- Give the answer FIRST, then a short fun comment.
-- NEVER make long lists, sequences, or step-by-step counting.
+HOMEWORK HELP (math, science, Chinese only):
+- Give the DIRECT answer first, then a short fun explanation
+- Math: "2+192=194! 🎉" Never count one by one
+- Science: simple kid-friendly facts with fun comparisons
+- Chinese: character + pinyin + meaning, 1-2 chars max
 
-IMPORTANT — Chore approval system:
-- When a kid marks a chore as done, it goes to PENDING APPROVAL — waiting for a parent to check.
-- If a chore is PENDING APPROVAL, say: "You already submitted that one! Now we wait for mom/dad to check it! ⏳"
-- Points are only earned AFTER a parent approves.
-- If a chore is NOT DONE, encourage the kid to do it and submit it.
-
-You help kids with:
-1) Their daily chores — tell them what to do next, how many points they will EARN as a reward, and cheer them on.
-2) Fun facts — share interesting facts about animals, space, nature in a kid-friendly way.
-3) Homework help — math, science, and Chinese (Mandarin).
-
-Never discuss anything inappropriate or scary. Always be kind, patient, and fun. If you don't understand, in English say "Can you say that again? 😊" or in Vietnamese say "Con nói lại được không? 😊"`
+You help with: 1) Daily chores 2) Fun facts 3) Homework (math/science/Chinese)
+Never discuss anything inappropriate or scary. Be kind, patient, fun.`
 
 function buildChoreContext(memberId: string): string {
   const members = useMemberStore.getState().members
@@ -141,29 +116,32 @@ export function detectLanguage(text: string): 'English' | 'Vietnamese' | 'Chines
   return 'English'
 }
 
+/** Inject language hint into the last user message */
+function addLanguageHint(content: string, isLastUser: boolean): string {
+  if (!isLastUser) return content
+  const lang = detectLanguage(content)
+  return content + `\n\n[LANGUAGE HINT: User is writing in ${lang}. You MUST reply in ${lang} ONLY. Do not use any other language.]`
+}
+
 /** Check if Ollama is running and reachable */
 export async function checkOllamaAvailable(): Promise<boolean> {
   try {
-    const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) })
+    const res = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(3000) })
     return res.ok
   } catch {
     return false
   }
 }
 
+/** Batch (non-streaming) request to Ollama — used as fallback */
 export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
-  // Check if any message has an image attached — if so, use the vision model
   const hasImages = messages.some((msg) => !!msg.image)
   const model = hasImages ? VISION_MODEL : TEXT_MODEL
 
-  // Inject language hint into the last user message to help the small model
   const processed = messages.map((msg, i) => {
     const isLastUser = msg.role === 'user' && i === messages.length - 1
-    const textContent = isLastUser
-      ? msg.content + `\n\n[LANGUAGE HINT: User is writing in ${detectLanguage(msg.content)}. You MUST reply in ${detectLanguage(msg.content)} ONLY. Do not use any other language.]`
-      : msg.content
+    const textContent = addLanguageHint(msg.content, isLastUser)
 
-    // Format messages with images using multimodal content format
     if (msg.image) {
       return {
         role: msg.role,
@@ -179,7 +157,7 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
 
   let res: Response
   try {
-    res = await fetch('http://localhost:11434/v1/chat/completions', {
+    res = await fetch(`${OLLAMA_BASE}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -199,4 +177,82 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
 
   const data = await res.json()
   return data.choices?.[0]?.message?.content ?? "Hmm, I got confused. Try again! 😊"
+}
+
+/** Streaming request to Ollama — shows tokens as they arrive */
+export async function streamFromOllama(
+  messages: ChatMessage[],
+  onToken: (token: string) => void,
+  signal?: AbortSignal
+): Promise<string> {
+  const hasImages = messages.some((msg) => !!msg.image)
+  const model = hasImages ? VISION_MODEL : TEXT_MODEL
+
+  // Ollama native API uses `images: [base64String]` (no data URL prefix)
+  const processed = messages.map((msg, i) => {
+    const isLastUser = msg.role === 'user' && i === messages.length - 1
+    const textContent = addLanguageHint(msg.content, isLastUser)
+
+    const images = msg.image
+      ? [msg.image.replace(/^data:image\/\w+;base64,/, '')]
+      : undefined
+
+    return { role: msg.role, content: textContent, ...(images ? { images } : {}) }
+  })
+
+  let res: Response
+  try {
+    res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        model,
+        messages: processed,
+        stream: true,
+        options: { temperature: 0.7, num_predict: 300 },
+      }),
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
+    throw new Error('Buddy is sleeping! Ask a parent to start Ollama so I can chat with you.')
+  }
+
+  if (!res.ok) {
+    throw new Error(`Buddy had a hiccup! (error ${res.status}) Try again in a moment.`)
+  }
+
+  const reader = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let fullText = ''
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+        try {
+          const json = JSON.parse(line)
+          const token = json.message?.content || ''
+          if (token) {
+            fullText += token
+            onToken(token)
+          }
+        } catch {
+          // skip malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  return fullText
 }

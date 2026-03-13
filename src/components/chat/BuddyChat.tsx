@@ -125,18 +125,21 @@ export default function BuddyChat() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
   const prevMessageCountRef = useRef(0)
+  const wasStreamingRef = useRef(false)
 
   const {
     messages,
     isOpen,
     isLoading,
+    isStreaming,
     error,
     selectedMemberId,
     soundEnabled,
     setOpen,
     setSelectedMemberId,
     setSoundEnabled,
-    sendMessage,
+    sendMessageStreaming,
+    cancelGeneration,
     clearMessages,
   } = useChatStore()
 
@@ -175,18 +178,26 @@ export default function BuddyChat() {
     }
   }, [])
 
-  // Auto-speak new assistant messages
+  // Auto-speak new assistant messages (only after streaming completes)
   useEffect(() => {
     if (!soundEnabled) return
+
+    // Track streaming state — don't speak mid-stream
+    if (isStreaming) {
+      wasStreamingRef.current = true
+      return
+    }
+
     const assistantMessages = messages.filter((m) => m.role === 'assistant')
-    if (assistantMessages.length > prevMessageCountRef.current) {
+    if (assistantMessages.length > prevMessageCountRef.current || wasStreamingRef.current) {
       const lastMsg = assistantMessages[assistantMessages.length - 1]
-      if (lastMsg) {
+      if (lastMsg?.content) {
         speakText(lastMsg.content)
       }
+      wasStreamingRef.current = false
     }
     prevMessageCountRef.current = assistantMessages.length
-  }, [messages, soundEnabled])
+  }, [messages, soundEnabled, isStreaming])
 
   // Stop speech when chat closes or sound disabled
   useEffect(() => {
@@ -273,12 +284,12 @@ export default function BuddyChat() {
     const finalText = text || "What's in this picture?"
     setInput('')
     setPendingImage(null)
-    await sendMessage(finalText, image ?? undefined)
-  }, [input, pendingImage, isLoading, sendMessage])
+    await sendMessageStreaming(finalText, image ?? undefined)
+  }, [input, pendingImage, isLoading, sendMessageStreaming])
 
   const handleQuickAction = async (text: string) => {
     if (isLoading) return
-    await sendMessage(text)
+    await sendMessageStreaming(text)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -328,7 +339,7 @@ export default function BuddyChat() {
       recognition.onresult = (event: any) => {
         const transcript = event.results[0]?.[0]?.transcript ?? ''
         if (transcript.trim()) {
-          sendMessage(transcript.trim())
+          sendMessageStreaming(transcript.trim())
         }
         setIsListening(false)
         setMicStatus('idle')
@@ -499,7 +510,18 @@ export default function BuddyChat() {
             <ChatBubble key={i} message={msg} isUser={msg.role === 'user'} />
           ))}
 
-        {isLoading && <TypingIndicator />}
+        {isLoading && !isStreaming && <TypingIndicator />}
+
+        {isLoading && (
+          <div className="flex justify-center mb-3">
+            <button
+              onClick={cancelGeneration}
+              className="px-4 py-1.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+            >
+              Stop generating
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="text-center text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2 mb-3">

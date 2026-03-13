@@ -113,7 +113,7 @@ export default function ProfileSelectScreen() {
         setPin('')
       }
     } catch {
-      setError('Connection error. Try again.')
+      setError('Verification failed. Try again.')
       setPin('')
     } finally {
       setChecking(false)

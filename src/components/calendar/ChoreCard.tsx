@@ -86,10 +86,10 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
           <span className="shrink-0 text-sm xl:text-xs">{occurrence.chore.emoji}</span>
         )}
         {isOverdue && <AlertCircle size={12} className="shrink-0 text-white" />}
-        {occurrence.chore.startTime && (
-          <span className={`shrink-0 hidden xl:inline text-xs font-medium ${isOverdue ? 'text-white/80' : 'text-muted-foreground'}`}>{occurrence.chore.startTime}</span>
-        )}
         <span className={`truncate font-semibold ${occurrence.isCompleted ? 'line-through' : ''}`}>
+          {occurrence.chore.startTime && (
+            <span className={`font-normal ${isOverdue ? 'text-white/80' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
+          )}
           {occurrence.chore.name}
         </span>
         {member?.avatar && (

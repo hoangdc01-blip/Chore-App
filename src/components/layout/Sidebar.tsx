@@ -5,7 +5,6 @@ import { Users, X, KeyRound, Moon, Sun, ArrowLeftRight } from 'lucide-react'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import ChangePinDialog from '../auth/ChangePinDialog'
-import ThemePicker from '../settings/ThemePicker'
 
 interface SidebarProps {
   hiddenMemberIds: Set<string>
@@ -80,13 +79,6 @@ export default function Sidebar({ hiddenMemberIds, onToggleMember, open, onClose
           <div className="flex-1 flex flex-col gap-4 overflow-auto min-h-0">
             <MemberList hiddenMemberIds={hiddenMemberIds} onToggleMember={onToggleMember} />
             <MemberDialog />
-          </div>
-        )}
-
-        {/* Kid mode: theme picker + spacer */}
-        {isKidMode && (
-          <div className="flex-1 flex flex-col gap-4">
-            <ThemePicker />
           </div>
         )}
 

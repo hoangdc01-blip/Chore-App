@@ -6,6 +6,7 @@ import { useChoreStore } from '../../store/chore-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import { fireConfetti } from '../../lib/confetti'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface ChoreDetailsProps {
   occurrence: ChoreOccurrence | null
@@ -24,6 +25,7 @@ const recurrenceLabels: Record<string, string> = {
 }
 
 export default function ChoreDetails({ occurrence, open, onClose, onEdit }: ChoreDetailsProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open)
   const removeChore = useChoreStore((s) => s.removeChore)
   const toggleCompletion = useChoreStore((s) => s.toggleCompletion)
   const submitForApproval = useChoreStore((s) => s.submitForApproval)
@@ -90,11 +92,15 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
       onTouchStart={(e) => e.stopPropagation()}
     >
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chore-details-title"
         className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold">Chore Details</h3>
+          <h3 id="chore-details-title" className="font-semibold">Chore Details</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>

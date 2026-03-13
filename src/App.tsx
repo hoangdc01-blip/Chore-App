@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import type { CalendarViewMode, AppView } from './types'
 import Header from './components/layout/Header'
 import Sidebar from './components/layout/Sidebar'
@@ -8,11 +8,11 @@ import RewardShop from './components/rewards/RewardShop'
 import MyCoupons from './components/rewards/MyCoupons'
 import GameMenu from './games/GameMenu'
 import Toaster from './components/ui/Toaster'
-import BuddyChat from './components/chat/BuddyChat'
+const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
 import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
-import SetupWizard from './components/setup/SetupWizard'
+const SetupWizard = lazy(() => import('./components/setup/SetupWizard'))
 import { useFirebase } from './lib/firebase-flag'
 import { subscribeToAll, updateMemberDoc, saveEarnedBadges, setClaimedBonus } from './lib/firestore-sync'
 import { signInAfterPin } from './lib/pin'
@@ -184,9 +184,11 @@ export default function App() {
     if (members.length === 0 && !_initialized) {
       return (
         <>
-          <SetupWizard onComplete={() => {
-            useAppStore.getState().setMode('select')
-          }} />
+          <Suspense fallback={<div className="fixed inset-0 bg-background flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <SetupWizard onComplete={() => {
+              useAppStore.getState().setMode('select')
+            }} />
+          </Suspense>
           <Toaster />
         </>
       )
@@ -258,7 +260,9 @@ export default function App() {
         )}
       </div>
       <Toaster />
-      <BuddyChat />
+      <Suspense fallback={null}>
+        <BuddyChat />
+      </Suspense>
       <BadgeCelebration />
     </div>
   )

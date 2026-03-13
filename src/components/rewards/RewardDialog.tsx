@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useRewardStore } from '../../store/reward-store'
 import { showToast } from '../../store/toast-store'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface RewardDialogProps {
   open: boolean
@@ -14,6 +15,7 @@ const REWARD_EMOJIS = [
 ]
 
 export default function RewardDialog({ open, onClose }: RewardDialogProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open)
   const addReward = useRewardStore((s) => s.addReward)
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🎁')
@@ -49,11 +51,15 @@ export default function RewardDialog({ open, onClose }: RewardDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reward-dialog-title"
         className="bg-background rounded-xl shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold">Add Reward</h3>
+          <h3 id="reward-dialog-title" className="font-semibold">Add Reward</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>

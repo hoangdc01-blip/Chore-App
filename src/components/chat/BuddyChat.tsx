@@ -436,6 +436,7 @@ export default function BuddyChat() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
             title={soundEnabled ? 'Sound ON' : 'Sound OFF'}
+            aria-label={soundEnabled ? 'Disable sound' : 'Enable sound'}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
@@ -443,6 +444,7 @@ export default function BuddyChat() {
             onClick={clearMessages}
             className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="Clear chat"
+            aria-label="Clear chat"
           >
             <Trash2 size={16} />
           </button>
@@ -450,6 +452,7 @@ export default function BuddyChat() {
             onClick={() => setOpen(false)}
             className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="Close"
+            aria-label="Close chat"
           >
             <X size={18} />
           </button>
@@ -478,6 +481,8 @@ export default function BuddyChat() {
       {/* Messages area with drag-and-drop */}
       <div
         className="flex-1 overflow-auto px-4 py-3 min-h-0 relative"
+        aria-live="polite"
+        aria-label="Chat messages"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -649,6 +654,7 @@ export default function BuddyChat() {
               disabled={isLoading}
               className="rounded-xl px-3 py-2.5 bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center disabled:opacity-40"
               title="Attach image"
+              aria-label="Attach image"
             >
               <ImagePlus size={16} />
             </button>
@@ -663,6 +669,7 @@ export default function BuddyChat() {
                     : 'bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent'
               } disabled:opacity-40`}
               title={isListening ? 'Stop listening' : 'Talk to Buddy'}
+              aria-label={isListening ? 'Stop listening' : 'Talk to Buddy'}
             >
               {micStatus === 'unsupported' ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
@@ -672,6 +679,7 @@ export default function BuddyChat() {
           onClick={handleSend}
           disabled={(!input.trim() && !pendingImage) || !effectiveMemberId || isLoading}
           className="rounded-xl px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
+          aria-label="Send message"
         >
           <Send size={16} />
         </button>

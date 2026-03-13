@@ -3,6 +3,7 @@ import { X, Camera } from 'lucide-react'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { type FamilyMember, EMOJI_OPTIONS } from '../../types'
 import { resizeImageToDataURL } from '../../lib/image'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface MemberEditDialogProps {
   member: FamilyMember | null
@@ -11,6 +12,7 @@ interface MemberEditDialogProps {
 }
 
 export default function MemberEditDialog({ member, open, onClose }: MemberEditDialogProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open)
   const updateMember = useMemberStore((s) => s.updateMember)
   const [name, setName] = useState('')
   const [colorIndex, setColorIndex] = useState(0)
@@ -58,11 +60,15 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="member-edit-title"
         className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold">Edit Kid Profile</h3>
+          <h3 id="member-edit-title" className="font-semibold">Edit Kid Profile</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>

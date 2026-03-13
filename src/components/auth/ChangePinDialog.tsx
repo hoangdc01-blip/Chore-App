@@ -124,6 +124,9 @@ export default function ChangePinDialog({ open, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Change PIN"
         className="bg-neutral-50 dark:bg-neutral-900 rounded-2xl shadow-xl p-6 w-full max-w-[300px] mx-4 flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >

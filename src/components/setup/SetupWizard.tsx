@@ -76,7 +76,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const color = MEMBER_COLORS[nextColorIndex]
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
+    <div role="dialog" aria-modal="true" aria-label="Family setup wizard" className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
       <div
         className={`flex flex-col items-center w-full max-w-[480px] transition-opacity duration-200 ${
           transitioning ? 'opacity-0' : 'opacity-100'

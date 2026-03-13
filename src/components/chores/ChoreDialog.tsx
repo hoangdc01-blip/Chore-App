@@ -7,6 +7,7 @@ import { showToast } from '../../store/toast-store'
 import type { Chore, RecurrenceType } from '../../types'
 import { DAY_LABELS } from '../../types'
 import EmojiPicker from '../ui/EmojiPicker'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface ChoreDialogProps {
   open: boolean
@@ -20,6 +21,7 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
   const addChore = useChoreStore((s) => s.addChore)
   const updateChore = useChoreStore((s) => s.updateChore)
   const members = useMemberStore((s) => s.members)
+  const trapRef = useFocusTrap<HTMLDivElement>(open)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -104,11 +106,15 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chore-dialog-title"
         className="bg-background rounded-lg shadow-lg border border-border w-full max-w-[95vw] xl:max-w-md mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="font-semibold">{editChore ? 'Edit Chore' : 'Add Chore'}</h3>
+          <h3 id="chore-dialog-title" className="font-semibold">{editChore ? 'Edit Chore' : 'Add Chore'}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>

@@ -38,11 +38,12 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
 
   return (
     <header className="safe-top border-b border-border px-3 xl:px-6 py-2 xl:py-3 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="navigation" aria-label="Main navigation">
         {/* Left: menu + title */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onMenuToggle}
+            aria-label="Toggle menu"
             className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Menu size={20} />

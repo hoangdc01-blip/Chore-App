@@ -30,6 +30,15 @@ export default function Sidebar({ hiddenMemberIds, onToggleMember, open, onClose
     localStorage.setItem('theme', dark ? 'dark' : 'light')
   }, [dark])
 
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, onClose])
+
   return (
     <>
       {open && (
@@ -37,6 +46,8 @@ export default function Sidebar({ hiddenMemberIds, onToggleMember, open, onClose
       )}
 
       <aside
+        role="complementary"
+        aria-label="Settings sidebar"
         className={`
           fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border p-4 flex flex-col transition-transform duration-200
           ${open ? 'translate-x-0' : '-translate-x-full'}

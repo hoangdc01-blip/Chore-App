@@ -68,6 +68,9 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         {canMarkDone && !occurrence.isPending && (
           <button
             onClick={handleCheck}
+            role="checkbox"
+            aria-checked={occurrence.isCompleted}
+            aria-label={`Mark ${occurrence.chore.name} as ${occurrence.isCompleted ? 'not done' : 'done'}`}
             className={`shrink-0 h-5 w-5 xl:h-4 xl:w-4 rounded-md border-2 flex items-center justify-center transition-colors ${
               occurrence.isCompleted
                 ? 'bg-green-600 border-green-600 text-white'
@@ -108,6 +111,9 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
       {canMarkDone && !occurrence.isPending && (
         <button
           onClick={handleCheck}
+          role="checkbox"
+          aria-checked={occurrence.isCompleted}
+          aria-label={`Mark ${occurrence.chore.name} as ${occurrence.isCompleted ? 'not done' : 'done'}`}
           className={`shrink-0 h-7 w-7 rounded-lg border-2 flex items-center justify-center transition-colors ${
             occurrence.isCompleted
               ? 'bg-green-600 border-green-600 text-white'

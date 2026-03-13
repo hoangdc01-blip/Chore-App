@@ -47,11 +47,11 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
 
   let cardClasses: string
   if (occurrence.isCompleted) {
-    cardClasses = 'bg-green-100 border-l-4 border-l-green-600 text-green-950 border border-green-400 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
+    cardClasses = 'bg-green-100 border-l-4 border-l-green-600 text-black border border-green-400 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
   } else if (occurrence.isPending) {
-    cardClasses = 'bg-amber-100 border-l-4 border-l-amber-500 text-amber-950 border border-amber-400 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
+    cardClasses = 'bg-amber-100 border-l-4 border-l-amber-500 text-black border border-amber-400 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
   } else if (isOverdue) {
-    cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-red-950 border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
+    cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-black border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
   } else if (color) {
     cardClasses = `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
   } else {
@@ -86,7 +86,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
           <span className="shrink-0 text-sm xl:text-xs">{occurrence.chore.emoji}</span>
         )}
         {isOverdue && <AlertCircle size={12} className="shrink-0 text-red-600 dark:text-red-400" />}
-        <span className={`truncate font-semibold ${occurrence.isCompleted ? 'line-through' : ''}`}>
+        <span className={`truncate font-semibold text-black dark:text-white ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.startTime && (
             <span className={`font-normal ${isOverdue ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
           )}
@@ -128,7 +128,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         <span className="shrink-0 text-lg">{occurrence.chore.emoji}</span>
       )}
       <div className="flex-1 min-w-0">
-        <span className={`block text-sm font-semibold truncate ${occurrence.isCompleted ? 'line-through' : ''}`}>
+        <span className={`block text-sm font-semibold truncate text-black dark:text-white ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.name}
         </span>
         <span className={`block text-xs ${isOverdue ? 'text-red-700 dark:text-red-300' : occurrence.isPending ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>

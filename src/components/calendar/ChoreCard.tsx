@@ -47,11 +47,11 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
 
   let cardClasses: string
   if (occurrence.isCompleted) {
-    cardClasses = 'bg-green-50 border-l-4 border-l-green-600 text-green-950 border border-green-400 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
+    cardClasses = 'bg-green-100 border-l-4 border-l-green-600 text-green-950 border border-green-400 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
   } else if (occurrence.isPending) {
-    cardClasses = 'bg-amber-50 border-l-4 border-l-amber-500 text-amber-950 border border-amber-400 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
+    cardClasses = 'bg-amber-100 border-l-4 border-l-amber-500 text-amber-950 border border-amber-400 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
   } else if (isOverdue) {
-    cardClasses = 'bg-red-50 border-l-4 border-l-red-600 text-red-950 border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
+    cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-red-950 border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
   } else if (color) {
     cardClasses = `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
   } else {

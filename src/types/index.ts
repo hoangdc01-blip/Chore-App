@@ -126,3 +126,16 @@ export const STREAK_BADGES = [
 ] as const
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+/** Parsed chore-creation request from AI chat */
+export interface ChoreAction {
+  name: string
+  assigneeId: string
+  startDate: string        // yyyy-MM-dd
+  points: number
+  recurrence: RecurrenceType
+  emoji?: string
+  startTime?: string       // HH:mm
+  description?: string
+  customDays?: number[]
+}

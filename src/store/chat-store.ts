@@ -108,9 +108,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     })
 
     const controller = new AbortController()
-    // Vision models need much longer — 120s vs 30s for text-only
+    // Vision models need longer — 120s for images, 60s for text
     const hasImages = allMessages.some((m) => !!m.image)
-    const timeoutMs = hasImages ? 120000 : 30000
+    const timeoutMs = hasImages ? 120000 : 60000
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     set({ abortController: controller })
 

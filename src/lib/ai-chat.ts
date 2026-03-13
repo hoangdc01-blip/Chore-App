@@ -10,7 +10,7 @@ export interface ChatMessage {
 }
 
 // Configurable via environment variables
-const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'llama3.2:3b'
+const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'qwen2.5:3b'
 const VISION_MODEL = import.meta.env.VITE_OLLAMA_VISION_MODEL || 'llava:7b'
 const OLLAMA_BASE = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434'
 

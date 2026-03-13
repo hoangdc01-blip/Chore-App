@@ -172,6 +172,11 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
   }
 
   if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(
+        `Vision model "${model}" is not installed. Ask a parent to run: ollama pull ${model}`
+      )
+    }
     throw new Error(`Buddy had a hiccup! (error ${res.status}) Try again in a moment.`)
   }
 
@@ -194,7 +199,7 @@ export async function streamFromOllama(
     const textContent = addLanguageHint(msg.content, isLastUser)
 
     const images = msg.image
-      ? [msg.image.replace(/^data:image\/\w+;base64,/, '')]
+      ? [msg.image.replace(/^data:[^;]+;base64,/, '')]
       : undefined
 
     return { role: msg.role, content: textContent, ...(images ? { images } : {}) }
@@ -219,6 +224,11 @@ export async function streamFromOllama(
   }
 
   if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(
+        `Vision model "${model}" is not installed. Ask a parent to run: ollama pull ${model}`
+      )
+    }
     throw new Error(`Buddy had a hiccup! (error ${res.status}) Try again in a moment.`)
   }
 

@@ -51,7 +51,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
   } else if (occurrence.isPending) {
     cardClasses = 'bg-amber-50 border-l-4 border-l-amber-500 text-foreground border border-amber-300 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
   } else if (isOverdue) {
-    cardClasses = 'bg-red-600 border-l-4 border-l-red-800 text-white border border-red-700 dark:bg-red-700 dark:text-white dark:border-red-800 dark:border-l-red-900'
+    cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-red-900 border border-red-300 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
   } else if (color) {
     cardClasses = `bg-card dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-sm dark:shadow-none`
   } else {
@@ -72,7 +72,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
               occurrence.isCompleted
                 ? 'bg-green-600 border-green-600 text-white'
                 : isOverdue
-                  ? 'border-white/60 hover:border-white hover:bg-white/10'
+                  ? 'border-red-400 hover:border-red-600 hover:bg-red-50 dark:border-red-400 dark:hover:border-red-300 dark:hover:bg-red-900/20'
                   : 'border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted'
             }`}
           >
@@ -85,10 +85,10 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         {occurrence.chore.emoji && (
           <span className="shrink-0 text-sm xl:text-xs">{occurrence.chore.emoji}</span>
         )}
-        {isOverdue && <AlertCircle size={12} className="shrink-0 text-white" />}
+        {isOverdue && <AlertCircle size={12} className="shrink-0 text-red-600 dark:text-red-400" />}
         <span className={`truncate font-semibold ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.startTime && (
-            <span className={`font-normal ${isOverdue ? 'text-white/80' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
+            <span className={`font-normal ${isOverdue ? 'text-red-600/70 dark:text-red-300' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
           )}
           {occurrence.chore.name}
         </span>
@@ -112,7 +112,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
             occurrence.isCompleted
               ? 'bg-green-600 border-green-600 text-white'
               : isOverdue
-                ? 'border-white/60 hover:border-white hover:bg-white/10'
+                ? 'border-red-400 hover:border-red-600 hover:bg-red-50 dark:border-red-400 dark:hover:border-red-300 dark:hover:bg-red-900/20'
                 : 'border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted'
           }`}
         >
@@ -131,14 +131,14 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         <span className={`block text-sm font-semibold truncate ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.name}
         </span>
-        <span className={`block text-xs ${isOverdue ? 'text-white/80' : occurrence.isPending ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+        <span className={`block text-xs ${isOverdue ? 'text-red-600/70 dark:text-red-300' : occurrence.isPending ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
           {member?.name ?? 'Unassigned'}
           {occurrence.chore.startTime && ` · ${occurrence.chore.startTime}`}
           {occurrence.isPending && ' · Waiting for approval'}
           {isOverdue && ' · Overdue'}
         </span>
       </div>
-      {isOverdue && <AlertCircle size={16} className="shrink-0 text-white" />}
+      {isOverdue && <AlertCircle size={16} className="shrink-0 text-red-600 dark:text-red-400" />}
       {member?.avatar ? (
         <img src={member.avatar} alt="" className="shrink-0 h-7 w-7 rounded-full object-cover" />
       ) : member ? (

@@ -11,12 +11,10 @@ interface ChatState {
   isStreaming: boolean
   error: string | null
   selectedMemberId: string | null
-  soundEnabled: boolean
   abortController: AbortController | null
 
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
-  setSoundEnabled: (enabled: boolean) => void
   sendMessage: (content: string, image?: string) => Promise<void>
   sendMessageStreaming: (content: string, image?: string) => Promise<void>
   cancelGeneration: () => void
@@ -30,7 +28,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   isStreaming: false,
   error: null,
   selectedMemberId: null,
-  soundEnabled: true,
   abortController: null,
 
   setOpen: (open) => {
@@ -43,8 +40,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   setSelectedMemberId: (id) => set({ selectedMemberId: id }),
-
-  setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
 
   // Batch fallback (non-streaming)
   sendMessage: async (content, image) => {

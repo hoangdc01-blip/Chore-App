@@ -51,7 +51,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
   } else if (occurrence.isPending) {
     cardClasses = 'bg-amber-50 border-l-4 border-l-amber-500 text-foreground border border-amber-300 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
   } else if (isOverdue) {
-    cardClasses = 'bg-red-500 border-l-4 border-l-red-800 text-white border border-red-600 dark:bg-red-700 dark:text-white dark:border-red-800 dark:border-l-red-900'
+    cardClasses = 'bg-red-600 border-l-4 border-l-red-800 text-white border border-red-700 dark:bg-red-700 dark:text-white dark:border-red-800 dark:border-l-red-900'
   } else if (color) {
     cardClasses = `bg-card dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-sm dark:shadow-none`
   } else {

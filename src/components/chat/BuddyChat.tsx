@@ -115,7 +115,11 @@ export default function BuddyChat() {
     if (isKidMode && activeKidId && selectedMemberId !== activeKidId) {
       setSelectedMemberId(activeKidId)
     }
-  }, [isKidMode, activeKidId, selectedMemberId, setSelectedMemberId])
+    // Parent mode: auto-select first kid if none selected
+    if (!isKidMode && !selectedMemberId && members.length > 0) {
+      setSelectedMemberId(members[0].id)
+    }
+  }, [isKidMode, activeKidId, selectedMemberId, setSelectedMemberId, members])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

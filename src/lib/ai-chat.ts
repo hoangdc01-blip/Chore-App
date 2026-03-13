@@ -121,9 +121,32 @@ Today's chores:
 ${allLists || '  (all done! 🎉)'}`
 }
 
+function buildGeneralContext(): string {
+  const members = useMemberStore.getState().members
+  if (members.length === 0) return ''
+
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const store = useChoreStore.getState()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const allOccurrences = store.getOccurrencesForRange(todayStart, todayEnd)
+
+  const lines = members.map(m => {
+    const memberOccs = allOccurrences.filter(o => o.chore.assigneeId === m.id)
+    const done = memberOccs.filter(o => o.isCompleted).length
+    const total = memberOccs.length
+    return `  - ${m.name}: ${done}/${total} chores done (${m.points} points)`
+  }).join('\n')
+
+  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}`
+}
+
 export function buildSystemPrompt(memberId: string | null): string {
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
-  const context = memberId ? buildChoreContext(memberId) : ''
+  const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
   return BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory()
 }
 

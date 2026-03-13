@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { setClaimedBonus } from '../lib/firestore-sync'
 
 interface ChallengeState {
   // Key: challengeId:memberId:date → true if bonus claimed
@@ -17,12 +18,16 @@ export const useChallengeStore = create<ChallengeState>()(persist(
     },
 
     claimBonus: (challengeId, memberId, date) => {
+      const key = `${challengeId}:${memberId}:${date}`
       set((s) => ({
         claimedBonuses: {
           ...s.claimedBonuses,
-          [`${challengeId}:${memberId}:${date}`]: true,
+          [key]: true,
         },
       }))
+
+      // Sync to Firestore
+      setClaimedBonus(key)
     },
   }),
   {

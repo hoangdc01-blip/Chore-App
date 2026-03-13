@@ -176,6 +176,20 @@ export async function updateCouponDoc(id: string, updates: Partial<Coupon>): Pro
   await setDoc(doc(db, 'coupons', id), clean(updates), { merge: true })
 }
 
+// ── Achievements ──
+
+export async function saveEarnedBadges(memberId: string, badgeIds: string[]): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'achievements', memberId), { badgeIds })
+}
+
+// ── Claimed Bonuses ──
+
+export async function setClaimedBonus(key: string): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'claimedBonuses', key), { claimed: true })
+}
+
 // ── Bulk fetch ──
 
 export async function fetchAllData(): Promise<{
@@ -205,6 +219,8 @@ export function subscribeToAll(onData: (data: {
   rewards: Reward[]
   redemptions: Redemption[]
   coupons: Coupon[]
+  earnedBadges: Record<string, string[]>
+  claimedBonuses: Record<string, boolean>
 }) => void): () => void {
   if (!useFirebase) {
     // No-op: data is already in localStorage via Zustand persist
@@ -219,12 +235,14 @@ export function subscribeToAll(onData: (data: {
   let rewards: Reward[] = []
   let redemptions: Redemption[] = []
   let coupons: Coupon[] = []
+  let earnedBadges: Record<string, string[]> = {}
+  let claimedBonuses: Record<string, boolean> = {}
   let initialLoad = 0
-  const TOTAL_COLLECTIONS = 8
+  const TOTAL_COLLECTIONS = 10
 
   const notify = () => {
     if (initialLoad < TOTAL_COLLECTIONS) return
-    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons })
+    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses })
   }
 
   const handleError = (name: string) => (err: unknown) => {
@@ -290,7 +308,24 @@ export function subscribeToAll(onData: (data: {
     notify()
   }, handleError('coupons'))
 
-  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5a(); unsub5(); unsub6(); unsub7() }
+  const unsub8 = onSnapshot(collection(db, 'achievements'), (snap) => {
+    earnedBadges = {}
+    snap.docs.forEach((d) => {
+      const data = d.data()
+      earnedBadges[d.id] = (data.badgeIds as string[]) || []
+    })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  }, handleError('achievements'))
+
+  const unsub9 = onSnapshot(collection(db, 'claimedBonuses'), (snap) => {
+    claimedBonuses = {}
+    snap.docs.forEach((d) => { claimedBonuses[d.id] = true })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  }, handleError('claimedBonuses'))
+
+  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5a(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9() }
 }
 
 // ── Bulk push (local → Firestore) ──

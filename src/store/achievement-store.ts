@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { checkNewAchievements, type AchievementContext } from '../lib/achievements'
+import { saveEarnedBadges } from '../lib/firestore-sync'
 
 // Stable empty array to avoid creating new references on every selector call
 const EMPTY_BADGES: string[] = []
@@ -43,6 +44,9 @@ export const useAchievementStore = create<AchievementState>()(persist(
       ]
 
       set({ earnedBadges: updatedEarned, newBadgeQueue: newQueue })
+
+      // Sync to Firestore
+      saveEarnedBadges(context.memberId, updatedEarned[context.memberId])
     },
 
     dismissNewBadge: () => {

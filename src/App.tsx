@@ -13,13 +13,15 @@ import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
 import { useFirebase } from './lib/firebase-flag'
-import { subscribeToAll, updateMemberDoc } from './lib/firestore-sync'
+import { subscribeToAll, updateMemberDoc, saveEarnedBadges, setClaimedBonus } from './lib/firestore-sync'
 import { signInAfterPin } from './lib/pin'
 import { useChoreStore } from './store/chore-store'
 import { useMemberStore } from './store/member-store'
 import { useRewardStore } from './store/reward-store'
 import { useAuthStore } from './store/auth-store'
 import { useAppStore } from './store/app-store'
+import { useAchievementStore } from './store/achievement-store'
+import { useChallengeStore } from './store/challenge-store'
 import { computeKidStats, getAllTimeRange } from './lib/stats'
 import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
@@ -80,14 +82,32 @@ export default function App() {
       return
     }
 
-    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons }) => {
+    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses }) => {
       useMemberStore.setState({ members, _initialized: true })
       useChoreStore.setState({ chores, completions, skipped, pendingApprovals })
       useRewardStore.setState({ rewards, redemptions, coupons })
+      useAchievementStore.setState({ earnedBadges })
+      useChallengeStore.setState({ claimedBonuses })
 
-      // One-time migration: compute stored points for members that don't have them yet
+      // One-time migration
       if (!migrated.current) {
         migrated.current = true
+
+        // Push localStorage achievements/challenges to Firestore if Firestore is empty
+        const localBadges = useAchievementStore.getState().earnedBadges
+        if (Object.keys(earnedBadges).length === 0 && Object.keys(localBadges).length > 0) {
+          for (const [memberId, badges] of Object.entries(localBadges)) {
+            if (badges.length > 0) saveEarnedBadges(memberId, badges)
+          }
+        }
+        const localBonuses = useChallengeStore.getState().claimedBonuses
+        if (Object.keys(claimedBonuses).length === 0 && Object.keys(localBonuses).length > 0) {
+          for (const key of Object.keys(localBonuses)) {
+            setClaimedBonus(key)
+          }
+        }
+
+        // Compute stored points for members that don't have them yet
         const range = getAllTimeRange(chores)
         const rewardMap = new Map(rewards.map((r) => [r.id, r]))
 

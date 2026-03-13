@@ -24,7 +24,7 @@ export default function DayView({ currentDate, occurrences, onDayClick, onChoreC
       <div
         onClick={() => onDayClick(currentDate)}
         className={`flex items-center gap-2 px-4 py-2 border-b border-border cursor-pointer ${
-          today ? 'bg-primary/5' : 'bg-muted/30'
+          today ? 'bg-primary/12' : 'bg-muted/60'
         }`}
       >
         <span className="text-sm text-muted-foreground">

@@ -2,7 +2,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly
 
 export type CalendarViewMode = 'month' | 'week' | 'day'
 
-export type AppView = 'calendar' | 'dashboard' | 'rewards'
+export type AppView = 'calendar' | 'dashboard' | 'rewards' | 'games' | 'coupons'
 
 export interface FamilyMember {
   id: string
@@ -10,7 +10,11 @@ export interface FamilyMember {
   color: string
   avatar?: string
   points: number
+  emojiPasscode?: string
+  theme?: string
 }
+
+export const EMOJI_OPTIONS = ['🐶', '🐱', '🐻', '🦁', '🐸', '🦋', '🌟', '🌈', '🍎', '🎵', '🚀', '🎈']
 
 /** Count completions for a member directly from the completions record */
 export function countCompletionsForMember(completions: CompletionRecord, memberId: string): number {
@@ -41,10 +45,12 @@ export interface ChoreOccurrence {
   chore: Chore
   isCompleted: boolean
   isSkipped: boolean
+  isPending: boolean
 }
 
 export type CompletionRecord = Record<string, boolean>
 export type SkippedRecord = Record<string, boolean>
+export type PendingRecord = Record<string, boolean>
 
 export interface KidStats {
   memberId: string
@@ -80,6 +86,16 @@ export interface Redemption {
   rewardId: string
   memberId: string
   redeemedAt: string
+}
+
+export interface Coupon {
+  id: string
+  rewardId: string
+  rewardName: string
+  rewardEmoji: string
+  memberId: string
+  redeemedAt: string
+  used: boolean
 }
 
 export const LEVEL_THRESHOLDS = [

@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, Reward, Redemption } from '../types'
+import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, PendingRecord, Reward, Redemption, Coupon } from '../types'
 
 // Strip undefined values — Firestore rejects them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,6 +107,25 @@ export async function removeSkipped(key: string): Promise<void> {
   await deleteDoc(doc(db, 'skipped', key))
 }
 
+// ── Pending Approvals ──
+
+export async function fetchPendingApprovals(): Promise<PendingRecord> {
+  const snap = await getDocs(collection(db, 'pendingApprovals'))
+  const record: PendingRecord = {}
+  snap.docs.forEach((d) => {
+    record[d.id] = true
+  })
+  return record
+}
+
+export async function setPendingApproval(key: string, choreId: string, memberId: string, date: string): Promise<void> {
+  await setDoc(doc(db, 'pendingApprovals', key), { choreId, memberId, date, pending: true, submittedAt: Date.now() })
+}
+
+export async function removePendingApproval(key: string): Promise<void> {
+  await deleteDoc(doc(db, 'pendingApprovals', key))
+}
+
 // ── Rewards ──
 
 export async function saveReward(reward: Reward): Promise<void> {
@@ -121,6 +140,16 @@ export async function deleteRewardDoc(id: string): Promise<void> {
 
 export async function saveRedemption(redemption: Redemption): Promise<void> {
   await setDoc(doc(db, 'redemptions', redemption.id), clean(redemption))
+}
+
+// ── Coupons ──
+
+export async function saveCoupon(coupon: Coupon): Promise<void> {
+  await setDoc(doc(db, 'coupons', coupon.id), clean(coupon))
+}
+
+export async function updateCouponDoc(id: string, updates: Partial<Coupon>): Promise<void> {
+  await setDoc(doc(db, 'coupons', id), clean(updates), { merge: true })
 }
 
 // ── Bulk fetch ──
@@ -147,21 +176,31 @@ export function subscribeToAll(onData: (data: {
   chores: Chore[]
   completions: CompletionRecord
   skipped: SkippedRecord
+  pendingApprovals: PendingRecord
   rewards: Reward[]
   redemptions: Redemption[]
+  coupons: Coupon[]
 }) => void): () => void {
   let members: FamilyMember[] = []
   let chores: Chore[] = []
   let completions: CompletionRecord = {}
   let skipped: SkippedRecord = {}
+  let pendingApprovals: PendingRecord = {}
   let rewards: Reward[] = []
   let redemptions: Redemption[] = []
+  let coupons: Coupon[] = []
   let initialLoad = 0
-  const TOTAL_COLLECTIONS = 6
+  const TOTAL_COLLECTIONS = 8
 
   const notify = () => {
     if (initialLoad < TOTAL_COLLECTIONS) return
-    onData({ members, chores, completions, skipped, rewards, redemptions })
+    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons })
+  }
+
+  const handleError = (name: string) => (err: unknown) => {
+    console.warn(`[firestore] ${name} listener error:`, err)
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
   }
 
   const unsub1 = onSnapshot(collection(db, 'members'), (snap) => {
@@ -171,7 +210,7 @@ export function subscribeToAll(onData: (data: {
     })
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('members'))
 
   const unsub2 = onSnapshot(collection(db, 'chores'), (snap) => {
     chores = snap.docs.map((d) => {
@@ -180,35 +219,48 @@ export function subscribeToAll(onData: (data: {
     })
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('chores'))
 
   const unsub3 = onSnapshot(collection(db, 'completions'), (snap) => {
     completions = {}
     snap.docs.forEach((d) => { completions[d.id] = true })
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('completions'))
 
   const unsub4 = onSnapshot(collection(db, 'skipped'), (snap) => {
     skipped = {}
     snap.docs.forEach((d) => { skipped[d.id] = true })
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('skipped'))
+
+  const unsub5a = onSnapshot(collection(db, 'pendingApprovals'), (snap) => {
+    pendingApprovals = {}
+    snap.docs.forEach((d) => { pendingApprovals[d.id] = true })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  }, handleError('pendingApprovals'))
 
   const unsub5 = onSnapshot(collection(db, 'rewards'), (snap) => {
     rewards = snap.docs.map((d) => d.data() as Reward)
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('rewards'))
 
   const unsub6 = onSnapshot(collection(db, 'redemptions'), (snap) => {
     redemptions = snap.docs.map((d) => d.data() as Redemption)
     if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
     notify()
-  })
+  }, handleError('redemptions'))
 
-  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6() }
+  const unsub7 = onSnapshot(collection(db, 'coupons'), (snap) => {
+    coupons = snap.docs.map((d) => d.data() as Coupon)
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  }, handleError('coupons'))
+
+  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5a(); unsub5(); unsub6(); unsub7() }
 }
 
 // ── Bulk push (local → Firestore) ──

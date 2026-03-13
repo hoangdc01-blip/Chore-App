@@ -1,0 +1,308 @@
+# .claude/eval/light-mode-2026-03-13.yaml
+target: Light Mode Visual Quality | grade: B | anchor: stack-brief
+
+# ============================================================
+# VERDICT: Was this app designed dark-mode-first?
+# ============================================================
+# NO - this is NOT a dark-mode-first app. The theme tokens in
+# index.css define light mode as the DEFAULT (lines 3-18) and
+# dark mode as the .dark override (lines 21-36). The token
+# system is well-designed for both modes.
+#
+# The REAL problem is INCONSISTENT adoption of those tokens.
+# Many components bypass the token system and use raw Tailwind
+# colors (neutral-X, gray-X) with explicit dark: variants.
+# When a developer writes `bg-neutral-100 dark:bg-neutral-800`,
+# they tend to eyeball the dark: variant carefully while the
+# light variant gets a "close enough" treatment. This creates
+# a PATCHWORK effect where some parts use tokens (look great
+# in both modes) and other parts use hardcoded colors (look
+# acceptable but inconsistent in light mode).
+# ============================================================
+
+# ============================================================
+# 3A x RWOS ANALYSIS
+# ============================================================
+
+appealing:  # HÌNH - Light mode visual quality
+
+  # ── RISKS (potential future problems) ──
+  R:
+    - sev: H
+      desc: "WeekView time labels use raw gray-600 which is too faint against white bg in light mode, inconsistent with token system"
+      file: "src/components/calendar/WeekView.tsx:91,117"
+      detail: "text-gray-600 dark:text-gray-400 - should be text-muted-foreground"
+      fix: "Replace `text-gray-600 dark:text-gray-400` with `text-muted-foreground`"
+
+    - sev: M
+      desc: "GameMenu game cards use hardcoded bg-white for light mode, bypassing the card token which is also white but semantically correct"
+      file: "src/games/GameMenu.tsx:104"
+      detail: "bg-white dark:bg-neutral-800 - should be bg-card"
+      fix: "Replace `bg-white dark:bg-neutral-800` with `bg-card text-card-foreground`"
+
+    - sev: M
+      desc: "GameWrapper kid selection cards use hardcoded bg-white, inconsistent with token system"
+      file: "src/games/GameWrapper.tsx:211,245"
+      detail: "bg-white dark:bg-neutral-800/80 - should be bg-card"
+      fix: "Replace with `bg-card`"
+
+    - sev: M
+      desc: "GameWrapper game-over modal uses bg-white, bypassing card token"
+      file: "src/games/GameWrapper.tsx:336"
+      detail: "bg-white dark:bg-neutral-800 - should be bg-card"
+      fix: "Replace with `bg-card text-card-foreground`"
+
+    - sev: M
+      desc: "GameMenu unavailable game card uses raw neutral colors"
+      file: "src/games/GameMenu.tsx:105"
+      detail: "bg-neutral-100 dark:bg-neutral-800/50 - should be bg-muted"
+      fix: "Replace with `bg-muted`"
+
+    - sev: M
+      desc: "GameMenu Coming Soon badge uses raw neutral colors"
+      file: "src/games/GameMenu.tsx:118"
+      detail: "bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400"
+      fix: "Replace with `bg-muted text-muted-foreground`"
+
+    - sev: M
+      desc: "GameWrapper lock screen gradient uses raw neutral colors"
+      file: "src/games/GameWrapper.tsx:271"
+      detail: "from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900"
+      fix: "Replace with `bg-muted` or use a simpler token-based background"
+
+    - sev: M
+      desc: "KidStatsCard and ChallengeCard progress bars use bg-black/10 which is barely visible in light mode"
+      file: "src/components/dashboard/KidStatsCard.tsx:51,68 and src/components/dashboard/ChallengeCard.tsx:67"
+      detail: "bg-black/10 dark:bg-white/15 - only 10% opacity on white bg looks washed out"
+      fix: "Replace with `bg-neutral-200 dark:bg-neutral-700` or `bg-muted` for better visibility"
+
+    - sev: L
+      desc: "MyCoupons coupon cards use raw neutral colors for borders and backgrounds"
+      file: "src/components/rewards/MyCoupons.tsx:53-54,60-61,75"
+      detail: "border-neutral-200 dark:border-neutral-700, bg-neutral-100 dark:bg-neutral-800, border-neutral-300 dark:border-neutral-600"
+      fix: "Replace with border-border, bg-muted, etc."
+
+    - sev: L
+      desc: "MyCoupons USED watermark uses raw neutral colors"
+      file: "src/components/rewards/MyCoupons.tsx:102"
+      detail: "text-neutral-400 dark:text-neutral-500"
+      fix: "Replace with `text-muted-foreground`"
+
+  # ── WEAKNESSES (current visible issues) ──
+  W:
+    - sev: H
+      desc: "ChoreCard default (uncolored) card uses bg-white which has no visual distinction from the page background (#fafafa) in light mode - cards look flat/invisible"
+      file: "src/components/calendar/ChoreCard.tsx:56-58"
+      detail: "bg-white dark:bg-neutral-800 with border-neutral-300 dark:border-neutral-700. On light bg (#fafafa), white cards with light borders lack depth."
+      fix: "The shadow-sm helps but consider using bg-card which is #ffffff with the existing border-border (#d0d0d0) for consistency. The real fix: ensure all card borders use border-border token not raw neutral-300."
+
+    - sev: M
+      desc: "ChoreCard checkbox unchecked state uses raw neutral colors - slightly different visual weight in light vs dark"
+      file: "src/components/calendar/ChoreCard.tsx:76,116"
+      detail: "border-neutral-400 hover:border-neutral-600 hover:bg-neutral-100 dark:border-neutral-500 dark:hover:border-neutral-300"
+      fix: "Replace with `border-border hover:border-foreground/60 hover:bg-muted`"
+
+    - sev: M
+      desc: "PendingApprovals wrapper uses amber colors that work well but the light variant bg-amber-50/50 is very faint - almost invisible against the #fafafa background"
+      file: "src/components/dashboard/PendingApprovals.tsx:31"
+      detail: "bg-amber-50/50 at 50% opacity on a #fafafa bg is nearly invisible"
+      fix: "Change to `bg-amber-50` (full opacity) for light mode"
+
+    - sev: M
+      desc: "KidStatsCard level badge uses hardcoded bg-amber-100 text-amber-800 which only has a dark: variant, looks fine but inconsistent"
+      file: "src/components/dashboard/KidStatsCard.tsx:33"
+      detail: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 - works but bypasses tokens"
+      fix: "Acceptable as-is since it's intentionally amber-branded, not a bug"
+
+    - sev: L
+      desc: "ChoreCard time display uses raw neutral-500/neutral-400"
+      file: "src/components/calendar/ChoreCard.tsx:90"
+      detail: "text-neutral-500 dark:text-neutral-400"
+      fix: "Replace with `text-muted-foreground`"
+
+    - sev: L
+      desc: "ChoreCard full-mode sub-text uses raw neutral-500/neutral-400"
+      file: "src/components/calendar/ChoreCard.tsx:134"
+      detail: "text-neutral-500 dark:text-neutral-400"
+      fix: "Replace with `text-muted-foreground`"
+
+    - sev: L
+      desc: "ChoreCard member initial badge uses raw bg-neutral-400 as fallback"
+      file: "src/components/calendar/ChoreCard.tsx:145"
+      detail: "bg-neutral-400 fallback for missing color"
+      fix: "Replace with `bg-muted-foreground`"
+
+  # ── OPPORTUNITIES ──
+  O:
+    - desc: "Auth screens (ProfileSelectScreen, PinSetupScreen) use raw neutral colors extensively but they actually look GOOD in light mode because the developer carefully paired light/dark variants"
+      file: "src/components/auth/ProfileSelectScreen.tsx, src/components/auth/PinSetupScreen.tsx"
+      detail: "These are Netflix-style screens with intentional neutral palette. Not broken, just not using tokens."
+
+    - desc: "BuddyChat uses tokens well for the main container but hardcodes gradients for the chat header - could be more consistent"
+      file: "src/components/chat/BuddyChat.tsx:409"
+      detail: "bg-gradient-to-r from-green-500/10 to-emerald-500/10 - this is decorative and fine"
+
+    - desc: "All dialog components (ChoreDialog, RewardDialog, MemberDialog, MemberEditDialog, ChoreDetails) consistently use tokens - bg-background, border-border, text-muted-foreground"
+      detail: "These are well-implemented and look identical in both modes"
+
+  # ── STRENGTHS ──
+  S:
+    - desc: "Theme token system is well-designed with appropriate light/dark values"
+      file: "src/index.css:3-36"
+      detail: "Light bg #fafafa, card #ffffff, border #d0d0d0, muted #f0f0f0 - all sensible choices"
+
+    - desc: "Header uses tokens exclusively - bg-muted, bg-background, text-foreground, text-muted-foreground"
+      file: "src/components/layout/Header.tsx"
+      detail: "The gradient bg is appropriately adjusted: from-blue-500/10 (light) vs from-blue-500/5 (dark)"
+
+    - desc: "Sidebar uses tokens exclusively for all interactive elements"
+      file: "src/components/layout/Sidebar.tsx"
+      detail: "bg-background, border-border, text-muted-foreground, hover:bg-muted"
+
+    - desc: "CalendarHeader uses tokens exclusively - bg-background, border-border, bg-muted, text-foreground"
+      file: "src/components/calendar/CalendarHeader.tsx"
+      detail: "Picker dropdowns, month grid, all well-tokenized"
+
+    - desc: "FilterBar uses tokens exclusively"
+      file: "src/components/calendar/FilterBar.tsx"
+      detail: "bg-primary, bg-muted, text-muted-foreground - clean implementation"
+
+    - desc: "MonthView uses tokens for headers and mobile mini-calendar"
+      file: "src/components/calendar/MonthView.tsx"
+      detail: "bg-muted, text-foreground, text-muted-foreground, border-border"
+
+    - desc: "DayCell uses tokens correctly"
+      file: "src/components/calendar/DayCell.tsx"
+
+    - desc: "DayView uses tokens correctly"
+      file: "src/components/calendar/DayView.tsx"
+
+    - desc: "Dashboard uses tokens for all layout and controls"
+      file: "src/components/dashboard/Dashboard.tsx"
+
+    - desc: "Leaderboard uses tokens for structure (border-border, bg-muted/50, divide-border)"
+      file: "src/components/dashboard/Leaderboard.tsx"
+
+    - desc: "RewardShop uses tokens for layout and buttons"
+      file: "src/components/rewards/RewardShop.tsx"
+
+    - desc: "RewardDialog uses tokens throughout"
+      file: "src/components/rewards/RewardDialog.tsx"
+
+    - desc: "MemberList uses tokens throughout"
+      file: "src/components/members/MemberList.tsx"
+
+    - desc: "All dialog/modal components use tokens consistently"
+      file: "Multiple files"
+
+    - desc: "MEMBER_COLORS use -200 bg shades which look great on light backgrounds"
+      file: "src/types/index.ts:65-73"
+      detail: "bg-blue-200, bg-green-200, etc. - these are designed for light mode and work well"
+
+accurate:
+  S:
+    - desc: "ChoreCard correctly handles all 5 states (completed, pending, overdue, colored, uncolored) with both light and dark variants"
+      file: "src/components/calendar/ChoreCard.tsx:49-59"
+
+    - desc: "MEMBER_COLORS correctly define both light-friendly (bg-X-200, text-X-900) values"
+      file: "src/types/index.ts:65-73"
+
+assured:
+  S:
+    - desc: "Theme switching mechanism is robust - toggles .dark class on documentElement"
+      file: "src/components/layout/Sidebar.tsx:29-32"
+
+# ============================================================
+# FILE-BY-FILE ISSUE CATALOG (only files with issues)
+# ============================================================
+#
+# LEGEND: [C]ritical [H]igh [M]edium [L]ow
+#
+# --- src/components/calendar/WeekView.tsx ---
+# [H] L91:  text-gray-600 dark:text-gray-400 -> text-muted-foreground
+# [H] L117: text-gray-600 dark:text-gray-400 -> text-muted-foreground
+#
+# --- src/components/calendar/ChoreCard.tsx ---
+# [M] L56-58: bg-white -> bg-card, border-neutral-300 -> border-border
+# [M] L76: border-neutral-400 hover:border-neutral-600 hover:bg-neutral-100 -> border-border hover:border-foreground/60 hover:bg-muted
+# [M] L116: same as L76
+# [L] L90: text-neutral-500 dark:text-neutral-400 -> text-muted-foreground
+# [L] L134: text-neutral-500 dark:text-neutral-400 -> text-muted-foreground
+# [L] L145: bg-neutral-400 -> bg-muted-foreground
+#
+# --- src/components/dashboard/KidStatsCard.tsx ---
+# [M] L51: bg-black/10 dark:bg-white/15 -> bg-neutral-200 dark:bg-neutral-700
+# [M] L68: bg-black/10 dark:bg-white/15 -> bg-neutral-200 dark:bg-neutral-700
+#
+# --- src/components/dashboard/ChallengeCard.tsx ---
+# [M] L67: bg-black/10 dark:bg-white/15 -> bg-neutral-200 dark:bg-neutral-700
+#
+# --- src/components/dashboard/PendingApprovals.tsx ---
+# [M] L31: bg-amber-50/50 -> bg-amber-50 (remove /50 opacity)
+#
+# --- src/games/GameMenu.tsx ---
+# [M] L104: bg-white dark:bg-neutral-800 -> bg-card
+# [M] L105: bg-neutral-100 dark:bg-neutral-800/50 -> bg-muted
+# [M] L118: bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 -> bg-muted text-muted-foreground
+#
+# --- src/games/GameWrapper.tsx ---
+# [M] L211: bg-white dark:bg-neutral-800/80 -> bg-card
+# [M] L245: bg-white dark:bg-neutral-800/80 -> bg-card
+# [M] L271: from-neutral-100 to-neutral-200 -> bg-muted
+# [M] L336: bg-white dark:bg-neutral-800 -> bg-card
+#
+# --- src/components/rewards/MyCoupons.tsx ---
+# [L] L53: border-neutral-200 dark:border-neutral-700 -> border-border
+# [L] L60: bg-neutral-100 dark:bg-neutral-800 -> bg-muted
+# [L] L75: border-neutral-300 dark:border-neutral-600 -> border-border
+# [L] L102: text-neutral-400 dark:text-neutral-500 -> text-muted-foreground
+#
+# --- FILES WITH NO ISSUES (use tokens correctly) ---
+# src/index.css - GOOD
+# src/components/layout/Header.tsx - GOOD
+# src/components/layout/Sidebar.tsx - GOOD
+# src/components/calendar/CalendarView.tsx - GOOD (no styling)
+# src/components/calendar/CalendarHeader.tsx - GOOD
+# src/components/calendar/MonthView.tsx - GOOD
+# src/components/calendar/DayView.tsx - GOOD
+# src/components/calendar/DayCell.tsx - GOOD
+# src/components/calendar/FilterBar.tsx - GOOD
+# src/components/dashboard/Dashboard.tsx - GOOD
+# src/components/dashboard/Leaderboard.tsx - GOOD
+# src/components/rewards/RewardShop.tsx - GOOD
+# src/components/rewards/RewardDialog.tsx - GOOD
+# src/components/auth/ProfileSelectScreen.tsx - ACCEPTABLE (intentional neutral palette)
+# src/components/auth/PinSetupScreen.tsx - ACCEPTABLE (intentional neutral palette)
+# src/components/chat/BuddyChat.tsx - GOOD
+# src/components/members/MemberList.tsx - GOOD
+# src/components/members/MemberDialog.tsx - GOOD
+# src/components/members/MemberEditDialog.tsx - GOOD
+# src/components/chores/ChoreDialog.tsx - GOOD
+# src/components/chores/ChoreDetails.tsx - GOOD (one acceptable amber override)
+
+# ============================================================
+# SUMMARY
+# ============================================================
+summary:
+  r_count: 10
+  w_count: 7
+  critical: []
+  high_issues:
+    - "WeekView time labels use gray-600 instead of token (2 instances)"
+    - "ChoreCard default cards have weak visual distinction from page bg"
+  recommendation: >
+    The app is NOT dark-mode-first. It has a solid token system that most
+    components use correctly. The issues are concentrated in 6 files:
+    WeekView, ChoreCard, KidStatsCard, ChallengeCard, GameMenu, and
+    GameWrapper. The fixes are mechanical - replace raw Tailwind colors
+    with the equivalent semantic tokens. The progress bars (bg-black/10)
+    are the most visually impactful fix for light mode. Estimated fix
+    time: 30-45 minutes.
+
+  files_needing_fixes: 7
+  files_clean: 21
+  clean_percentage: 75
+
+final_grade: B
+urd_gate: N/A
+verdict: FIXABLE

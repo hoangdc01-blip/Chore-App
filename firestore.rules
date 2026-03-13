@@ -2,30 +2,92 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // PIN config: anyone can read (needed to verify PIN before auth),
-    // only authenticated users can write (to change PIN)
+    // only authenticated users can write, and only hash+salt fields
     match /config/{docId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.data.keys().hasOnly(['hash', 'salt'])
+        && request.resource.data.hash is string
+        && request.resource.data.hash.size() <= 128;
     }
 
-    // All app data: only authenticated users can read/write
+    // Helper: require authenticated user
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    // Helper: validate string field exists and is reasonable length
+    function validString(field, maxLen) {
+      return field is string && field.size() > 0 && field.size() <= maxLen;
+    }
+
+    match /gameScores/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['memberId', 'score', 'game'])
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0;
+    }
+
     match /members/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['name'])
+        && validString(request.resource.data.name, 50);
     }
+
     match /chores/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['name', 'assigneeId', 'startDate'])
+        && validString(request.resource.data.name, 200)
+        && validString(request.resource.data.assigneeId, 100)
+        && validString(request.resource.data.startDate, 10);
     }
+
     match /completions/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['choreId', 'memberId', 'date', 'completed'])
+        && request.resource.data.completed is bool;
     }
+
+    match /pendingApprovals/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['choreId', 'memberId', 'date']);
+    }
+
     match /skipped/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['choreId', 'memberId', 'date']);
     }
+
     match /rewards/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['name', 'cost'])
+        && validString(request.resource.data.name, 200)
+        && request.resource.data.cost is int
+        && request.resource.data.cost >= 0;
     }
+
     match /redemptions/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['memberId', 'rewardId']);
+    }
+
+    match /coupons/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['memberId', 'rewardId']);
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

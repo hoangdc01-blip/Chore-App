@@ -1,0 +1,463 @@
+# .claude/eval/full-codebase-2026-03-13.yaml
+target: full-codebase | grade: B | anchor: stack-brief
+
+# ============================================================
+# 3A x RWOS EVALUATION
+# ============================================================
+
+accurate: # LY - Logic correctness
+  R: # Risks
+    - sev: H
+      desc: >
+        Firestore rules allow ANY authenticated user full read/write to ALL collections.
+        Anonymous auth means any user who calls signInAnonymously() gets full access to
+        all family data. There is no per-user scoping. A malicious actor could enumerate
+        and modify all documents.
+      file: firestore.rules:15-16
+      abcef: "F - data breach potential if app URL is discovered"
+
+    - sev: H
+      desc: >
+        PIN config document (config/pin) has allow read: if true, exposing the PIN
+        hash and salt to unauthenticated users. While PBKDF2 with 100K iterations
+        provides reasonable brute-force resistance, exposing the hash publicly is
+        unnecessary and allows offline brute-force attacks on a 4-digit PIN
+        (only 10,000 combinations).
+      file: firestore.rules:7
+      abcef: "F - 4-digit PIN + public hash = offline brute-force trivial"
+
+    - sev: H
+      desc: >
+        No server-side authorization between parent and kid actions. The app relies
+        entirely on client-side mode checks (useAppStore.mode). A kid could open
+        browser devtools, call useAppStore.getState().enterParentMode(), and bypass
+        all restrictions - approving their own chores, modifying points, etc.
+      file: src/store/app-store.ts:20
+      abcef: "F - kids can self-promote to parent via devtools"
+
+    - sev: M
+      desc: >
+        MemberDialog sets emojiPasscode via a setTimeout(50ms) race condition.
+        After addMember(), it waits 50ms then grabs the last member from the array.
+        If two members are added quickly, or Firestore sync fires in between,
+        the passcode could be set on the wrong member.
+      file: src/components/members/MemberDialog.tsx:51-57
+      abcef: "F - race condition in member creation"
+
+    - sev: M
+      desc: >
+        Completion/skipped/pending records grow indefinitely with no cleanup.
+        Format "choreId:memberId:YYYY-MM-DD" means one entry per chore per day.
+        After a year of 4 kids with 5 daily chores each, that is ~7300 Firestore
+        documents in completions alone. The localStorage will also bloat since
+        Zustand persist serializes the entire record.
+      file: src/store/chore-store.ts:79-93
+      abcef: "F - performance degradation over 6-12 months"
+
+    - sev: M
+      desc: >
+        pushAllData() uses a single Firestore writeBatch. Firestore batches are
+        limited to 500 operations. With enough completions/skipped records, this
+        will throw an error and fail silently (no batch chunking).
+      file: src/lib/firestore-sync.ts:274-303
+      abcef: "F - bulk sync fails with >500 records"
+
+    - sev: M
+      desc: >
+        redeemReward does not check for negative points atomically. adjustPoints
+        uses Math.max(0, ...) but the check and deduction are not atomic across
+        Firestore. A kid could rapidly click "Redeem" multiple times before the
+        first deduction propagates, overdrafting their points balance.
+      file: src/store/reward-store.ts:37-64
+      abcef: "F - double-spend race condition on reward redemption"
+
+    - sev: L
+      desc: >
+        computeStreak calls expandRecurrence for each individual day up to 365
+        times per chore. For a member with 10 chores and a 100-day streak,
+        that's 1000+ calls to expandRecurrence. Each call parses dates and
+        iterates. This is O(n*m) per stats computation.
+      file: src/lib/stats.ts:57-88
+      abcef: "E blocked - poor algorithmic efficiency"
+
+  W: # Weaknesses
+    - sev: M
+      desc: >
+        setCompletion writes {done: true} but Firestore rules validate
+        {completed: bool}. The field name mismatch means the rule validation
+        checks request.resource.data.completed but the code writes 'done'.
+        This works because Firestore rules check hasAll (subset), and the
+        write also includes choreId/memberId/date, but the 'completed' field
+        is never actually written - so the hasAll check for 'completed' should
+        FAIL. This is either a latent bug or the rules were deployed differently
+        than the source file shows.
+      file: src/lib/firestore-sync.ts:84 vs firestore.rules:51-52
+      abcef: "F latent - field name mismatch between code and rules"
+
+    - sev: M
+      desc: >
+        Firestore listeners in subscribeToAll use closure-based state that
+        doesn't notify until all 8 collections have fired their initial
+        snapshot. If any single collection listener errors out on first call,
+        the handleError increments the counter, but subsequent data updates
+        from OTHER collections won't notify because initialLoad still hasn't
+        reached TOTAL_COLLECTIONS until that errored collection fires again
+        (which it won't). Error-then-success from others is handled, but
+        permanent errors on one collection will eventually unblock via handleError.
+      file: src/lib/firestore-sync.ts:192-204
+      abcef: "F - partial data load on collection error"
+
+    - sev: L
+      desc: >
+        hexEncode(salt.buffer) on line 70 of pin.ts passes an ArrayBuffer that
+        may include extra bytes from the underlying buffer if the Uint8Array is a
+        view of a larger buffer. crypto.getRandomValues returns a Uint8Array where
+        .buffer IS the full backing buffer, so this works for now, but using
+        salt.buffer instead of new Uint8Array(salt).buffer is fragile.
+      file: src/lib/pin.ts:70
+      abcef: "F latent - buffer encoding fragility"
+
+    - sev: L
+      desc: >
+        gameScores are stored in config/gameScores as a single document with an
+        array. Firestore document size limit is 1MB. As scores accumulate, this
+        could eventually hit the limit, though unlikely for a family app.
+      file: src/games/game-store.ts:64
+      abcef: "F unlikely but architecturally wrong"
+
+    - sev: L
+      desc: >
+        dailyBonusClaims in game-store is not persisted. Page refresh resets
+        the counter, allowing unlimited daily bonus claims.
+      file: src/games/game-store.ts:34
+      abcef: "F - daily bonus bypass via refresh"
+
+  O: # Opportunities
+    - desc: >
+        No test framework configured. Zero unit/integration tests. This is the
+        single biggest quality gap. The recurrence logic, stats computation, and
+        store actions are all pure-function-testable.
+      file: package.json
+      abcef: "E blocked - no automated quality verification"
+
+    - desc: >
+        The Ollama AI chat hardcodes localhost:11434. This only works when running
+        locally. Could support configurable API endpoints or cloud-hosted LLM
+        fallback for deployed versions.
+      file: src/lib/ai-chat.ts:114,134
+      abcef: "E blocked - AI feature unusable in deployed/hosted scenario"
+
+    - desc: >
+        No offline support despite Firestore offline capabilities. Firestore SDK
+        has enablePersistence but it's not configured. Combined with Zustand
+        localStorage persist, the app has an ad-hoc offline story but no
+        intentional offline-first architecture.
+      file: src/lib/firebase.ts
+      abcef: "E tapped but incomplete"
+
+  S: # Strengths
+    - desc: >
+        Well-structured Zustand stores with proper persist middleware, migration
+        functions, and version tracking. The 2-part to 3-part key migration in
+        chore-store is correctly implemented.
+      file: src/store/chore-store.ts:181-220
+      abcef: "E flowing - solid state management foundation"
+
+    - desc: >
+        PIN security uses PBKDF2 with 100K iterations and random salt, with
+        auto-migration from legacy SHA-256. This is proper cryptographic practice
+        for a client-side app.
+      file: src/lib/pin.ts:20-29
+      abcef: "E flowing - proper key derivation"
+
+    - desc: >
+        Clean separation of concerns: types in one file, stores separate from
+        components, sync layer abstracted. The codebase is navigable and
+        consistent in style.
+      file: src/types/index.ts
+      abcef: "E flowing - maintainable architecture"
+
+    - desc: >
+        Recurrence expansion is computed on-the-fly rather than stored,
+        keeping state minimal and avoiding stale-data bugs when chore
+        schedules change.
+      file: src/lib/recurrence.ts
+      abcef: "E flowing - correct architectural decision"
+
+
+assured: # KHI - Runtime robustness
+  R: # Risks
+    - sev: H
+      desc: >
+        Avatar images are stored as base64 data URLs directly in Firestore
+        member documents and in localStorage via Zustand persist. A single
+        high-resolution photo could be 500KB+ as base64. With 4 kids each
+        having avatars, that's 2MB+ in localStorage (5MB limit) and in
+        every Firestore member document read.
+      file: src/components/members/MemberDialog.tsx:40-41
+      abcef: "F - localStorage quota exceeded risk"
+
+    - sev: M
+      desc: >
+        subscribeToAll creates 8 simultaneous Firestore onSnapshot listeners.
+        On every Firestore change to ANY collection, the notify() function
+        calls setState on 3 different Zustand stores. Each setState triggers
+        re-renders. A burst of Firestore updates (e.g., bulk approval) causes
+        a cascade of re-renders.
+      file: src/lib/firestore-sync.ts:195-197
+      abcef: "F - render storm on multi-collection updates"
+
+    - sev: M
+      desc: >
+        No request debouncing or throttling on Firestore writes. Rapid toggling
+        of completion checkboxes fires immediate setDoc/deleteDoc calls.
+        Combined with optimistic local state updates, rapid clicks could cause
+        Firestore state to diverge from local state.
+      file: src/store/chore-store.ts:77-93
+      abcef: "F - state divergence under rapid interaction"
+
+    - sev: L
+      desc: >
+        Error handling on Firestore sync failures is limited to toast
+        notifications with no retry logic. If a write fails, local state
+        has already been updated optimistically, creating permanent
+        local/remote divergence until next full page reload.
+      file: src/store/chore-store.ts:55 (pattern repeated throughout)
+      abcef: "F - silent data loss on transient network errors"
+
+  W: # Weaknesses
+    - sev: M
+      desc: >
+        The app uses `new Date()` freely throughout, making it untestable for
+        date-dependent logic and potentially inconsistent if code runs across
+        midnight boundaries.
+      file: src/lib/stats.ts:54, src/lib/ai-chat.ts:63-68
+      abcef: "E blocked - no date injection/mocking capability"
+
+    - sev: L
+      desc: >
+        No loading states or skeleton UI for individual data operations.
+        The only loading indicator is the initial sync spinner. Actions like
+        approving chores, redeeming rewards have no visual feedback beyond
+        toasts.
+      file: src/components/dashboard/PendingApprovals.tsx
+      abcef: "E tapped but incomplete"
+
+  O: # Opportunities
+    - desc: >
+        Could implement Firestore offline persistence for better offline
+        experience, reducing the need for localStorage Zustand persist
+        as a fallback.
+      file: src/lib/firebase.ts
+      abcef: "E available"
+
+    - desc: >
+        React.memo / useMemo could be applied more aggressively to
+        ChoreCard and list components to reduce unnecessary re-renders,
+        especially in month view with many cards.
+      file: src/components/calendar/ChoreCard.tsx
+      abcef: "E available"
+
+  S: # Strengths
+    - desc: >
+        TypeScript is fully passing with zero errors (tsc --noEmit clean).
+        Types are consistently used throughout with proper interfaces.
+      abcef: "E flowing - type safety maintained"
+
+    - desc: >
+        Error boundary component exists at root level to catch and
+        display runtime crashes gracefully.
+      file: src/components/ErrorBoundary.tsx
+      abcef: "E flowing - crash resilience"
+
+    - desc: >
+        Firebase config uses VITE_ env variables properly, keeping
+        secrets out of source code. .env.local is gitignored.
+      file: src/lib/firebase.ts, .gitignore
+      abcef: "E flowing - proper secret management"
+
+    - desc: >
+        PIN login has lockout protection (5 attempts, 2-minute cooldown)
+        for both parent and kid profiles with countdown timer.
+      file: src/components/auth/ProfileSelectScreen.tsx:10-11
+      abcef: "E flowing - brute-force mitigation"
+
+
+appealing: # HINH - UI/UX quality
+  R: # Risks
+    - sev: M
+      desc: >
+        ProfileSelectScreen uses inline styles extensively (style={{ color: '#666' }},
+        style={{ backgroundColor: '#0d0d0d' }}) instead of Tailwind classes,
+        creating an inconsistency with the rest of the app's styling approach.
+        These hardcoded colors also don't respect the app's dark mode theme tokens.
+      file: src/components/auth/ProfileSelectScreen.tsx:212,293,306-308
+      abcef: "F - styling inconsistency and theme bypass"
+
+  W: # Weaknesses
+    - sev: M
+      desc: >
+        No ARIA labels on interactive elements. Checkbox buttons in ChoreCard
+        have no aria-label or aria-checked. Number pad buttons in PIN screens
+        have no aria-label. This makes the app inaccessible to screen readers.
+      file: src/components/calendar/ChoreCard.tsx:69-81
+      abcef: "F - accessibility gaps"
+
+    - sev: L
+      desc: >
+        The header title shows "{kidName}'s Chores" which doesn't handle
+        names ending in 's' correctly (e.g., "James's Chores" vs "James' Chores").
+        Minor grammar issue.
+      file: src/components/layout/Header.tsx:52
+      abcef: "F minor - grammar edge case"
+
+    - sev: L
+      desc: >
+        Duplicate loading spinner code (bouncing dots) appears twice in App.tsx
+        (lines 107-114 and 135-143). Should be extracted to a shared component.
+      file: src/App.tsx:107-114,135-143
+      abcef: "E blocked - code duplication"
+
+  O: # Opportunities
+    - desc: >
+        The app could benefit from skeleton loading states instead of the
+        generic bouncing dots, giving users a preview of the layout while
+        data loads.
+      abcef: "E available"
+
+    - desc: >
+        Touch target sizes are well-handled (min-h-[44px], min-h-[48px])
+        throughout the app. This is good mobile-first practice.
+      abcef: "E flowing"
+
+  S: # Strengths
+    - desc: >
+        Consistent design system with semantic color tokens (primary,
+        muted, destructive, etc.) and proper dark mode support via CSS
+        variables in index.css.
+      file: src/index.css:3-32
+      abcef: "E flowing - cohesive design system"
+
+    - desc: >
+        Responsive design is thoughtful - compact ChoreCards for desktop
+        grid, full cards for mobile list. xl: breakpoint used consistently.
+      file: src/components/calendar/ChoreCard.tsx:62-100
+      abcef: "E flowing - responsive design"
+
+    - desc: >
+        Netflix-style profile selection screen is visually polished with
+        smooth animations (fade-in-up, hover scale effects).
+      file: src/components/auth/ProfileSelectScreen.tsx
+      abcef: "E flowing - engaging entry experience"
+
+    - desc: >
+        Coupon component has a creative "perforated ticket" design with
+        semicircle cutouts and dashed borders.
+      file: src/components/rewards/MyCoupons.tsx:74-78
+      abcef: "E flowing - delightful UI detail"
+
+
+# ============================================================
+# URD COVERAGE (inferred from features/memory)
+# ============================================================
+
+urd_coverage:
+  must:
+    total: 10
+    covered: 10
+    missing: []
+    percentage: 100
+    items:
+      - "Chore CRUD with recurrence" # chore-store + ChoreDialog
+      - "Family member CRUD" # member-store + MemberDialog
+      - "Calendar view (month/week/day)" # CalendarView + subviews
+      - "Completion tracking" # 3-part keys, completions record
+      - "Parent/Kid mode separation" # app-store, mode checks
+      - "PIN authentication for parent" # pin.ts, PinSetupScreen
+      - "Points system" # points field, adjustPoints
+      - "Reward shop + redemption" # reward-store, RewardShop
+      - "Pending approval workflow" # submitForApproval, approveChore
+      - "Firebase data persistence" # firestore-sync.ts
+
+  should:
+    total: 6
+    covered: 6
+    missing: []
+    percentage: 100
+    items:
+      - "Kid emoji passcode" # emojiPasscode, ProfileSelectScreen
+      - "Coupon system" # Coupon type, MyCoupons
+      - "AI Buddy chat" # ai-chat.ts, BuddyChat, chat-store
+      - "Mini games (Flappy Bird)" # games/ directory
+      - "Leaderboard + stats" # Dashboard, stats.ts
+      - "Dark mode" # Sidebar toggle, CSS variables
+
+  verdict: PASS
+
+
+# ============================================================
+# SUMMARY
+# ============================================================
+
+summary:
+  r_count: 11
+  w_count: 8
+  o_count: 5
+  s_count: 11
+  critical_risks:
+    - "Firestore rules: no per-user scoping, any anon user has full access"
+    - "PIN hash publicly readable, 4-digit PIN trivially brute-forceable offline"
+    - "Client-side-only authorization: kids can bypass restrictions via devtools"
+    - "Base64 avatars in localStorage risk quota overflow"
+
+  notable_strengths:
+    - "Zero TypeScript errors, consistent type safety"
+    - "Well-structured Zustand stores with proper migrations"
+    - "PBKDF2 PIN hashing with salt and legacy migration"
+    - "Polished responsive UI with dark mode"
+    - "Complete feature coverage matching requirements"
+
+  recommendation: >
+    The app has a solid architecture and complete feature set with polished UI.
+    However, three HIGH-severity security risks in Firestore rules and auth
+    model prevent a Grade A. The security model assumes a trusted LAN/family
+    environment, which is reasonable for the use case but creates real risk
+    if the app is publicly deployed. The data growth issue (M severity) will
+    cause problems after ~6 months of daily use.
+
+    Priority fixes:
+    1. Firestore rules: scope reads/writes to the authenticated user's UID
+    2. PIN hash: require auth before reading config/pin document
+    3. Batch chunking for pushAllData (500-op limit)
+    4. Avatar image size limits or Firebase Storage migration
+    5. Add automated tests for core logic (recurrence, stats, stores)
+
+
+# ============================================================
+# FINAL GRADE
+# ============================================================
+
+final_grade: B
+urd_gate: PASS
+verdict: CONDITIONAL_PASS
+
+rationale: >
+  No Critical-severity Accurate risks (the H-severity items are security
+  concerns that do not cause incorrect logic - the app works correctly in
+  its intended environment). All MUST requirements are covered. The app
+  compiles cleanly, has a consistent architecture, and delivers a polished
+  user experience. The security model is the primary concern keeping this
+  from Grade A - it assumes a trusted environment, which is fragile.
+  Grade B: functional and well-built but needs hardening before any
+  public/production deployment.
+
+
+# ============================================================
+# JIT HINTS (for COUNCIL)
+# ============================================================
+
+jit_hint:
+  cho: "Firestore rules are the biggest bottleneck - no per-user data isolation"
+  chat: "Architecture is clean, no over-engineering. Fix quality is good but needs security pass"
+  luong: "Security fixes are essential. Test framework is high-value but can be deferred"
+  luc: "Security fixes needed before any public deploy. Data growth issue needs fix within 3 months"

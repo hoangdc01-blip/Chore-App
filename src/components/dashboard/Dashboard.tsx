@@ -4,6 +4,8 @@ import { useMemberStore } from '../../store/member-store'
 import { computeAllKidsStats, getWeekRange, getMonthRange } from '../../lib/stats'
 import Leaderboard from './Leaderboard'
 import KidStatsCard from './KidStatsCard'
+import PendingApprovals from './PendingApprovals'
+import ChallengeCard from './ChallengeCard'
 
 type Period = 'week' | 'month'
 
@@ -31,7 +33,7 @@ export default function Dashboard() {
   return (
     <div className="flex-1 overflow-y-auto p-4 xl:p-6 space-y-4 xl:space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Dashboard</h2>
+        <h2 className="text-lg font-bold">Dashboard</h2>
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           <button
             onClick={() => setPeriod('week')}
@@ -55,6 +57,20 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      <PendingApprovals />
+
+      {/* Daily Challenges */}
+      {members.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Today's Challenge</h3>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {members.map((m) => (
+              <ChallengeCard key={m.id} memberId={m.id} memberName={m.name} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <Leaderboard members={members} />
 

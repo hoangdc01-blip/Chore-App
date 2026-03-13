@@ -1,0 +1,392 @@
+# .claude/eval/full-codebase-2026-03-12.yaml
+target: full-codebase | grade: B | anchor: stack-brief
+
+# ============================================================
+# 3A x RWOS EVALUATION
+# ============================================================
+
+accurate: # LY - Logic dung?
+  R: # Risks
+    - sev: HIGH
+      desc: >
+        PIN hash stored as unsalted SHA-256. SHA-256 without salt is vulnerable
+        to rainbow table attacks. A 4-digit PIN has only 10,000 combinations,
+        making brute-force trivial even with hashing. The PIN doc is also
+        world-readable (firestore rule: allow read if true), so any user
+        can fetch the hash and crack it offline in milliseconds.
+      file: "src/lib/pin.ts:7-12, firestore.rules:6-9"
+      abcef: "F - security breach potential; 4-digit PIN + no salt + public read = trivially crackable"
+
+    - sev: HIGH
+      desc: >
+        Firestore rules are effectively "authenticated = full access". Anonymous
+        auth is used, meaning ANY user who calls signInAnonymously() gets full
+        read/write to ALL collections. There is no per-user scoping, no role
+        checks, no document ownership validation. Any anonymous user can read
+        or modify any family's data.
+      file: "firestore.rules:1-40"
+      abcef: "F - data exposure; single-family assumption is not enforced at DB level"
+
+    - sev: MEDIUM
+      desc: >
+        Race condition in optimistic state updates. Store actions update local
+        state immediately then fire async Firestore writes with .catch() for
+        error toast only. If the Firestore write fails, local state is now
+        inconsistent with remote. The real-time listener will eventually
+        overwrite local state, but there is a window where the user sees
+        stale/incorrect data and may take further actions on it.
+      file: "src/store/chore-store.ts:52-55, src/store/member-store.ts:43-44"
+      abcef: "F - data integrity risk under network failures"
+
+    - sev: MEDIUM
+      desc: >
+        The expandRecurrence function has no upper bound protection. A daily
+        chore with no endDate and a rangeEnd far in the future will generate
+        unbounded dates. The CalendarView limits this to visible range, but
+        getAllTimeRange (used in migration) uses a fixed 2020-01-01 to now,
+        potentially generating thousands of dates per chore for stats
+        computation.
+      file: "src/lib/recurrence.ts:44-56, src/lib/stats.ts:113-115"
+      abcef: "F - performance degradation over time"
+
+    - sev: MEDIUM
+      desc: >
+        computeStreak iterates up to 365 days and for each day calls
+        expandRecurrence for every chore. This is O(365 * numChores) per
+        member, called for each member in computeAllKidsStats. With many
+        chores this becomes expensive and runs on every render of Dashboard.
+      file: "src/lib/stats.ts:48-88"
+      abcef: "F - performance bottleneck as data grows"
+
+  W: # Weaknesses
+    - sev: MEDIUM
+      desc: >
+        Completion/skip/pending records grow unboundedly as flat
+        Record<string, boolean> objects. Over months of use with daily chores,
+        these objects could contain thousands of entries, all loaded into memory
+        and persisted to localStorage (which has ~5MB limit).
+      file: "src/store/chore-store.ts:49-50"
+      abcef: "F - localStorage quota exceeded over time"
+
+    - sev: MEDIUM
+      desc: >
+        The one-time migration in App.tsx that computes stored points runs
+        inside the Firestore subscription callback. If it triggers
+        updateMemberDoc for multiple members, those writes trigger new
+        snapshots which call the callback again. The migrated.current ref
+        prevents re-running, but the pattern is fragile.
+      file: "src/App.tsx:66-81"
+      abcef: "F - re-entrant callback risk"
+
+    - sev: LOW
+      desc: >
+        Firestore document IDs use the composite key format
+        "choreId:memberId:date" which contains colons. While Firestore
+        allows colons in doc IDs, this makes manual debugging in the
+        Firebase console harder and could cause issues with certain
+        URL-encoding scenarios.
+      file: "src/store/chore-store.ts:40-42"
+      abcef: "E - operational friction"
+
+    - sev: LOW
+      desc: >
+        The pushAllData function uses a single writeBatch for all data.
+        Firestore batches have a 500-operation limit. With enough members,
+        chores, and completions, this will silently fail.
+      file: "src/lib/firestore-sync.ts:268-304"
+      abcef: "F - batch limit exceeded"
+
+    - sev: LOW
+      desc: >
+        console.log statements left in production code (pin.ts lines 30, 42, 44).
+        These log "Saving PIN to Firestore" and the anonymous user UID, which
+        is unnecessary information leakage.
+      file: "src/lib/pin.ts:30,42-44"
+      abcef: "F - info leakage in production"
+
+  O: # Opportunities
+    - desc: >
+        Stats could be cached/memoized at the store level rather than
+        recomputed every render. A computed selector or derived state
+        would eliminate redundant recurrence expansion.
+      file: "src/lib/stats.ts"
+      abcef: "E - performance gain blocked by architecture"
+
+    - desc: >
+        The completion key format "choreId:memberId:date" enables a natural
+        partitioning strategy - completions could be archived by month/year
+        to keep active working set small.
+      file: "src/store/chore-store.ts"
+      abcef: "E - scalability improvement path"
+
+  S: # Strengths
+    - desc: >
+        Recurrence expansion is computed on-the-fly rather than stored,
+        which keeps the data model clean and avoids synchronization issues
+        when chores are edited. The expandRecurrence function correctly
+        handles all recurrence types including custom day-of-week.
+      file: "src/lib/recurrence.ts:14-57"
+      abcef: "E - clean data architecture"
+
+    - desc: >
+        Zustand persist migration system is properly implemented with
+        version tracking and migrate functions for both chore-store (v2)
+        and member-store (v2). The key format migration from 2-part to
+        3-part is handled correctly.
+      file: "src/store/chore-store.ts:178-227"
+      abcef: "E - data evolution handled well"
+
+    - desc: >
+        The approval workflow (kid submits -> pending -> parent approves/rejects)
+        is logically sound with proper state transitions and no way for a kid
+        to bypass approval to directly earn points.
+      file: "src/store/chore-store.ts:96-139"
+      abcef: "E - business logic correctness"
+
+assured: # KHI - Chay tot?
+  R: # Risks
+    - sev: HIGH
+      desc: >
+        No error boundary at the React level. If any component throws during
+        render (e.g., Firestore returns unexpected data shape, a member is
+        deleted while their chore card is displayed), the entire app crashes
+        with a white screen and no recovery path.
+      file: "src/App.tsx"
+      abcef: "F - unrecoverable crash"
+
+    - sev: MEDIUM
+      desc: >
+        The AI chat depends on a local Ollama instance (localhost:11434).
+        If Ollama is not running, sendToOllama throws a fetch error. The
+        error handling shows a message, but the dependency on a local
+        service is not documented in the UI or onboarding flow. Kids
+        clicking "Chat with Buddy" will get a confusing error.
+      file: "src/lib/ai-chat.ts:122-138"
+      abcef: "F - feature unavailable without local setup"
+
+    - sev: MEDIUM
+      desc: >
+        SpeechRecognition language is hardcoded to 'en-US' but the app
+        supports Vietnamese and Chinese input via text. Voice input in
+        non-English will produce poor or no results.
+      file: "src/components/chat/BuddyChat.tsx:222"
+      abcef: "F - feature mismatch with multilingual support"
+
+  W: # Weaknesses
+    - sev: MEDIUM
+      desc: >
+        No loading states or skeleton screens for individual data operations.
+        When toggling completion or approving a chore, the UI updates
+        optimistically but there is no indication that a sync is in
+        progress. If the network is slow, the toast appears much later.
+      file: "src/store/chore-store.ts:77-93"
+      abcef: "F - poor feedback under slow network"
+
+    - sev: LOW
+      desc: >
+        The dark mode toggle uses localStorage directly and
+        document.documentElement.classList.toggle. This causes a flash of
+        wrong theme on page load since the theme is only applied after
+        React hydration.
+      file: "src/components/layout/Sidebar.tsx:19,30-33"
+      abcef: "F - FOUC on dark mode"
+
+    - sev: LOW
+      desc: >
+        The rewards-storage Zustand persist config has version: 1 but
+        no migrate function. If version is bumped in the future without
+        adding migrate, all reward data will be lost (per MEMORY.md
+        critical note).
+      file: "src/store/reward-store.ts:76-84"
+      abcef: "F - future migration trap"
+
+  O: # Opportunities
+    - desc: >
+        The real-time subscription pattern in subscribeToAll waits for
+        all 8 collections before first render. If any single collection
+        fails or is slow, the entire app is blocked. Could show partial
+        data progressively.
+      file: "src/lib/firestore-sync.ts:192-197"
+      abcef: "E - blocked by all-or-nothing loading"
+
+  S: # Strengths
+    - desc: >
+        Firestore real-time listeners with proper cleanup. The
+        subscribeToAll function returns an unsubscribe function that
+        cleans up all 8 listeners, and it is properly called in the
+        useEffect cleanup in App.tsx.
+      file: "src/lib/firestore-sync.ts:174-264, src/App.tsx:59-86"
+      abcef: "E - resource management"
+
+    - desc: >
+        PIN lockout mechanism with MAX_ATTEMPTS=5 and 2-minute cooldown
+        prevents brute-force at the UI level. Both parent PIN and kid
+        emoji passcode have independent lockout counters.
+      file: "src/components/auth/ProfileSelectScreen.tsx:10-11,103-107"
+      abcef: "E - UI-level brute-force protection"
+
+    - desc: >
+        The app handles offline/sync gracefully with optimistic updates.
+        Local state changes immediately while Firestore syncs in background.
+        Failed syncs show toast notifications rather than blocking the user.
+      file: "src/store/chore-store.ts:52-55"
+      abcef: "E - responsive UX"
+
+    - desc: >
+        Firebase config uses environment variables (import.meta.env.VITE_*)
+        rather than hardcoded values, enabling proper secret management
+        across environments.
+      file: "src/lib/firebase.ts:5-12"
+      abcef: "E - proper config management"
+
+appealing: # HINH - Dep?
+  R: # Risks
+    - sev: LOW
+      desc: >
+        ProfileSelectScreen uses extensive inline styles (style={{ backgroundColor: '#0d0d0d' }})
+        and inline event handlers for hover effects (onMouseEnter/onMouseLeave setting
+        style directly). This bypasses the Tailwind design system and will not
+        respond to the dark mode toggle or theme changes.
+      file: "src/components/auth/ProfileSelectScreen.tsx:211-286,291-389,392-494"
+      abcef: "F - style inconsistency with rest of app"
+
+  W: # Weaknesses
+    - sev: MEDIUM
+      desc: >
+        No aria-label or role attributes on interactive elements throughout
+        the app. The PIN pad buttons lack aria-label, the profile selection
+        buttons lack accessible names, and the chat panel has no ARIA
+        landmarks. Screen reader users cannot navigate the app.
+      file: "src/components/auth/PinSetupScreen.tsx:113-127, src/components/auth/ProfileSelectScreen.tsx:408-442"
+      abcef: "F - inaccessible to assistive technology users"
+
+    - sev: LOW
+      desc: >
+        The ProfileSelectScreen and PinSetupScreen use a completely different
+        visual language (dark background, custom colors, inline styles) compared
+        to the main app (Tailwind theme tokens, light/dark mode support).
+        The transition between profile selection and main app is jarring.
+      file: "src/components/auth/ProfileSelectScreen.tsx vs src/components/layout/Header.tsx"
+      abcef: "F - visual inconsistency"
+
+    - sev: LOW
+      desc: >
+        ChoreCard has duplicated rendering logic between compact and full modes
+        (lines 62-99 vs 103-150). Both branches share similar structure but
+        differ in size classes. A single component with size variants would
+        be more maintainable.
+      file: "src/components/calendar/ChoreCard.tsx:62-150"
+      abcef: "F - code duplication"
+
+  O: # Opportunities
+    - desc: >
+        The design token system in index.css is well-structured but
+        underutilized. Many components use hardcoded Tailwind color classes
+        (bg-green-600, text-amber-500) instead of semantic tokens, missing
+        the opportunity for consistent theming.
+      file: "src/index.css:3-32"
+      abcef: "E - theme consistency blocked by hardcoded colors"
+
+  S: # Strengths
+    - desc: >
+        Touch-friendly design with min-h-[44px] on interactive elements
+        throughout the app, meeting the 44px minimum touch target
+        recommended by WCAG. Mobile-first responsive layout with
+        xl: breakpoint overrides for desktop.
+      file: "src/components/rewards/RewardShop.tsx:65-66, src/components/chores/ChoreDetails.tsx:198"
+      abcef: "E - good mobile UX"
+
+    - desc: >
+        Netflix-style profile selection with animated transitions
+        (animate-fade-in-up with staggered delays) creates a polished
+        first impression. The kid emoji passcode is a creative,
+        age-appropriate authentication mechanism.
+      file: "src/components/auth/ProfileSelectScreen.tsx:398-491"
+      abcef: "E - delightful UX for target audience"
+
+    - desc: >
+        Proper modal pattern with click-outside-to-close, Escape key
+        handling, and stopPropagation consistently applied across
+        ChoreDetails, ChoreDialog, and chat components.
+      file: "src/components/chores/ChoreDetails.tsx:40-47,86-94"
+      abcef: "E - consistent interaction patterns"
+
+# ============================================================
+# URD COVERAGE (inferred from feature set)
+# ============================================================
+
+urd_coverage:
+  must:
+    total: 10
+    covered: 10
+    missing: []
+    percentage: 100
+    details:
+      - "Chore CRUD with recurrence: COVERED (chore-store + ChoreDialog)"
+      - "Calendar views (month/week/day): COVERED (CalendarView + 3 sub-views)"
+      - "Member management: COVERED (member-store + MemberDialog/MemberEditDialog)"
+      - "Completion tracking: COVERED (chore-store completions + ChoreCard)"
+      - "Points system: COVERED (FamilyMember.points + adjustPoints)"
+      - "Parent/Kid mode separation: COVERED (app-store + conditional rendering)"
+      - "PIN authentication for parent: COVERED (pin.ts + PinSetupScreen + ProfileSelectScreen)"
+      - "Pending approval workflow: COVERED (submitForApproval/approveChore/rejectChore)"
+      - "Reward shop + redemption: COVERED (reward-store + RewardShop)"
+      - "Firestore persistence: COVERED (firestore-sync.ts real-time listeners)"
+  should:
+    total: 6
+    covered: 6
+    missing: []
+    percentage: 100
+    details:
+      - "Coupon system: COVERED (Coupon type + MyCoupons component)"
+      - "AI Buddy chat: COVERED (ai-chat.ts + BuddyChat + chat-store)"
+      - "Mini games: COVERED (games/ directory with FlappyBird)"
+      - "Dark mode: COVERED (Sidebar toggle + CSS variables)"
+      - "Kid emoji passcode: COVERED (ProfileSelectScreen emoji login)"
+      - "Dashboard with stats/leaderboard: COVERED (Dashboard + Leaderboard + KidStatsCard)"
+  verdict: PASS
+
+# ============================================================
+# SUMMARY
+# ============================================================
+
+summary:
+  r_count: 7
+  w_count: 9
+  o_count: 4
+  s_count: 9
+  critical:
+    - "Firestore rules allow any anonymous user full read/write to all data"
+    - "PIN is unsalted SHA-256 stored in world-readable Firestore doc"
+    - "No React error boundary - any render error crashes entire app"
+  recommendation: >
+    The app has solid architecture and feature completeness. The primary
+    concerns are security (Firestore rules + PIN hashing) and robustness
+    (error boundaries + unbounded data growth). The security issues are
+    partially mitigated by the single-family use case, but remain
+    exploitable by any technically literate person with the Firebase
+    project ID.
+
+final_grade: B
+urd_gate: PASS
+verdict: CONDITIONAL_PASS
+
+# ============================================================
+# JIT HINTS (for COUNCIL)
+# ============================================================
+
+jit_hint:
+  cho: >
+    Bottleneck is Firestore security rules - they are effectively open.
+    Secondary bottleneck is the absence of React error boundaries.
+  chat: >
+    The optimistic update pattern is pragmatic for a family app but
+    lacks rollback. Not over-engineered - appropriate for scope.
+  luong: >
+    Fix priority: (1) Error boundary wrapper (low effort, high impact),
+    (2) Firestore rules tightening, (3) PIN salting. Stats performance
+    can be deferred.
+  luc: >
+    Error boundary is immediate (30 min fix). Firestore rules need
+    design discussion (single-family vs multi-family). PIN hardening
+    can be deferred since UI lockout provides partial protection.

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { type Chore, type ChoreOccurrence, type CompletionRecord, type SkippedRecord } from '../types'
+import { type Chore, type ChoreOccurrence, type CompletionRecord, type SkippedRecord, type PendingRecord } from '../types'
 import { expandRecurrence } from '../lib/recurrence'
 import { generateId } from '../lib/utils'
 import { format } from 'date-fns'
@@ -13,19 +13,45 @@ import {
   removeCompletion,
   setSkipped,
   removeSkipped,
+  setPendingApproval,
+  removePendingApproval,
 } from '../lib/firestore-sync'
 import { useMemberStore } from './member-store'
 import { showToast } from './toast-store'
+import { useAchievementStore } from './achievement-store'
+import { buildAchievementContext } from '../lib/achievements'
+import { computeStreak } from '../lib/stats'
+import { countCompletionsForMember } from '../types'
+
+function triggerAchievementCheck(memberId: string) {
+  // Defer to avoid calling during state update
+  setTimeout(() => {
+    const { chores, completions, skipped } = useChoreStore.getState()
+    const member = useMemberStore.getState().members.find((m) => m.id === memberId)
+    if (!member) return
+    const kidChores = chores.filter((c) => c.assigneeId === memberId)
+    const streak = computeStreak(memberId, kidChores, completions, skipped)
+    const totalCompletions = countCompletionsForMember(completions, memberId)
+    const ctx = buildAchievementContext(memberId, completions, member.points ?? 0, streak, 0, 0)
+    ctx.totalCompletions = totalCompletions
+    useAchievementStore.getState().checkAndAward(ctx)
+  }, 100)
+}
 
 interface ChoreState {
   chores: Chore[]
   completions: CompletionRecord
   skipped: SkippedRecord
+  pendingApprovals: PendingRecord
   addChore: (chore: Omit<Chore, 'id'>) => void
   removeChore: (id: string) => void
   removeChoresByMember: (memberId: string) => void
   updateChore: (id: string, updates: Partial<Omit<Chore, 'id'>>) => void
   toggleCompletion: (choreId: string, memberId: string, date: string) => void
+  submitForApproval: (choreId: string, memberId: string, date: string) => void
+  approveChore: (choreId: string, memberId: string, date: string) => void
+  rejectChore: (choreId: string, memberId: string, date: string) => void
+  cancelPending: (choreId: string, memberId: string, date: string) => void
   toggleSkip: (choreId: string, memberId: string, date: string) => void
   getOccurrencesForRange: (start: Date, end: Date) => ChoreOccurrence[]
 }
@@ -40,6 +66,7 @@ export const useChoreStore = create<ChoreState>()(
       chores: [],
       completions: {},
       skipped: {},
+      pendingApprovals: {},
 
       addChore: (choreData) => {
         const chore: Chore = { ...choreData, id: generateId() }
@@ -80,9 +107,57 @@ export const useChoreStore = create<ChoreState>()(
 
         if (!wasComplete) {
           setCompletion(key, choreId, memberId, date).catch(() => showToast('Sync failed. Please try again.', 'error'))
+          triggerAchievementCheck(memberId)
         } else {
           removeCompletion(key).catch(() => showToast('Sync failed. Please try again.', 'error'))
         }
+      },
+
+      submitForApproval: (choreId, memberId, date) => {
+        const key = makeKey(choreId, memberId, date)
+        const pendingApprovals = { ...get().pendingApprovals }
+        if (pendingApprovals[key]) return // already pending
+        pendingApprovals[key] = true
+        set({ pendingApprovals })
+        setPendingApproval(key, choreId, memberId, date).catch(() => showToast('Sync failed. Please try again.', 'error'))
+        showToast('Submitted for parent approval! ⏳', 'success')
+      },
+
+      approveChore: (choreId, memberId, date) => {
+        const key = makeKey(choreId, memberId, date)
+        // Remove from pending
+        const pendingApprovals = { ...get().pendingApprovals }
+        delete pendingApprovals[key]
+        // Add to completions
+        const completions = { ...get().completions }
+        completions[key] = true
+        set({ pendingApprovals, completions })
+        // Award points
+        const chore = get().chores.find((c) => c.id === choreId)
+        const pts = Number(chore?.points) || 1
+        useMemberStore.getState().adjustPoints(memberId, pts)
+        // Sync to Firestore
+        removePendingApproval(key).catch(() => showToast('Sync failed.', 'error'))
+        setCompletion(key, choreId, memberId, date).catch(() => showToast('Sync failed.', 'error'))
+        triggerAchievementCheck(memberId)
+      },
+
+      rejectChore: (choreId, memberId, date) => {
+        const key = makeKey(choreId, memberId, date)
+        const pendingApprovals = { ...get().pendingApprovals }
+        delete pendingApprovals[key]
+        set({ pendingApprovals })
+        removePendingApproval(key).catch(() => showToast('Sync failed.', 'error'))
+      },
+
+      cancelPending: (choreId, memberId, date) => {
+        const key = makeKey(choreId, memberId, date)
+        const pendingApprovals = { ...get().pendingApprovals }
+        if (!pendingApprovals[key]) return
+        delete pendingApprovals[key]
+        set({ pendingApprovals })
+        removePendingApproval(key).catch(() => showToast('Sync failed.', 'error'))
+        showToast('Submission cancelled', 'info')
       },
 
       toggleSkip: (choreId, memberId, date) => {
@@ -99,7 +174,7 @@ export const useChoreStore = create<ChoreState>()(
       },
 
       getOccurrencesForRange: (start, end) => {
-        const { chores, completions, skipped } = get()
+        const { chores, completions, skipped, pendingApprovals } = get()
         const occurrences: ChoreOccurrence[] = []
 
         for (const chore of chores) {
@@ -113,6 +188,7 @@ export const useChoreStore = create<ChoreState>()(
               chore,
               isCompleted: !!completions[key],
               isSkipped: !!skipped[key],
+              isPending: !!pendingApprovals[key],
             })
           }
         }
@@ -167,6 +243,7 @@ export const useChoreStore = create<ChoreState>()(
         chores: state.chores,
         completions: state.completions,
         skipped: state.skipped,
+        pendingApprovals: state.pendingApprovals,
       }),
     }
   )

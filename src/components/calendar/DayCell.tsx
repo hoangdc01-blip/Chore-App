@@ -27,7 +27,7 @@ export default function DayCell({
       onClick={() => onDayClick(day)}
       className={`border border-border p-1 cursor-pointer hover:bg-accent/50 transition-colors ${
         isWeekView ? 'min-h-[200px]' : 'min-h-[100px]'
-      } ${today ? 'bg-primary/5' : !inMonth && !isWeekView ? 'bg-muted/30' : ''}`}
+      } ${today ? 'bg-primary/12' : !inMonth && !isWeekView ? 'bg-muted/60' : ''}`}
     >
       <div className="flex justify-between items-start mb-1">
         <span

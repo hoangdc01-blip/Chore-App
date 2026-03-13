@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react'
 import { addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, isBefore, parseISO } from 'date-fns'
 import type { CalendarViewMode, ChoreOccurrence, Chore } from '../../types'
 import { useChoreStore } from '../../store/chore-store'
+import { useAppStore } from '../../store/app-store'
 import CalendarHeader from './CalendarHeader'
 import MonthView from './MonthView'
 import WeekView from './WeekView'
@@ -31,7 +32,10 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
   const chores = useChoreStore((s) => s.chores)
   const completions = useChoreStore((s) => s.completions)
   const skipped = useChoreStore((s) => s.skipped)
+  const pendingApprovals = useChoreStore((s) => s.pendingApprovals)
   const getOccurrencesForRange = useChoreStore((s) => s.getOccurrencesForRange)
+  const appMode = useAppStore((s) => s.mode)
+  const activeKidId = useAppStore((s) => s.activeKidId)
 
   const occurrences = useMemo(() => {
     let start: Date, end: Date
@@ -48,6 +52,10 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
       end = endOfDay(currentDate)
     }
     let results = getOccurrencesForRange(start, end)
+    // Kid mode: only show their own chores
+    if (appMode === 'kid' && activeKidId) {
+      results = results.filter((occ) => occ.chore.assigneeId === activeKidId)
+    }
     if (hiddenMemberIds.size > 0) {
       results = results.filter((occ) => !hiddenMemberIds.has(occ.chore.assigneeId))
     }
@@ -65,7 +73,7 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
       results = results.filter((occ) => !occ.isCompleted && isBefore(startOfDay(parseISO(occ.date)), today))
     }
     return results
-  }, [currentDate, viewMode, getOccurrencesForRange, searchQuery, hiddenMemberIds, chores, completions, skipped, statusFilter])
+  }, [currentDate, viewMode, getOccurrencesForRange, searchQuery, hiddenMemberIds, chores, completions, skipped, pendingApprovals, statusFilter, appMode, activeKidId])
 
   // For day view date picker: compute which dates have tasks (3-month window for prev/next month nav)
   const datesWithTasks = useMemo(() => {
@@ -108,6 +116,7 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
   const closedAtRef = useRef(0)
 
   const handleDayClick = (date: Date, time?: string) => {
+    if (appMode === 'kid') return // kids can't create chores
     if (Date.now() - closedAtRef.current < 300) return
     setEditChore(null)
     setDialogDate(format(date, 'yyyy-MM-dd'))

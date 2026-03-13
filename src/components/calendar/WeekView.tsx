@@ -62,13 +62,13 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
       <div className="hidden xl:flex xl:flex-col xl:flex-1 overflow-auto">
         {/* Header row */}
         <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
-          <div className="border border-border bg-muted/50" />
+          <div className="border border-border bg-muted" />
           {days.map((day) => {
             const today = isToday(day)
             return (
               <div
                 key={format(day, 'yyyy-MM-dd')}
-                className={`border border-border px-2 py-1.5 text-center bg-muted/50 ${today ? 'bg-primary/10' : ''}`}
+                className={`border border-border px-2 py-1.5 text-center bg-muted ${today ? 'bg-primary/20' : ''}`}
               >
                 <span className="text-sm font-bold text-foreground">{format(day, 'EEE')}</span>
                 <br />
@@ -88,7 +88,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
 
         {/* All-day row */}
         <div className="grid shrink-0" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
-          <div className="border border-border px-1 py-1 text-sm text-gray-600 dark:text-gray-400 font-semibold flex items-start justify-end pr-2">
+          <div className="border border-border px-1 py-1 text-sm text-muted-foreground font-semibold flex items-start justify-end pr-2">
             All day
           </div>
           {days.map((day) => {
@@ -99,7 +99,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
               <div
                 key={dateKey}
                 onClick={() => onDayClick(day)}
-                className={`border border-border p-1 min-h-[36px] cursor-pointer hover:bg-accent/50 transition-colors ${todayCol ? 'bg-primary/5' : ''}`}
+                className={`border border-border p-1 min-h-[36px] cursor-pointer hover:bg-accent/50 transition-colors ${todayCol ? 'bg-primary/12' : ''}`}
               >
                 <div className="space-y-0.5">
                   {allDay.map((occ) => (
@@ -114,7 +114,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
         {/* Time grid */}
         {HOURS.map((hour) => (
           <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
-            <div className="border border-border px-1 text-xs text-gray-600 dark:text-gray-400 font-semibold flex items-start justify-end pr-2 pt-0.5 h-[60px]">
+            <div className="border border-border px-1 text-xs text-muted-foreground font-semibold flex items-start justify-end pr-2 pt-0.5 h-[60px]">
               {formatHour(hour)}
             </div>
             {days.map((day) => {
@@ -125,7 +125,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
                 <div
                   key={dateKey}
                   onClick={() => onDayClick(day, `${String(hour).padStart(2, '0')}:00`)}
-                  className={`border border-border p-0.5 h-[60px] cursor-pointer hover:bg-accent/50 transition-colors overflow-hidden ${todayCol ? 'bg-primary/5' : ''}`}
+                  className={`border border-border p-0.5 h-[60px] cursor-pointer hover:bg-accent/50 transition-colors overflow-hidden ${todayCol ? 'bg-primary/12' : ''}`}
                 >
                   <div className="space-y-0.5">
                     {hourOccs.map((occ) => (
@@ -142,7 +142,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
       {/* ── Mobile: horizontal day selector + task list ── */}
       <div className="flex-1 flex flex-col overflow-hidden xl:hidden">
         {/* Day selector row */}
-        <div className="flex shrink-0 border-b border-border bg-muted/30">
+        <div className="flex shrink-0 border-b border-border bg-muted">
           {days.map((day, idx) => {
             const today = isToday(day)
             const dateKey = format(day, 'yyyy-MM-dd')
@@ -155,7 +155,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
                 key={dateKey}
                 onClick={() => setSelectedDayIndex(idx)}
                 className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${
-                  isSelected ? 'bg-primary/10' : ''
+                  isSelected ? 'bg-primary/20' : ''
                 }`}
               >
                 <span className={`text-xs font-semibold ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -181,7 +181,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
                       <span key={i} className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
                     ))}
                     {dayOccs.length > 3 && (
-                      <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary/50' : 'bg-muted-foreground/30'}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary/120' : 'bg-muted-foreground/30'}`} />
                     )}
                   </div>
                 )}

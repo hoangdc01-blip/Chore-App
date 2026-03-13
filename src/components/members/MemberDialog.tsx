@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, X, Camera } from 'lucide-react'
 import { useMemberStore } from '../../store/member-store'
-import { MEMBER_COLORS } from '../../types'
+import { MEMBER_COLORS, EMOJI_OPTIONS } from '../../types'
 import { resizeImageToDataURL } from '../../lib/image'
 
 export default function MemberDialog() {
@@ -11,6 +11,7 @@ export default function MemberDialog() {
   const [name, setName] = useState('')
   const [colorIndex, setColorIndex] = useState(0)
   const [avatar, setAvatar] = useState<string | undefined>()
+  const [emojiPasscode, setEmojiPasscode] = useState<string | undefined>()
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function MemberDialog() {
       setName('')
       setColorIndex(members.length % MEMBER_COLORS.length)
       setAvatar(undefined)
+      setEmojiPasscode(undefined)
     }
   }, [open, members.length])
 
@@ -44,6 +46,16 @@ export default function MemberDialog() {
     const trimmed = name.trim()
     if (!trimmed) return
     addMember(trimmed, avatar, String(colorIndex))
+    if (emojiPasscode) {
+      // Get the just-added member (last in list after state update)
+      setTimeout(() => {
+        const members = useMemberStore.getState().members
+        const added = members[members.length - 1]
+        if (added && added.name === trimmed) {
+          useMemberStore.getState().updateMember(added.id, { emojiPasscode })
+        }
+      }, 50)
+    }
     setOpen(false)
   }
 
@@ -118,6 +130,29 @@ export default function MemberDialog() {
                     />
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Secret Emoji (passcode)</label>
+                <div className="grid grid-cols-6 gap-2">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setEmojiPasscode(emojiPasscode === e ? undefined : e)}
+                      className={`h-11 w-full rounded-lg text-xl flex items-center justify-center transition-all ${
+                        emojiPasscode === e
+                          ? 'bg-primary/15 ring-2 ring-primary scale-110'
+                          : 'bg-muted hover:bg-accent'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {emojiPasscode ? `Selected: ${emojiPasscode}` : 'Optional — kid taps this emoji to log in'}
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

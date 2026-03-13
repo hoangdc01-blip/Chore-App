@@ -22,7 +22,7 @@ interface MemberState {
   _initialized: boolean
   addMember: (name: string, avatar?: string, color?: string) => void
   removeMember: (id: string) => void
-  updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string }) => void
+  updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string; emojiPasscode?: string; theme?: string }) => void
   adjustPoints: (memberId: string, delta: number) => void
 }
 
@@ -48,7 +48,7 @@ export const useMemberStore = create<MemberState>()(
         set({ members: get().members.filter((m) => m.id !== id) })
         deleteMemberDoc(id).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
-      updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string }) => {
+      updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string; emojiPasscode?: string }) => {
         const members = get().members.map((m) =>
           m.id === id ? { ...m, ...updates } : m
         )

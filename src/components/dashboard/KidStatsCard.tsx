@@ -3,6 +3,7 @@ import type { KidStats, FamilyMember } from '../../types'
 import { getLevel, STREAK_BADGES, countCompletionsForMember } from '../../types'
 import { getMemberColor } from '../../store/member-store'
 import { useChoreStore } from '../../store/chore-store'
+import BadgeGrid from '../achievements/BadgeGrid'
 
 interface KidStatsCardProps {
   member: FamilyMember
@@ -47,7 +48,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
             <span>Next: Lv.{level.level + 1}</span>
             <span>{member.points ?? 0}/{level.nextXp} XP</span>
           </div>
-          <div className="h-2 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden">
+          <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
             <div
               className="h-full rounded-full bg-amber-500 transition-all"
               style={{ width: `${Math.min(100, (((member.points ?? 0) - level.xp) / (level.nextXp - level.xp)) * 100)}%` }}
@@ -64,7 +65,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
           </span>
           <span className="font-medium">{stats.completionRate}%</span>
         </div>
-        <div className="h-2 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden">
+        <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
           <div
             className="h-full rounded-full bg-green-500 transition-all"
             style={{ width: `${stats.completionRate}%` }}
@@ -77,10 +78,12 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
           <Flame size={14} className="text-orange-500" />
           Current streak
         </span>
-        <span className="font-medium">
-          {stats.currentStreak} {stats.currentStreak === 1 ? 'day' : 'days'}
+        <span className="font-medium flex items-center gap-1">
+          <span className={stats.currentStreak >= 3 ? 'animate-pulse' : ''}>
+            {stats.currentStreak} {stats.currentStreak === 1 ? 'day' : 'days'}
+          </span>
           {earnedBadges.length > 0 && (
-            <span className="ml-1">
+            <span>
               {earnedBadges.map((b) => (
                 <span key={b.days} title={b.label}>{b.emoji}</span>
               ))}
@@ -92,6 +95,8 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
       <div className="text-xs text-muted-foreground">
         {choresDone} chores completed
       </div>
+
+      <BadgeGrid memberId={member.id} />
     </div>
   )
 }

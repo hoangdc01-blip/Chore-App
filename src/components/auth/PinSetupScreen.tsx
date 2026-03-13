@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Delete } from 'lucide-react'
 import { savePin, signInAfterPin } from '../../lib/pin'
 import { useAuthStore } from '../../store/auth-store'
+import { useAppStore } from '../../store/app-store'
 
 type Step = 'create' | 'confirm'
 
@@ -35,6 +36,7 @@ export default function PinSetupScreen() {
       await savePin(fullPin)
       useAuthStore.getState().setPinExists(true)
       useAuthStore.getState().setUnlocked(true)
+      useAppStore.getState().enterParentMode()
     } catch (err) {
       console.error('PIN setup failed:', err)
       setError('Failed to save PIN. Check that Anonymous Auth is enabled in Firebase Console.')

@@ -45,7 +45,7 @@ export function computeKidStats(
   }
 }
 
-function computeStreak(
+export function computeStreak(
   memberId: string,
   chores: Chore[],
   completions: CompletionRecord,
@@ -79,6 +79,8 @@ function computeStreak(
     if (hadChores && allDone) {
       streak++
     } else if (hadChores && !allDone) {
+      // Today's incomplete chores don't break the streak — skip today and count from yesterday
+      if (i === 0) continue
       break
     }
     // Days with no chores don't break the streak
@@ -110,6 +112,13 @@ export function getMonthRange(): { start: Date; end: Date } {
   return { start: startOfMonth(now), end: endOfMonth(now) }
 }
 
-export function getAllTimeRange(): { start: Date; end: Date } {
+export function getAllTimeRange(chores?: Chore[]): { start: Date; end: Date } {
+  if (chores && chores.length > 0) {
+    const earliest = chores.reduce((min, c) => {
+      const d = c.startDate
+      return d < min ? d : min
+    }, chores[0].startDate)
+    return { start: startOfDay(new Date(earliest)), end: endOfDay(new Date()) }
+  }
   return { start: new Date(2020, 0, 1), end: endOfDay(new Date()) }
 }

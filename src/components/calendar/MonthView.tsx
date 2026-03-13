@@ -51,7 +51,7 @@ export default function MonthView({ currentDate, occurrences, onDayClick, onChor
           {WEEKDAYS_LONG.map((day) => (
             <div
               key={day}
-              className="border border-border px-2 py-2 text-sm font-bold text-foreground text-center bg-muted/50"
+              className="border border-border px-2 py-2 text-sm font-bold text-foreground text-center bg-muted"
             >
               {day}
             </div>
@@ -102,7 +102,7 @@ export default function MonthView({ currentDate, occurrences, onDayClick, onChor
                   key={dateKey}
                   onClick={() => setSelectedDay(day)}
                   className={`flex flex-col items-center py-1.5 rounded-lg transition-colors ${
-                    isSelected ? 'bg-primary/10' : ''
+                    isSelected ? 'bg-primary/20' : ''
                   }`}
                 >
                   <span
@@ -133,7 +133,7 @@ export default function MonthView({ currentDate, occurrences, onDayClick, onChor
         </div>
 
         {/* Divider with selected date label */}
-        <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-y border-border bg-muted/30">
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-y border-border bg-muted">
           <span className="text-sm font-bold text-foreground">
             {format(selectedDay, 'EEEE, MMM d')}
           </span>

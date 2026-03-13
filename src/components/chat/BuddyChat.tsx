@@ -88,6 +88,7 @@ export default function BuddyChat() {
     isStreaming,
     error,
     selectedMemberId,
+    lastResponseTimeMs,
     setOpen,
     setSelectedMemberId,
     sendMessageStreaming,
@@ -316,9 +317,26 @@ export default function BuddyChat() {
 
         {messages
           .filter((m) => m.role !== 'system')
-          .map((msg, i) => (
-            <ChatBubble key={i} message={msg} isUser={msg.role === 'user'} />
-          ))}
+          .map((msg, i, arr) => {
+            const isLastAssistant =
+              msg.role === 'assistant' &&
+              i === arr.length - 1 &&
+              !isLoading &&
+              !isStreaming &&
+              lastResponseTimeMs != null
+            return (
+              <div key={i}>
+                <ChatBubble message={msg} isUser={msg.role === 'user'} />
+                {isLastAssistant && (
+                  <div className="flex justify-start mb-3 ml-10">
+                    <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                      {'\u26A1'} {(lastResponseTimeMs / 1000).toFixed(1)}s
+                    </span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
 
         {isLoading && !isStreaming && <TypingIndicator />}
 

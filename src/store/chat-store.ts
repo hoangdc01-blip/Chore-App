@@ -12,6 +12,7 @@ interface ChatState {
   error: string | null
   selectedMemberId: string | null
   abortController: AbortController | null
+  lastResponseTimeMs: number | null
 
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
@@ -29,6 +30,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   error: null,
   selectedMemberId: null,
   abortController: null,
+  lastResponseTimeMs: null,
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -84,6 +86,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     set({ abortController: controller })
 
+    const startTime = Date.now()
+
     try {
       const systemPrompt = buildSystemPrompt(get().selectedMemberId)
       const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
@@ -106,7 +110,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       )
 
       clearTimeout(timeoutId)
-      set({ isLoading: false, isStreaming: false, abortController: null })
+      set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })
     } catch (err) {
       clearTimeout(timeoutId)
 
@@ -120,9 +124,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             ? 'Image processing timed out. Try a simpler image or check that Ollama is running.'
             : 'Request timed out. Check that Ollama is running.'
           const updated = [...msgs.slice(0, -1), { ...lastMsg, content: errorText }]
-          set({ messages: updated, isLoading: false, isStreaming: false, abortController: null })
+          set({ messages: updated, isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: null })
         } else {
-          set({ isLoading: false, isStreaming: false, abortController: null })
+          set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: null })
         }
         return
       }
@@ -149,10 +153,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           isLoading: false,
           isStreaming: false,
           abortController: null,
+          lastResponseTimeMs: Date.now() - startTime,
         })
       } catch (fallbackErr) {
         const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong'
-        set({ isLoading: false, isStreaming: false, error: errorMsg, abortController: null })
+        set({ isLoading: false, isStreaming: false, error: errorMsg, abortController: null, lastResponseTimeMs: null })
       }
     }
   },

@@ -12,6 +12,7 @@ import BuddyChat from './components/chat/BuddyChat'
 import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
+import SetupWizard from './components/setup/SetupWizard'
 import { useFirebase } from './lib/firebase-flag'
 import { subscribeToAll, updateMemberDoc, saveEarnedBadges, setClaimedBonus } from './lib/firestore-sync'
 import { signInAfterPin } from './lib/pin'
@@ -39,6 +40,7 @@ export default function App() {
   const mode = useAppStore((s) => s.mode)
   const activeKidId = useAppStore((s) => s.activeKidId)
   const members = useMemberStore((s) => s.members)
+  const _initialized = useMemberStore((s) => s._initialized)
 
   const migrated = useRef(false)
 
@@ -83,7 +85,7 @@ export default function App() {
     }
 
     const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses }) => {
-      useMemberStore.setState({ members, _initialized: true })
+      useMemberStore.setState({ members, _initialized: members.length > 0 || useMemberStore.getState()._initialized })
       useChoreStore.setState({ chores, completions, skipped, pendingApprovals })
       useRewardStore.setState({ rewards, redemptions, coupons })
       useAchievementStore.setState({ earnedBadges })
@@ -161,8 +163,34 @@ export default function App() {
     return <PinSetupScreen />
   }
 
-  // Profile selection — show before waiting for data sync
+  // Profile selection — check if setup wizard is needed first
   if (mode === 'select') {
+    // If unlocked (PIN exists and auth ready), wait for sync before deciding
+    if (unlocked && syncing) {
+      return (
+        <div className="h-dvh flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
+          <div className="flex gap-1">
+            <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="h-3 w-3 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="text-sm">Loading...</span>
+        </div>
+      )
+    }
+
+    // No members and not initialized — show setup wizard
+    if (members.length === 0 && !_initialized) {
+      return (
+        <>
+          <SetupWizard onComplete={() => {
+            useAppStore.getState().setMode('select')
+          }} />
+          <Toaster />
+        </>
+      )
+    }
+
     return (
       <>
         <ProfileSelectScreen />

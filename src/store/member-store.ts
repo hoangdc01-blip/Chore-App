@@ -10,13 +10,6 @@ import {
 } from '../lib/firestore-sync'
 import { showToast } from './toast-store'
 
-export const DEFAULT_KIDS = [
-  { name: 'Bap', color: '0' },
-  { name: 'Bo', color: '1' },
-  { name: 'Boi', color: '2' },
-  { name: 'Bow', color: '3' },
-]
-
 interface MemberState {
   members: FamilyMember[]
   _initialized: boolean

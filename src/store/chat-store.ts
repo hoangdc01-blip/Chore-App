@@ -83,7 +83,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     })
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    // Vision models need much longer — 120s vs 30s for text-only
+    const hasImages = allMessages.some((m) => !!m.image)
+    const timeoutMs = hasImages ? 120000 : 30000
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     set({ abortController: controller })
 
     try {
@@ -113,8 +116,19 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       clearTimeout(timeoutId)
 
       if (err instanceof DOMException && err.name === 'AbortError') {
-        // User cancelled or timeout — keep partial text
-        set({ isLoading: false, isStreaming: false, abortController: null })
+        // User cancelled or timeout — keep partial text, but show error if it was a timeout
+        const msgs = get().messages
+        const lastMsg = msgs[msgs.length - 1]
+        if (lastMsg?.role === 'assistant' && lastMsg.content === '') {
+          // No content received at all — this was a timeout, not a user cancel
+          const errorText = hasImages
+            ? 'Image processing timed out. Try a simpler image or check that Ollama is running.'
+            : 'Request timed out. Check that Ollama is running.'
+          const updated = [...msgs.slice(0, -1), { ...lastMsg, content: errorText }]
+          set({ messages: updated, isLoading: false, isStreaming: false, abortController: null })
+        } else {
+          set({ isLoading: false, isStreaming: false, abortController: null })
+        }
         return
       }
 

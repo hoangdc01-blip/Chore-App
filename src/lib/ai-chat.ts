@@ -10,7 +10,7 @@ export interface ChatMessage {
 }
 
 // Configurable via environment variables
-const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'qwen2.5:3b'
+const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'qwen2.5:7b'
 const VISION_MODEL = import.meta.env.VITE_OLLAMA_VISION_MODEL || 'llava:7b'
 const OLLAMA_BASE = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434'
 
@@ -96,8 +96,9 @@ ${allLists || '  (all done! 🎉)'}`
 }
 
 export function buildSystemPrompt(memberId: string | null): string {
+  const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : ''
-  return BASE_SYSTEM_PROMPT + context
+  return BASE_SYSTEM_PROMPT + `\n\nCurrent date and time: ${now}` + context
 }
 
 /**
@@ -237,9 +238,27 @@ export async function streamFromOllama(
   let fullText = ''
   let buffer = ''
 
+  const IDLE_TIMEOUT_MS = 60000
+
   try {
     while (true) {
-      const { done, value } = await reader.read()
+      // Race the read against an idle timeout to detect Ollama hangs mid-stream
+      let idleTimerId: ReturnType<typeof setTimeout>
+      const idlePromise = new Promise<never>((_, reject) => {
+        idleTimerId = setTimeout(
+          () => reject(new Error('Ollama stopped responding mid-stream. Try again.')),
+          IDLE_TIMEOUT_MS
+        )
+      })
+
+      let readResult: { done: boolean; value?: Uint8Array }
+      try {
+        readResult = await Promise.race([reader.read(), idlePromise])
+      } finally {
+        clearTimeout(idleTimerId!)
+      }
+
+      const { done, value } = readResult
       if (done) break
 
       buffer += decoder.decode(value, { stream: true })

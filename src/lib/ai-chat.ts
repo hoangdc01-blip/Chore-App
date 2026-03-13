@@ -64,6 +64,31 @@ HOMEWORK HELP (math, science, Chinese only):
 You help with: 1) Daily chores 2) Fun facts 3) Homework (math/science/Chinese)
 Never discuss anything inappropriate or scary. Be kind, patient, fun.`
 
+const CHORE_CREATION_PROMPT = `
+
+CHORE CREATION: When the user asks to add, create, or schedule a chore, output EXACTLY this block at the END of your response:
+
+[CREATE_CHORE]{"name":"chore name","assigneeId":"member-id","startDate":"YYYY-MM-DD","points":1,"recurrence":"none"}[/CREATE_CHORE]
+
+Rules for chore creation:
+- name: short descriptive name for the chore
+- assigneeId: MUST be an exact ID from the FAMILY MEMBERS list below
+- startDate: resolve relative dates (tomorrow, next Monday, etc.) using the current date. Format: YYYY-MM-DD
+- points: number, default 1 if not specified
+- recurrence: one of "none","daily","weekly","biweekly","monthly". Default "none"
+- Optional fields: "emoji" (single emoji), "startTime" (HH:mm format), "description" (short text)
+- If the user doesn't specify who the chore is for, use the Current kid's ID
+- Always write a short fun message BEFORE the [CREATE_CHORE] block
+- NEVER put anything after the [/CREATE_CHORE] tag
+- Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
+
+function buildMemberDirectory(): string {
+  const members = useMemberStore.getState().members
+  if (members.length === 0) return ''
+  const lines = members.map(m => `  - "${m.name}" (ID: ${m.id})`).join('\n')
+  return `\n\nFAMILY MEMBERS:\n${lines}`
+}
+
 function buildChoreContext(memberId: string): string {
   const members = useMemberStore.getState().members
   const member = members.find((m) => m.id === memberId)
@@ -89,7 +114,7 @@ function buildChoreContext(memberId: string): string {
 
   const allLists = [doneList, pendingList, todoList].filter(Boolean).join('\n')
 
-  return `\n\nCurrent kid: ${member.name}.
+  return `\n\nCurrent kid: ${member.name} (ID: ${member.id}).
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
@@ -99,7 +124,7 @@ ${allLists || '  (all done! 🎉)'}`
 export function buildSystemPrompt(memberId: string | null): string {
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : ''
-  return BASE_SYSTEM_PROMPT + `\n\nCurrent date and time: ${now}` + context
+  return BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory()
 }
 
 /**

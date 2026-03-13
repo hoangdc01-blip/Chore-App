@@ -1,1 +1,3 @@
-export const useFirebase = import.meta.env.VITE_USE_FIREBASE === 'true'
+import { getEnv } from './env'
+
+export const useFirebase = getEnv('VITE_USE_FIREBASE') === 'true'

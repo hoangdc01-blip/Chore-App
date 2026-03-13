@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { getEnv } from './env'
 import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
 
@@ -10,9 +11,9 @@ export interface ChatMessage {
 }
 
 // Configurable via environment variables
-const TEXT_MODEL = import.meta.env.VITE_OLLAMA_TEXT_MODEL || 'qwen2.5:7b'
-const VISION_MODEL = import.meta.env.VITE_OLLAMA_VISION_MODEL || 'llava:7b'
-const OLLAMA_BASE = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434'
+const TEXT_MODEL = getEnv('VITE_OLLAMA_TEXT_MODEL', 'qwen2.5:7b')
+const VISION_MODEL = getEnv('VITE_OLLAMA_VISION_MODEL', 'llava:7b')
+const OLLAMA_BASE = getEnv('VITE_OLLAMA_URL', 'http://localhost:11434')
 
 /** Resize an image file to fit within maxDim and return a base64 data URL */
 export function resizeImageToDataURL(file: File, maxDim = 512): Promise<string> {

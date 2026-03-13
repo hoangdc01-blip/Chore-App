@@ -10,6 +10,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { useFirebase } from './firebase-flag'
 import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, PendingRecord, Reward, Redemption, Coupon } from '../types'
 
 // Strip undefined values — Firestore rejects them
@@ -25,38 +26,46 @@ function clean<T>(obj: T): Record<string, any> {
 // ── Members ──
 
 export async function fetchMembers(): Promise<FamilyMember[]> {
+  if (!useFirebase) return []
   const snap = await getDocs(collection(db, 'members'))
   return snap.docs.map((d) => d.data() as FamilyMember)
 }
 
 export async function saveMember(member: FamilyMember): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'members', member.id), clean(member))
 }
 
 export async function deleteMemberDoc(id: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'members', id))
 }
 
 export async function updateMemberDoc(id: string, updates: Partial<FamilyMember>): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'members', id), clean(updates), { merge: true })
 }
 
 // ── Chores ──
 
 export async function fetchChores(): Promise<Chore[]> {
+  if (!useFirebase) return []
   const snap = await getDocs(collection(db, 'chores'))
   return snap.docs.map((d) => d.data() as Chore)
 }
 
 export async function saveChore(chore: Chore): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'chores', chore.id), clean(chore))
 }
 
 export async function deleteChoreDoc(id: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'chores', id))
 }
 
 export async function deleteChoresByMemberDocs(memberId: string): Promise<void> {
+  if (!useFirebase) return
   const q = query(collection(db, 'chores'), where('assigneeId', '==', memberId))
   const snap = await getDocs(q)
   if (snap.empty) return
@@ -66,12 +75,14 @@ export async function deleteChoresByMemberDocs(memberId: string): Promise<void> 
 }
 
 export async function updateChoreDoc(id: string, updates: Partial<Chore>): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'chores', id), clean(updates), { merge: true })
 }
 
 // ── Completions ──
 
 export async function fetchCompletions(): Promise<CompletionRecord> {
+  if (!useFirebase) return {}
   const snap = await getDocs(collection(db, 'completions'))
   const record: CompletionRecord = {}
   snap.docs.forEach((d) => {
@@ -81,16 +92,19 @@ export async function fetchCompletions(): Promise<CompletionRecord> {
 }
 
 export async function setCompletion(key: string, choreId: string, memberId: string, date: string): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'completions', key), { choreId, memberId, date, done: true })
 }
 
 export async function removeCompletion(key: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'completions', key))
 }
 
 // ── Skipped ──
 
 export async function fetchSkipped(): Promise<SkippedRecord> {
+  if (!useFirebase) return {}
   const snap = await getDocs(collection(db, 'skipped'))
   const record: SkippedRecord = {}
   snap.docs.forEach((d) => {
@@ -100,16 +114,19 @@ export async function fetchSkipped(): Promise<SkippedRecord> {
 }
 
 export async function setSkipped(key: string, choreId: string, memberId: string, date: string): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'skipped', key), { choreId, memberId, date, skipped: true })
 }
 
 export async function removeSkipped(key: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'skipped', key))
 }
 
 // ── Pending Approvals ──
 
 export async function fetchPendingApprovals(): Promise<PendingRecord> {
+  if (!useFirebase) return {}
   const snap = await getDocs(collection(db, 'pendingApprovals'))
   const record: PendingRecord = {}
   snap.docs.forEach((d) => {
@@ -119,36 +136,43 @@ export async function fetchPendingApprovals(): Promise<PendingRecord> {
 }
 
 export async function setPendingApproval(key: string, choreId: string, memberId: string, date: string): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'pendingApprovals', key), { choreId, memberId, date, pending: true, submittedAt: Date.now() })
 }
 
 export async function removePendingApproval(key: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'pendingApprovals', key))
 }
 
 // ── Rewards ──
 
 export async function saveReward(reward: Reward): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'rewards', reward.id), clean(reward))
 }
 
 export async function deleteRewardDoc(id: string): Promise<void> {
+  if (!useFirebase) return
   await deleteDoc(doc(db, 'rewards', id))
 }
 
 // ── Redemptions ──
 
 export async function saveRedemption(redemption: Redemption): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'redemptions', redemption.id), clean(redemption))
 }
 
 // ── Coupons ──
 
 export async function saveCoupon(coupon: Coupon): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'coupons', coupon.id), clean(coupon))
 }
 
 export async function updateCouponDoc(id: string, updates: Partial<Coupon>): Promise<void> {
+  if (!useFirebase) return
   await setDoc(doc(db, 'coupons', id), clean(updates), { merge: true })
 }
 
@@ -160,6 +184,7 @@ export async function fetchAllData(): Promise<{
   completions: CompletionRecord
   skipped: SkippedRecord
 }> {
+  if (!useFirebase) return { members: [], chores: [], completions: {}, skipped: {} }
   const [members, chores, completions, skipped] = await Promise.all([
     fetchMembers(),
     fetchChores(),
@@ -181,6 +206,11 @@ export function subscribeToAll(onData: (data: {
   redemptions: Redemption[]
   coupons: Coupon[]
 }) => void): () => void {
+  if (!useFirebase) {
+    // No-op: data is already in localStorage via Zustand persist
+    return () => {}
+  }
+
   let members: FamilyMember[] = []
   let chores: Chore[] = []
   let completions: CompletionRecord = {}
@@ -271,6 +301,7 @@ export async function pushAllData(
   completions: CompletionRecord,
   skipped: SkippedRecord,
 ): Promise<void> {
+  if (!useFirebase) return
   const batch = writeBatch(db)
 
   for (const member of members) {

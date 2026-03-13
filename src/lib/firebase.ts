@@ -1,3 +1,4 @@
+import { useFirebase } from './firebase-flag'
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
@@ -11,6 +12,15 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-export const db = getFirestore(app)
-export const auth = getAuth(app)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let db: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let auth: any = null
+
+if (useFirebase) {
+  const app = initializeApp(firebaseConfig)
+  db = getFirestore(app)
+  auth = getAuth(app)
+}
+
+export { db, auth }

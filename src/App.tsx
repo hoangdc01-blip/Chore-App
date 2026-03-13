@@ -12,6 +12,7 @@ import BuddyChat from './components/chat/BuddyChat'
 import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
+import { useFirebase } from './lib/firebase-flag'
 import { subscribeToAll, updateMemberDoc } from './lib/firestore-sync'
 import { signInAfterPin } from './lib/pin'
 import { useChoreStore } from './store/chore-store'
@@ -39,7 +40,7 @@ export default function App() {
 
   const migrated = useRef(false)
 
-  // Check if PIN exists and sign in anonymously
+  // Check if PIN exists and sign in anonymously (Firebase) or just check localStorage (offline)
   useEffect(() => {
     async function init() {
       const hash = await getPinHash()
@@ -47,21 +48,38 @@ export default function App() {
       useAuthStore.getState().setPinExists(exists)
 
       if (exists) {
-        // Sign in anonymously so we can load data for profile selection
-        try {
-          await signInAfterPin()
+        if (useFirebase) {
+          // Sign in anonymously so we can load data for profile selection
+          try {
+            await signInAfterPin()
+            useAuthStore.getState().setUnlocked(true)
+          } catch {
+            // Will retry when user selects profile
+          }
+        } else {
+          // Offline mode: no auth needed, mark as unlocked for data access
           useAuthStore.getState().setUnlocked(true)
-        } catch {
-          // Will retry when user selects profile
         }
       }
     }
     init()
   }, [])
 
-  // Subscribe to Firestore data after signed in
+  // Subscribe to Firestore data after signed in, or use localStorage data directly
   useEffect(() => {
     if (!unlocked) return
+
+    if (!useFirebase) {
+      // Offline mode: data is already in Zustand stores via localStorage persist.
+      // Ensure _initialized flag is set so seeding logic works correctly.
+      const currentMembers = useMemberStore.getState().members
+      if (currentMembers.length > 0) {
+        useMemberStore.setState({ _initialized: true })
+      }
+      setSyncing(false)
+      return
+    }
+
     const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons }) => {
       useMemberStore.setState({ members, _initialized: true })
       useChoreStore.setState({ chores, completions, skipped, pendingApprovals })

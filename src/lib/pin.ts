@@ -1,9 +1,7 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { signInAnonymously, signOut } from 'firebase/auth'
-import { db, auth } from './firebase'
+import { useFirebase } from './firebase-flag'
 
-const PIN_DOC = doc(db, 'config', 'pin')
 const PBKDF2_ITERATIONS = 100_000
+const LOCAL_PIN_KEY = 'family-chores-pin'
 
 /** Check if crypto.subtle is available (requires secure context: HTTPS or localhost) */
 const hasSubtle = typeof crypto !== 'undefined' && !!crypto.subtle
@@ -123,21 +121,73 @@ async function hashPinLegacy(pin: string): Promise<string> {
   return hexEncode(hashBuffer)
 }
 
+// ── localStorage helpers for offline PIN storage ──
+
+function getLocalPinData(): { hash: string; salt?: string } | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_PIN_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+function setLocalPinData(data: { hash: string; salt: string }): void {
+  localStorage.setItem(LOCAL_PIN_KEY, JSON.stringify(data))
+}
+
+// ── Firestore helpers (lazy-loaded) ──
+
+async function getFirestorePinDoc() {
+  const { doc, getDoc, setDoc } = await import('firebase/firestore')
+  const { db } = await import('./firebase')
+  const PIN_DOC = doc(db, 'config', 'pin')
+  return { PIN_DOC, getDoc, setDoc }
+}
+
+// ── Public API ──
+
 export async function getPinHash(): Promise<string | null> {
+  if (!useFirebase) {
+    const data = getLocalPinData()
+    return data?.hash ?? null
+  }
+  const { PIN_DOC, getDoc } = await getFirestorePinDoc()
   const snap = await getDoc(PIN_DOC)
   if (!snap.exists()) return null
   return snap.data().hash as string
 }
 
 export async function verifyPin(pin: string): Promise<boolean> {
+  if (!useFirebase) {
+    const data = getLocalPinData()
+    if (!data) return false
+
+    if (data.salt) {
+      const salt = hexDecode(data.salt)
+      const hash = await hashPinPbkdf2(pin, salt)
+      return hash === data.hash
+    }
+
+    // Legacy unsalted SHA-256 — verify and auto-migrate
+    const legacyHash = await hashPinLegacy(pin)
+    if (legacyHash === data.hash) {
+      await savePin(pin)
+      return true
+    }
+    return false
+  }
+
+  const { PIN_DOC, getDoc } = await getFirestorePinDoc()
   const snap = await getDoc(PIN_DOC)
   if (!snap.exists()) return false
-  const data = snap.data()
-  const storedHash = data.hash as string
+  const snapData = snap.data()
+  const storedHash = snapData.hash as string
 
-  if (data.salt) {
+  if (snapData.salt) {
     // New salted PBKDF2 format
-    const salt = hexDecode(data.salt as string)
+    const salt = hexDecode(snapData.salt as string)
     const hash = await hashPinPbkdf2(pin, salt)
     return hash === storedHash
   }
@@ -155,7 +205,15 @@ export async function verifyPin(pin: string): Promise<boolean> {
 export async function savePin(pin: string): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const hash = await hashPinPbkdf2(pin, salt)
-  await setDoc(PIN_DOC, { hash, salt: hexEncode(salt.buffer as ArrayBuffer) })
+  const saltHex = hexEncode(salt.buffer as ArrayBuffer)
+
+  if (!useFirebase) {
+    setLocalPinData({ hash, salt: saltHex })
+    return
+  }
+
+  const { PIN_DOC, setDoc } = await getFirestorePinDoc()
+  await setDoc(PIN_DOC, { hash, salt: saltHex })
 }
 
 export async function changePin(currentPin: string, newPin: string): Promise<boolean> {
@@ -166,9 +224,15 @@ export async function changePin(currentPin: string, newPin: string): Promise<boo
 }
 
 export async function signInAfterPin(): Promise<void> {
+  if (!useFirebase) return
+  const { signInAnonymously } = await import('firebase/auth')
+  const { auth } = await import('./firebase')
   await signInAnonymously(auth)
 }
 
 export async function lockApp(): Promise<void> {
+  if (!useFirebase) return
+  const { signOut } = await import('firebase/auth')
+  const { auth } = await import('./firebase')
   await signOut(auth)
 }

@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { useFirebase } from '../lib/firebase-flag'
 import { format } from 'date-fns'
 import { showToast } from '../store/toast-store'
 
@@ -25,6 +24,22 @@ interface GameState {
   claimBonus: (memberId: string) => void
 }
 
+const LOCAL_SCORES_KEY = 'family-chores-game-scores'
+
+function getLocalScores(): GameHighScore[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_SCORES_KEY)
+    if (!raw) return []
+    return JSON.parse(raw)
+  } catch {
+    return []
+  }
+}
+
+function setLocalScores(scores: GameHighScore[]): void {
+  localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify(scores))
+}
+
 function todayKey(memberId: string) {
   return `${memberId}:${format(new Date(), 'yyyy-MM-dd')}`
 }
@@ -34,7 +49,13 @@ export const useGameStore = create<GameState>()((set, get) => ({
   dailyBonusClaims: {},
 
   loadHighScores: async () => {
+    if (!useFirebase) {
+      set({ highScores: getLocalScores() })
+      return
+    }
     try {
+      const { doc, getDoc } = await import('firebase/firestore')
+      const { db } = await import('../lib/firebase')
       const snap = await getDoc(doc(db, 'config', 'gameScores'))
       if (snap.exists()) {
         const data = snap.data()
@@ -60,7 +81,14 @@ export const useGameStore = create<GameState>()((set, get) => ({
       scores.push(entry)
     }
     set({ highScores: scores })
+
+    if (!useFirebase) {
+      setLocalScores(scores)
+      return
+    }
     try {
+      const { doc, setDoc } = await import('firebase/firestore')
+      const { db } = await import('../lib/firebase')
       await setDoc(doc(db, 'config', 'gameScores'), { scores })
     } catch {
       showToast('Score sync failed', 'error')

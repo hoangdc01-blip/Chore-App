@@ -35,15 +35,6 @@ export default function DayView({ currentDate, occurrences, onDayClick, onChoreC
           {dayOccurrences.length} {dayOccurrences.length === 1 ? 'task' : 'tasks'}
           {dayOccurrences.length > 0 && ` · ${doneCount} done`}
         </span>
-        {isParent && (
-          <button
-            onClick={handleAdd}
-            className="ml-auto flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-lg hover:bg-primary/10"
-          >
-            <Plus size={14} />
-            Add chore
-          </button>
-        )}
       </div>
 
       {/* Task list */}
@@ -102,11 +93,11 @@ export default function DayView({ currentDate, occurrences, onDayClick, onChoreC
           </div>
         )}
       </div>
-      {/* Floating add button */}
-      {isParent && dayOccurrences.length > 0 && (
+      {/* Floating add button — bottom-left to avoid Buddy chat button on bottom-right */}
+      {isParent && (
         <button
           onClick={handleAdd}
-          className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center"
+          className="absolute bottom-4 left-4 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center"
           title="Add chore"
         >
           <Plus size={22} />

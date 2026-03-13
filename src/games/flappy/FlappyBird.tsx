@@ -8,10 +8,10 @@ const GRAVITY = 0.12
 const FLAP_STRENGTH = -3.8
 const MAX_FALL_SPEED = 3.5
 const OBSTACLE_WIDTH = 55
-const MIN_GAP = 150
-const MAX_GAP = 240
-const INITIAL_SPEED = 1.3
-const MAX_SPEED = 2.8
+const MIN_GAP = 160
+const MAX_GAP = 260
+const INITIAL_SPEED = 1.0
+const MAX_SPEED = 3.0
 const GROUND_HEIGHT = 60
 const BIRD_SIZE = 30
 
@@ -57,13 +57,13 @@ export default function FlappyBird({ onScore, onGameOver, isPlaying, onStart, hi
   const canvasSize = useRef({ w: 0, h: 0 })
 
   const getGap = useCallback(() => {
-    // Gap shrinks very slowly — stays easy for first ~10 obstacles
-    return Math.max(MIN_GAP, MAX_GAP - score.current * 1.5)
+    // Gap shrinks very slowly — stays easy for first ~15 obstacles
+    return Math.max(MIN_GAP, MAX_GAP - score.current * 0.8)
   }, [])
 
   const getSpeed = useCallback(() => {
-    // Speed increases very gradually, cap at MAX_SPEED
-    return Math.min(MAX_SPEED, INITIAL_SPEED + score.current * 0.04)
+    // Speed ramps up gradually: easy first 10 points, then accelerates
+    return Math.min(MAX_SPEED, INITIAL_SPEED + score.current * 0.06)
   }, [])
 
   const initDecorations = useCallback((w: number, h: number) => {
@@ -410,7 +410,7 @@ export default function FlappyBird({ onScore, onGameOver, isPlaying, onStart, hi
 
         // Spawn obstacles — wide spacing at start, slowly tightens
         const lastObs = obstacles.current[obstacles.current.length - 1]
-        const spacing = Math.max(220, 320 - score.current * 3)
+        const spacing = Math.max(240, 400 - score.current * 4)
         if (!lastObs || lastObs.x < w - spacing) {
           const playH = h - GROUND_HEIGHT
           const gap = getGap()

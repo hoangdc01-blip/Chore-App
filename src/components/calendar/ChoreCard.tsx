@@ -47,7 +47,7 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
 
   let cardClasses: string
   if (occurrence.isCompleted) {
-    cardClasses = 'bg-green-50 border-l-4 border-l-green-600 text-foreground border border-green-300 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
+    cardClasses = 'bg-green-100 border-l-4 border-l-green-600 text-green-900 border border-green-300 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
   } else if (occurrence.isPending) {
     cardClasses = 'bg-amber-50 border-l-4 border-l-amber-500 text-foreground border border-amber-300 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
   } else if (isOverdue) {

@@ -165,7 +165,7 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
             </div>
           )}
 
-          <div className="flex gap-2 pt-3 border-t border-border flex-wrap">
+          <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border">
             {/* Mark Done / Undo / Pending indicator + Cancel */}
             {occurrence.isPending ? (
               <>

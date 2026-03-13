@@ -26,7 +26,7 @@ export default function FilterBar({ statusFilter, onStatusFilterChange, hiddenMe
         <button
           key={opt.value}
           onClick={() => onStatusFilterChange(opt.value)}
-          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] ${
             statusFilter === opt.value
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -47,7 +47,7 @@ export default function FilterBar({ statusFilter, onStatusFilterChange, hiddenMe
           <button
             key={member.id}
             onClick={() => onToggleMember(member.id)}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 ${
               hidden
                 ? 'bg-muted text-muted-foreground opacity-50'
                 : `${color.bg} ${color.text}`

@@ -81,7 +81,7 @@ export default function GameMenu({ onNavigate }: GameMenuProps) {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-500/10 via-pink-500/5 to-blue-500/10">
+    <div className="flex-1 overflow-auto pb-20 bg-gradient-to-b from-purple-500/10 via-pink-500/5 to-blue-500/10">
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
         {/* Title */}
         <div className="text-center mb-8">

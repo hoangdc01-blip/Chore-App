@@ -364,7 +364,7 @@ export default function ProfileSelectScreen() {
 
   // ── Profile Selection ──
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
       <div className="flex flex-col items-center w-full max-w-[420px]">
 
         {/* Header */}
@@ -410,12 +410,12 @@ export default function ProfileSelectScreen() {
         </div>
 
         {/* Kid profiles — 4 across */}
-        <div className="flex justify-center gap-4 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
           {members.map((member, i) => (
             <button
               key={member.id}
               onClick={() => handleKidClick(member)}
-              className="animate-fade-in-up group flex flex-col items-center gap-3 flex-1 max-w-[100px] py-5
+              className="animate-fade-in-up group flex flex-col items-center gap-3 py-5
                 rounded-2xl transition-all duration-300 ease-out
                 active:scale-[0.97]
                 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800

@@ -61,7 +61,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
       {/* ── Desktop: timeline grid ── */}
       <div className="hidden xl:flex xl:flex-col xl:flex-1 overflow-auto">
         {/* Header row */}
-        <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
+        <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
           <div className="border border-border bg-muted" />
           {days.map((day) => {
             const today = isToday(day)
@@ -87,7 +87,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
         </div>
 
         {/* All-day row */}
-        <div className="grid shrink-0" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
+        <div className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
           <div className="border border-border px-1 py-1 text-sm text-muted-foreground font-semibold flex items-start justify-end pr-2">
             All day
           </div>
@@ -113,7 +113,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
 
         {/* Time grid */}
         {HOURS.map((hour) => (
-          <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '40px repeat(7, 1fr)' }}>
+          <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
             <div className="border border-border px-1 text-xs text-muted-foreground font-semibold flex items-start justify-end pr-2 pt-0.5 h-[60px]">
               {formatHour(hour)}
             </div>

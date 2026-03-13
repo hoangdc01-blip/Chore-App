@@ -26,7 +26,7 @@ export default function MyCoupons() {
 
   if (sortedCoupons.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 xl:p-6">
+      <div className="flex-1 overflow-y-auto p-4 pb-20 xl:p-6 xl:pb-20">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <Ticket size={20} /> My Coupons
         </h2>
@@ -39,7 +39,7 @@ export default function MyCoupons() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 xl:p-6">
+    <div className="flex-1 overflow-y-auto p-4 pb-20 xl:p-6 xl:pb-20">
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
         <Ticket size={20} /> My Coupons
       </h2>

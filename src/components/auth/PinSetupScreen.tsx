@@ -76,7 +76,7 @@ export default function PinSetupScreen() {
   }, [addDigit, removeDigit])
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
       <div className="flex flex-col items-center w-full max-w-[280px] px-4">
         {/* App branding */}
         <h1 className="text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 mb-1">

@@ -31,7 +31,7 @@ export default function Dashboard() {
   const memberMap = new Map(members.map((m) => [m.id, m]))
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 xl:p-6 space-y-4 xl:space-y-6">
+    <div className="flex-1 overflow-y-auto p-4 pb-20 xl:p-6 xl:pb-20 space-y-4 xl:space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Dashboard</h2>
         <div className="flex gap-1 rounded-lg bg-muted p-1">

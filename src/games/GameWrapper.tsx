@@ -159,7 +159,7 @@ export default function GameWrapper({ gameName, gameId, onBack, onNavigateToChor
     const leaderboard = getLeaderboard(gameId)
     return (
       <div className="fixed inset-0 z-50 bg-background flex justify-center">
-        <div className="w-full max-w-[500px] h-full flex flex-col bg-gradient-to-b from-purple-500/20 via-pink-500/10 to-blue-500/20">
+        <div className="w-full max-w-[500px] h-full flex flex-col bg-gradient-to-b from-purple-500/20 via-pink-500/10 to-blue-500/20 safe-top safe-bottom">
           <div className="flex items-center gap-3 p-4 border-b border-border/50">
             <button onClick={onBack} className="rounded-lg p-2 hover:bg-muted transition-colors">
               <ArrowLeft size={20} />
@@ -268,7 +268,7 @@ export default function GameWrapper({ gameName, gameId, onBack, onNavigateToChor
   if (!isUnlocked) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex justify-center">
-        <div className="w-full max-w-[500px] h-full flex flex-col bg-muted">
+        <div className="w-full max-w-[500px] h-full flex flex-col bg-muted safe-top safe-bottom">
           <div className="flex items-center gap-3 p-4 border-b border-border/50">
             <button onClick={() => setSelectedMemberId(null)} className="rounded-lg p-2 hover:bg-muted transition-colors">
               <ArrowLeft size={20} />
@@ -298,7 +298,7 @@ export default function GameWrapper({ gameName, gameId, onBack, onNavigateToChor
   // ── Game Screen ──
   return (
     <div className="fixed inset-0 z-50 bg-black flex justify-center">
-      <div className="relative w-full max-w-[500px] h-full flex flex-col">
+      <div className="relative w-full max-w-[500px] h-full flex flex-col safe-top safe-bottom">
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-3">
           <button

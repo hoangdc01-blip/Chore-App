@@ -390,7 +390,7 @@ export default function BuddyChat() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg hover:scale-110 active:scale-95 transition-transform flex items-center justify-center"
+        className="fixed bottom-[calc(20px+env(safe-area-inset-bottom,0px))] right-5 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg hover:scale-110 active:scale-95 transition-transform flex items-center justify-center"
         title="Chat with Buddy"
       >
         <span className="text-2xl">{'\u{1F43B}'}</span>
@@ -406,7 +406,7 @@ export default function BuddyChat() {
       `}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-green-500/10 to-emerald-500/10 sm:rounded-t-2xl">
+      <div className="safe-top flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-green-500/10 to-emerald-500/10 sm:rounded-t-2xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-lg shadow-sm">
             {'\u{1F43B}'}

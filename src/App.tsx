@@ -108,7 +108,7 @@ export default function App() {
   // Loading: checking if PIN exists
   if (pinExists === null) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="h-dvh flex items-center justify-center bg-background">
         <div className="flex gap-1">
           <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -136,7 +136,7 @@ export default function App() {
   // Syncing data — show loading (only after profile is selected)
   if (syncing) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
+      <div className="h-dvh flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
         <div className="flex gap-1">
           <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -160,7 +160,7 @@ export default function App() {
 
   // ── Main App (Parent or Kid mode) ──
   return (
-    <div className="h-screen flex flex-col" style={themeStyle}>
+    <div className="h-dvh flex flex-col" style={themeStyle}>
       <Header
         activeView={activeView}
         onActiveViewChange={setActiveView}

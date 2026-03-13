@@ -37,7 +37,7 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
       ]
 
   return (
-    <header className="border-b border-border px-3 xl:px-6 py-2 xl:py-3 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
+    <header className="safe-top border-b border-border px-3 xl:px-6 py-2 xl:py-3 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
       <div className="flex items-center gap-2">
         {/* Left: menu + title */}
         <div className="flex items-center gap-2 shrink-0">
@@ -96,8 +96,8 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
         )}
 
         {/* Right: nav tabs — always pinned to the right */}
-        <div className={`flex items-center gap-1.5 ${activeView !== 'calendar' ? 'ml-auto' : ''}`}>
-          <div className="flex gap-1 rounded-lg bg-muted p-1">
+        <div className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar ${activeView !== 'calendar' ? 'ml-auto' : ''}`}>
+          <div className="flex gap-1 rounded-lg bg-muted p-1 shrink-0">
             {navTabs.map(({ view, icon: Icon, label }) => (
               <button
                 key={view}
@@ -116,7 +116,7 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
 
           {/* Mobile: day/week/month toggle */}
           {activeView === 'calendar' && (
-            <div className="flex xl:hidden gap-1 rounded-lg bg-muted p-1">
+            <div className="flex xl:hidden gap-1 rounded-lg bg-muted p-1 shrink-0">
               {(['day', 'week', 'month'] as const).map((m) => (
                 <button
                   key={m}

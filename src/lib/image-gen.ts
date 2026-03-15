@@ -25,10 +25,10 @@ export async function generateImage(prompt: string): Promise<{ imageBase64: stri
       body: JSON.stringify({
         prompt: kidSafePrompt,
         negative_prompt: negativePrompt,
-        steps: 6,
+        steps: 8,
         cfg_scale: 2,
-        width: 512,
-        height: 512,
+        width: 1024,
+        height: 1024,
         sampler_name: 'Euler a',
         n_iter: 1,
         batch_size: 1,

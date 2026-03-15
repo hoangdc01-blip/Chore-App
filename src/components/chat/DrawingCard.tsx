@@ -11,30 +11,51 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
   const isGeneratingImage = isGenerating
   const hasImage = !!result.imageDataUrl
 
-  const downloadAsJpeg = useCallback(() => {
+  const downloadAsPng = useCallback(() => {
     if (!result.imageDataUrl) return
     const link = document.createElement('a')
-    link.download = `${result.title}.jpeg`
+    link.download = `${result.title}.png`
     link.href = result.imageDataUrl
     link.click()
   }, [result.title, result.imageDataUrl])
 
-  const handlePrint = useCallback(() => {
+  const handlePrintA4 = useCallback(() => {
     if (!result.imageDataUrl) return
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
-        <head><title>${result.title}</title></head>
-        <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
-          <img src="${result.imageDataUrl}" style="max-width:100%;max-height:100vh;" />
+        <head>
+          <title>${result.title}</title>
+          <style>
+            @page { size: A4 portrait; margin: 15mm; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              width: 100%;
+              height: 100vh;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: white;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              image-rendering: -webkit-optimize-contrast;
+              image-rendering: crisp-edges;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${result.imageDataUrl}" />
         </body>
       </html>
     `)
     printWindow.document.close()
     printWindow.focus()
-    setTimeout(() => printWindow.print(), 250)
+    setTimeout(() => printWindow.print(), 500)
   }, [result.title, result.imageDataUrl])
 
   return (
@@ -76,16 +97,16 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
       {hasImage && !isGeneratingImage && (
         <div className="flex gap-2 mb-2">
           <button
-            onClick={downloadAsJpeg}
+            onClick={downloadAsPng}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm font-bold transition-colors"
           >
-            Download {'\u{1F4F7}'}
+            Download PNG {'\u{1F4F7}'}
           </button>
           <button
-            onClick={handlePrint}
+            onClick={handlePrintA4}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-white py-2 text-sm font-bold transition-colors"
           >
-            Print {'\u{1F5A8}\uFE0F'}
+            Print A4 {'\u{1F5A8}\uFE0F'}
           </button>
         </div>
       )}

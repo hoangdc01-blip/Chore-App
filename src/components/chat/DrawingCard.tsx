@@ -82,15 +82,6 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
 
   return (
     <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
-      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
-        Drawing
-      </div>
-
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">{'\u{1F3A8}'}</span>
-        <span className="font-bold text-foreground">{result.title}</span>
-      </div>
-
       <div
         className="bg-white rounded-lg border border-border p-2 mb-3 flex items-center justify-center"
         style={{ minHeight: '200px' }}

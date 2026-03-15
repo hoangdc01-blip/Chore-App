@@ -7,6 +7,7 @@ import Dashboard from './components/dashboard/Dashboard'
 import RewardShop from './components/rewards/RewardShop'
 import MyCoupons from './components/rewards/MyCoupons'
 import GameMenu from './games/GameMenu'
+import LanguageView from './components/language/LanguageView'
 import Toaster from './components/ui/Toaster'
 const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
 import BadgeCelebration from './components/achievements/BadgeCelebration'
@@ -263,6 +264,8 @@ export default function App() {
           <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
         ) : activeView === 'dashboard' ? (
           <Dashboard />
+        ) : activeView === 'language' ? (
+          <LanguageView />
         ) : activeView === 'games' ? (
           <GameMenu onNavigate={setActiveView} />
         ) : activeView === 'coupons' ? (

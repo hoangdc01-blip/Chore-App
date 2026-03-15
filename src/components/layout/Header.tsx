@@ -1,4 +1,4 @@
-import { Search, Calendar, BarChart3, Menu, Gift, Gamepad2, Ticket, Star } from 'lucide-react'
+import { Search, Calendar, BarChart3, Menu, Gift, Gamepad2, Ticket, Star, Languages } from 'lucide-react'
 import type { CalendarViewMode, AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore } from '../../store/member-store'
@@ -26,6 +26,7 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
   const navTabs: { view: AppView; icon: typeof Calendar; label: string }[] = isKidMode
     ? [
         { view: 'calendar', icon: Calendar, label: 'My Chores' },
+        { view: 'language', icon: Languages, label: 'Learn' },
         { view: 'rewards', icon: Gift, label: 'Rewards' },
         { view: 'coupons', icon: Ticket, label: 'Coupons' },
         { view: 'games', icon: Gamepad2, label: 'Games' },
@@ -33,6 +34,7 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
     : [
         { view: 'calendar', icon: Calendar, label: 'Calendar' },
         { view: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+        { view: 'language', icon: Languages, label: 'Learn' },
         { view: 'rewards', icon: Gift, label: 'Rewards' },
         { view: 'games', icon: Gamepad2, label: 'Games' },
       ]

@@ -52,7 +52,7 @@ export function resizeImageToDataURL(file: File, maxDim = 512): Promise<string> 
 }
 
 // Compact system prompt — optimized for small models (fewer tokens, same rules)
-const BASE_SYSTEM_PROMPT = `You are Buddy, a fun AI assistant for kids aged 4-7 in a chore app. Use simple short sentences, lots of emoji. Be encouraging and positive. Max 3-4 sentences per response.
+const BASE_SYSTEM_PROMPT = `You are Váu Váu, a fun AI assistant for kids aged 4-7 in a chore app. Use simple short sentences, lots of emoji. Be encouraging and positive. Max 3-4 sentences per response.
 
 SIMPLE LANGUAGE: These are kids aged 4-7. Use very simple words. No big or technical words. Explain like you're talking to a 5-year-old. Use comparisons to things kids know (toys, animals, food, games).
 
@@ -172,6 +172,7 @@ Rules:
 - Always write a fun, encouraging message BEFORE the [DRAW_IMAGE] block
 - NEVER put anything after the [/DRAW_IMAGE] tag
 - Output the block on a SINGLE LINE
+- COLORING PAGE REQUEST: When the kid says they want a coloring page but does NOT specify what to draw, ask them what they'd like! Suggest some fun options like animals, dinosaurs, princesses, rockets, etc. Do NOT output the [DRAW_IMAGE] block until they tell you what they want. Only output [DRAW_IMAGE] when you know the specific subject to draw.
 
 PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXACTLY this block at the END of your response:
 
@@ -659,7 +660,7 @@ export interface BuddyContext {
 
 function buildStoryContext(ctx: BuddyContext): string {
   const step = ctx.storyStep ?? 0
-  return `\n\nSTORY: You are Buddy the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
+  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {
@@ -674,7 +675,7 @@ function buildFirstMessageContext(ctx: BuddyContext): string {
 
 /** Minimal system prompt for the vision model (llava:7b) — keeps token count low so the model can focus on the image */
 function buildVisionSystemPrompt(): string {
-  return `You are Buddy the Penguin \u{1F427}, a helpful and fun AI assistant for kids aged 4-7.
+  return `You are Váu Váu the Penguin \u{1F427}, a helpful and fun AI assistant for kids aged 4-7.
 
 When you see an image:
 - Describe what you see clearly and enthusiastically
@@ -784,7 +785,7 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
       }),
     })
   } catch {
-    throw new Error('Buddy is sleeping! Ask a parent to start Ollama so I can chat with you.')
+    throw new Error('Váu Váu is sleeping! Ask a parent to start Ollama so I can chat with you.')
   }
 
   if (!res.ok) {
@@ -793,7 +794,7 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
         `Vision model "${model}" is not installed. Ask a parent to run: ollama pull ${model}`
       )
     }
-    throw new Error(`Buddy had a hiccup! (error ${res.status}) Try again in a moment.`)
+    throw new Error(`Váu Váu had a hiccup! (error ${res.status}) Try again in a moment.`)
   }
 
   const data = await res.json()
@@ -836,7 +837,7 @@ export async function streamFromOllama(
     })
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err
-    throw new Error('Buddy is sleeping! Ask a parent to start Ollama so I can chat with you.')
+    throw new Error('Váu Váu is sleeping! Ask a parent to start Ollama so I can chat with you.')
   }
 
   if (!res.ok) {
@@ -845,7 +846,7 @@ export async function streamFromOllama(
         `Vision model "${model}" is not installed. Ask a parent to run: ollama pull ${model}`
       )
     }
-    throw new Error(`Buddy had a hiccup! (error ${res.status}) Try again in a moment.`)
+    throw new Error(`Váu Váu had a hiccup! (error ${res.status}) Try again in a moment.`)
   }
 
   const reader = res.body!.getReader()

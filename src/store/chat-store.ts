@@ -3,6 +3,7 @@ import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
 import { generateImage } from '../lib/image-gen'
+import { DRAWING_LIBRARY } from '../lib/drawing-library'
 import { generatePptx } from '../lib/pptx-gen'
 import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, PresentationResult, PresentationAction } from '../types'
 import { useChoreStore } from './chore-store'
@@ -75,6 +76,23 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
   }
 }
 
+/** Find a matching drawing from the pre-built SVG library */
+function findLibraryDrawing(title: string): string | null {
+  const lower = title.toLowerCase()
+  // Try keyword matching
+  const match = DRAWING_LIBRARY.find(d =>
+    d.keywords.some(kw => lower.includes(kw)) ||
+    lower.includes(d.id)
+  )
+  if (match) {
+    // Convert SVG to data URL
+    return `data:image/svg+xml;base64,${btoa(match.svg)}`
+  }
+  // Pick a random one as last resort
+  const random = DRAWING_LIBRARY[Math.floor(Math.random() * DRAWING_LIBRARY.length)]
+  return `data:image/svg+xml;base64,${btoa(random.svg)}`
+}
+
 /** Post-process drawing result: call Stable Diffusion to generate the actual image */
 async function resolveDrawingImage(
   drawingResult: DrawingResult,
@@ -96,20 +114,18 @@ async function resolveDrawingImage(
         isGeneratingImage: false,
         generatingDrawingIndex: null,
       })
-    } else {
-      set({
-        drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '' } },
-        isGeneratingImage: false,
-        generatingDrawingIndex: null,
-      })
+      return
     }
   } catch {
-    set({
-      drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '' } },
-      isGeneratingImage: false,
-      generatingDrawingIndex: null,
-    })
+    // Fall through to library fallback
   }
+  // Fallback: use SVG drawing library
+  const fallbackUrl = findLibraryDrawing(drawingResult.title)
+  set({
+    drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: fallbackUrl ?? '' } },
+    isGeneratingImage: false,
+    generatingDrawingIndex: null,
+  })
 }
 
 /** Post-process presentation action: generate slide content + PPTX blob and store result */

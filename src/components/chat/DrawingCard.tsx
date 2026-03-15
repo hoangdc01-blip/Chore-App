@@ -10,14 +10,15 @@ interface Props {
 export default function DrawingCard({ result, isGenerating = false, onDismiss }: Props) {
   const isGeneratingImage = isGenerating
   const hasImage = !!result.imageDataUrl
+  const isSvg = result.imageDataUrl?.startsWith('data:image/svg') ?? false
 
   const downloadAsPng = useCallback(() => {
     if (!result.imageDataUrl) return
     const link = document.createElement('a')
-    link.download = `${result.title}.png`
+    link.download = `${result.title}.${isSvg ? 'svg' : 'png'}`
     link.href = result.imageDataUrl
     link.click()
-  }, [result.title, result.imageDataUrl])
+  }, [result.title, result.imageDataUrl, isSvg])
 
   const handlePrintA4 = useCallback(() => {
     if (!result.imageDataUrl) return
@@ -100,7 +101,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
             onClick={downloadAsPng}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm font-bold transition-colors"
           >
-            Download PNG {'\u{1F4F7}'}
+            {isSvg ? 'Download SVG' : 'Download PNG'} {'\u{1F4F7}'}
           </button>
           <button
             onClick={handlePrintA4}

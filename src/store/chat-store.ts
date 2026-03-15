@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
-import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, BuddyCharacter } from '../types'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult } from '../types'
 import { useAppStore } from './app-store'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
@@ -34,7 +34,6 @@ interface ChatState {
   drawingResult: DrawingResult | null
   drawingMessageIndex: number | null
 
-  buddyCharacter: BuddyCharacter | null
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
   reminderVariety: number
@@ -51,7 +50,6 @@ interface ChatState {
   cancelRewardAction: () => void
   dismissHomeworkResult: () => void
   dismissDrawing: () => void
-  selectBuddyCharacter: (character: BuddyCharacter) => void
   advanceStory: (memberId: string) => void
 }
 
@@ -62,7 +60,6 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
   const member = memberId ? useMemberStore.getState().members.find(m => m.id === memberId) : null
 
   return {
-    buddyCharacter: state.buddyCharacter,
     storyStep: memberId ? (state.storyProgress[memberId] ?? 0) : 0,
     isFirstMessageToday: isFirstToday,
     personalityNote: member?.personalityNote,
@@ -91,7 +88,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   drawingResult: null,
   drawingMessageIndex: null,
 
-  buddyCharacter: null,
   storyProgress: {},
   lastGreetingDate: {},
   reminderVariety: 0,
@@ -135,9 +131,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         if (get().lastGreetingDate[memberId] !== today) {
           updates.lastGreetingDate = { ...get().lastGreetingDate, [memberId]: today }
         }
-        if (get().buddyCharacter) {
-          updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
-        }
+        updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
         if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
       }
 
@@ -236,9 +230,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         if (get().lastGreetingDate[memberId] !== today) {
           updates.lastGreetingDate = { ...get().lastGreetingDate, [memberId]: today }
         }
-        if (get().buddyCharacter) {
-          updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
-        }
+        updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
         if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
       }
 
@@ -412,10 +404,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   dismissDrawing: () => {
     set({ drawingResult: null, drawingMessageIndex: null })
-  },
-
-  selectBuddyCharacter: (character) => {
-    set({ buddyCharacter: character })
   },
 
   advanceStory: (memberId) => {

@@ -5,7 +5,7 @@ import { useMemberStore } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
-import { BUDDY_CHARACTERS } from '../../types'
+import { BUDDY_CHARACTER } from '../../types'
 import { useQuestStore } from '../../store/quest-store'
 import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
@@ -137,9 +137,7 @@ export default function BuddyChat() {
     drawingResult,
     drawingMessageIndex,
     dismissDrawing,
-    buddyCharacter,
     storyProgress,
-    selectBuddyCharacter,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -149,8 +147,8 @@ export default function BuddyChat() {
 
   // In kid mode, auto-select the active kid
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
-  const buddyEmoji = buddyCharacter?.emoji ?? '\u{1F43B}'
-  const buddyName = buddyCharacter?.name ?? 'Buddy'
+  const buddyEmoji = BUDDY_CHARACTER.emoji
+  const buddyName = BUDDY_CHARACTER.name
   const storyStep = effectiveMemberId ? (storyProgress[effectiveMemberId] ?? 0) : 0
   const storyChapter = Math.floor(storyStep / 5) + 1
 
@@ -309,7 +307,7 @@ export default function BuddyChat() {
           <div>
             <h3 className="font-extrabold text-foreground text-base">{buddyName}</h3>
             <p className="text-xs text-muted-foreground">
-              {buddyCharacter ? `Chapter ${storyChapter}` : 'Your friendly helper!'}
+              Chapter {storyChapter}
             </p>
           </div>
         </div>
@@ -371,38 +369,15 @@ export default function BuddyChat() {
 
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-6">
-            {!buddyCharacter ? (
-              <>
-                <p className="font-bold text-foreground text-lg">Choose your Buddy!</p>
-                <p className="text-sm text-muted-foreground max-w-[240px]">
-                  Pick a character to go on adventures with!
-                </p>
-                <div className="flex flex-wrap justify-center gap-3 mt-2">
-                  {BUDDY_CHARACTERS.map((char) => (
-                    <button
-                      key={char.type}
-                      onClick={() => selectBuddyCharacter(char)}
-                      className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted hover:bg-accent hover:scale-105 transition-all"
-                    >
-                      <span className="text-3xl">{char.emoji}</span>
-                      <span className="text-xs font-bold text-foreground">{char.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl shadow-md">
-                  {buddyEmoji}
-                </div>
-                <p className="font-bold text-foreground text-lg">Hi there! I'm {buddyName}!</p>
-                <p className="text-sm text-muted-foreground max-w-[240px]">
-                  {effectiveMemberId
-                    ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
-                    : 'Pick a kid above, then ask me anything!'}
-                </p>
-              </>
-            )}
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl shadow-md">
+              {buddyEmoji}
+            </div>
+            <p className="font-bold text-foreground text-lg">Hi there! I'm {buddyName}!</p>
+            <p className="text-sm text-muted-foreground max-w-[240px]">
+              {effectiveMemberId
+                ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
+                : 'Pick a kid above, then ask me anything!'}
+            </p>
           </div>
         )}
 

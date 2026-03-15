@@ -128,19 +128,7 @@ export const STREAK_BADGES = [
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
-export interface BuddyCharacter {
-  name: string
-  type: 'dragon' | 'robot' | 'bear' | 'cat' | 'unicorn'
-  emoji: string
-}
-
-export const BUDDY_CHARACTERS: BuddyCharacter[] = [
-  { name: 'Blaze', type: 'dragon', emoji: '\u{1F432}' },
-  { name: 'Bolt', type: 'robot', emoji: '\u{1F916}' },
-  { name: 'Teddy', type: 'bear', emoji: '\u{1F43B}' },
-  { name: 'Whiskers', type: 'cat', emoji: '\u{1F431}' },
-  { name: 'Sparkle', type: 'unicorn', emoji: '\u{1F984}' },
-]
+export const BUDDY_CHARACTER = { name: 'Buddy', type: 'penguin', emoji: '\u{1F427}' } as const
 
 /** Parsed reward-redemption request from AI chat */
 export interface RewardAction {

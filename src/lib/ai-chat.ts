@@ -621,7 +621,6 @@ function buildGeneralContext(): string {
 }
 
 export interface BuddyContext {
-  buddyCharacter?: { name: string; type: string; emoji: string } | null
   storyStep?: number
   isFirstMessageToday?: boolean
   personalityNote?: string
@@ -629,9 +628,8 @@ export interface BuddyContext {
 }
 
 function buildStoryContext(ctx: BuddyContext): string {
-  if (!ctx.buddyCharacter) return ''
   const step = ctx.storyStep ?? 0
-  return `\n\nSTORY: You are ${ctx.buddyCharacter.name} the ${ctx.buddyCharacter.type} ${ctx.buddyCharacter.emoji}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
+  return `\n\nSTORY: You are Buddy the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {

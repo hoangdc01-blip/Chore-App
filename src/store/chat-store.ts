@@ -111,7 +111,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     try {
       const buddyCtx = buildBuddyCtx(get())
-      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+      const hasImagesInConvo = messages.some((m) => !!m.image)
+      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx, hasImagesInConvo)
 
       // Check homework limit if image is attached (skip for parent mode)
       const isParentMode = useAppStore.getState().mode !== 'kid'
@@ -210,7 +211,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     try {
       const buddyCtx = buildBuddyCtx(get())
-      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+      const hasImagesStream = allMessages.some((m) => !!m.image)
+      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx, hasImagesStream)
 
       // Check homework limit if image is attached (skip for parent mode)
       const isParentModeStream = useAppStore.getState().mode !== 'kid'
@@ -321,7 +323,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         set({ messages: withoutPlaceholder, isStreaming: false })
 
         const fallbackBuddyCtx = buildBuddyCtx(get())
-        const systemPrompt = buildSystemPrompt(get().selectedMemberId, fallbackBuddyCtx)
+        const hasImagesFallback = allMessages.some((m) => !!m.image)
+        const systemPrompt = buildSystemPrompt(get().selectedMemberId, fallbackBuddyCtx, hasImagesFallback)
         const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
         const fallbackMessages: ChatMessage[] = [
           { role: 'system', content: systemPrompt },

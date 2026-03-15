@@ -642,7 +642,21 @@ function buildFirstMessageContext(ctx: BuddyContext): string {
   return `\n\nFIRST_MESSAGE_TODAY: true`
 }
 
-export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyContext): string {
+/** Minimal system prompt for the vision model (llava:7b) — keeps token count low so the model can focus on the image */
+function buildVisionSystemPrompt(): string {
+  return `You are Buddy the Penguin \u{1F427}, a helpful and fun AI assistant for kids aged 4-7.
+
+When you see an image:
+- Describe what you see clearly and enthusiastically
+- If it's homework, check the answers. Output: [HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"...","kidAnswer":"...","hint":"..."}]}[/HOMEWORK_CHECK]
+- Never give correct answers for homework — only hints
+- If asked to describe, count, or identify things in the image, do so carefully
+- Keep responses short (2-3 sentences) and fun with emojis
+- Respond in the same language the kid uses`
+}
+
+export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyContext, hasImages = false): string {
+  if (hasImages) return buildVisionSystemPrompt()
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
   let prompt = BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
@@ -732,7 +746,7 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
         model,
         messages: processed,
         temperature: 0.7,
-        max_tokens: 300,
+        max_tokens: hasImages ? 500 : 300,
       }),
     })
   } catch {
@@ -783,7 +797,7 @@ export async function streamFromOllama(
         model,
         messages: processed,
         stream: true,
-        options: { temperature: 0.7, num_predict: 300 },
+        options: { temperature: 0.7, num_predict: hasImages ? 500 : 300 },
       }),
     })
   } catch (err) {

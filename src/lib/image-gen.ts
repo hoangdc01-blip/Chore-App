@@ -1,7 +1,7 @@
 import { getEnv } from './env'
 
 const GEMINI_API_KEY = getEnv('VITE_GEMINI_API_KEY', '')
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_API_KEY}`
 
 export async function generateImage(prompt: string): Promise<{ imageBase64: string; mimeType: string } | null> {
   if (!GEMINI_API_KEY) return null

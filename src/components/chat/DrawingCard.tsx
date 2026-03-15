@@ -1,14 +1,14 @@
 import { useCallback } from 'react'
 import type { DrawingResult } from '../../types'
-import { useChatStore } from '../../store/chat-store'
 
 interface Props {
   result: DrawingResult
+  isGenerating?: boolean
   onDismiss: () => void
 }
 
-export default function DrawingCard({ result, onDismiss }: Props) {
-  const isGeneratingImage = useChatStore((s) => s.isGeneratingImage)
+export default function DrawingCard({ result, isGenerating = false, onDismiss }: Props) {
+  const isGeneratingImage = isGenerating
   const hasImage = !!result.imageDataUrl
 
   const downloadAsJpeg = useCallback(() => {

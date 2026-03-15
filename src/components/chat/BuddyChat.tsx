@@ -154,8 +154,8 @@ export default function BuddyChat() {
     homeworkCheckResult,
     homeworkCheckMessageIndex,
     dismissHomeworkResult,
-    drawingResult,
-    drawingMessageIndex,
+    drawings,
+    generatingDrawingIndex,
     dismissDrawing,
     storyProgress,
     autoReadAloud,
@@ -502,11 +502,11 @@ export default function BuddyChat() {
                     />
                 )}
                 {msg.role === 'assistant' &&
-                  drawingResult &&
-                  drawingMessageIndex === originalIndex && (
+                  drawings[originalIndex] && (
                     <DrawingCard
-                      result={drawingResult}
-                      onDismiss={dismissDrawing}
+                      result={drawings[originalIndex]}
+                      isGenerating={generatingDrawingIndex === originalIndex}
+                      onDismiss={() => dismissDrawing(originalIndex)}
                     />
                 )}
               </div>

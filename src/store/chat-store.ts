@@ -18,6 +18,7 @@ interface ChatState {
   isLoading: boolean
   isStreaming: boolean
   isGeneratingImage: boolean
+  generatingDrawingIndex: number | null
   error: string | null
   selectedMemberId: string | null
   abortController: AbortController | null
@@ -32,8 +33,7 @@ interface ChatState {
   homeworkCheckResult: HomeworkCheckResult | null
   homeworkCheckMessageIndex: number | null
 
-  drawingResult: DrawingResult | null
-  drawingMessageIndex: number | null
+  drawings: Record<number, DrawingResult>
 
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
@@ -51,7 +51,7 @@ interface ChatState {
   acceptRewardAction: () => void
   cancelRewardAction: () => void
   dismissHomeworkResult: () => void
-  dismissDrawing: () => void
+  dismissDrawing: (messageIndex: number) => void
   advanceStory: (memberId: string) => void
   toggleAutoReadAloud: () => void
 }
@@ -75,28 +75,34 @@ async function resolveDrawingImage(
   drawingResult: DrawingResult,
   messageIndex: number,
   set: (partial: Partial<ChatState>) => void,
-  _get: () => ChatState
+  get: () => ChatState
 ): Promise<void> {
-  set({ isGeneratingImage: true, drawingResult, drawingMessageIndex: messageIndex })
+  set({
+    isGeneratingImage: true,
+    generatingDrawingIndex: messageIndex,
+    drawings: { ...get().drawings, [messageIndex]: drawingResult },
+  })
   try {
     const result = await generateImage(drawingResult.title)
     if (result) {
       const imageDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`
       set({
-        drawingResult: { title: drawingResult.title, imageDataUrl },
+        drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl } },
         isGeneratingImage: false,
+        generatingDrawingIndex: null,
       })
     } else {
-      // SD failed - show error in drawing card
       set({
-        drawingResult: { title: drawingResult.title, imageDataUrl: '' },
+        drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '' } },
         isGeneratingImage: false,
+        generatingDrawingIndex: null,
       })
     }
   } catch {
     set({
-      drawingResult: { title: drawingResult.title, imageDataUrl: '' },
+      drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '' } },
       isGeneratingImage: false,
+      generatingDrawingIndex: null,
     })
   }
 }
@@ -107,6 +113,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   isLoading: false,
   isStreaming: false,
   isGeneratingImage: false,
+  generatingDrawingIndex: null,
   error: null,
   selectedMemberId: null,
   abortController: null,
@@ -119,8 +126,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   homeworkCheckResult: null,
   homeworkCheckMessageIndex: null,
 
-  drawingResult: null,
-  drawingMessageIndex: null,
+  drawings: {},
 
   storyProgress: {},
   lastGreetingDate: {},
@@ -414,8 +420,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ homeworkCheckResult: null, homeworkCheckMessageIndex: null })
   },
 
-  dismissDrawing: () => {
-    set({ drawingResult: null, drawingMessageIndex: null })
+  dismissDrawing: (messageIndex: number) => {
+    const updated = { ...get().drawings }
+    delete updated[messageIndex]
+    set({ drawings: updated })
   },
 
   advanceStory: (memberId) => {
@@ -431,5 +439,5 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   toggleAutoReadAloud: () => set({ autoReadAloud: !get().autoReadAloud }),
 
-  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawingResult: null, drawingMessageIndex: null }),
+  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawings: {} }),
 }))

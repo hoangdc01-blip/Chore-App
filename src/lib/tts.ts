@@ -18,9 +18,9 @@ function detectTTSLang(text: string): string {
 function cleanForSpeech(text: string): string {
   return text
     .replace(/\[.*?\].*?\[\/.*?\]/gs, '')
-    .replace(/[\u{1F600}-\u{1FFFF}]/gu, '')
-    .replace(/[\u{2600}-\u{26FF}]/gu, '')
-    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    // Remove ALL emojis, symbols, pictographs, flags, modifiers
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    .replace(/\uFE0F/g, '') // variation selectors
     .replace(/[*_~`#]/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim()

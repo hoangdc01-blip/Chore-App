@@ -183,6 +183,13 @@ export async function saveEarnedBadges(memberId: string, badgeIds: string[]): Pr
   await setDoc(doc(db, 'achievements', memberId), { badgeIds })
 }
 
+// ── Stickers ──
+
+export async function saveEarnedStickers(memberId: string, stickerIds: string[]): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'stickers', memberId), { stickerIds })
+}
+
 // ── Claimed Bonuses ──
 
 export async function setClaimedBonus(key: string): Promise<void> {
@@ -221,6 +228,7 @@ export function subscribeToAll(onData: (data: {
   coupons: Coupon[]
   earnedBadges: Record<string, string[]>
   claimedBonuses: Record<string, boolean>
+  earnedStickers: Record<string, string[]>
 }) => void): () => void {
   if (!useFirebase) {
     // No-op: data is already in localStorage via Zustand persist
@@ -237,12 +245,13 @@ export function subscribeToAll(onData: (data: {
   let coupons: Coupon[] = []
   let earnedBadges: Record<string, string[]> = {}
   let claimedBonuses: Record<string, boolean> = {}
+  let earnedStickersData: Record<string, string[]> = {}
   let initialLoad = 0
-  const TOTAL_COLLECTIONS = 10
+  const TOTAL_COLLECTIONS = 11
 
   const notify = () => {
     if (initialLoad < TOTAL_COLLECTIONS) return
-    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses })
+    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers: earnedStickersData })
   }
 
   const handleError = (name: string) => (err: unknown) => {
@@ -325,7 +334,17 @@ export function subscribeToAll(onData: (data: {
     notify()
   }, handleError('claimedBonuses'))
 
-  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5a(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9() }
+  const unsub10 = onSnapshot(collection(db, 'stickers'), (snap) => {
+    earnedStickersData = {}
+    snap.docs.forEach((d) => {
+      const data = d.data()
+      earnedStickersData[d.id] = (data.stickerIds as string[]) || []
+    })
+    if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+    notify()
+  }, handleError('stickers'))
+
+  return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5a(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10() }
 }
 
 // ── Bulk push (local → Firestore) ──

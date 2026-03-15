@@ -23,6 +23,7 @@ import { useAuthStore } from './store/auth-store'
 import { useAppStore } from './store/app-store'
 import { useAchievementStore } from './store/achievement-store'
 import { useChallengeStore } from './store/challenge-store'
+import { useStickerStore } from './store/sticker-store'
 import { computeKidStats, getAllTimeRange } from './lib/stats'
 import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
@@ -85,12 +86,13 @@ export default function App() {
       return
     }
 
-    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses }) => {
+    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers }) => {
       useMemberStore.setState({ members, _initialized: members.length > 0 || useMemberStore.getState()._initialized })
       useChoreStore.setState({ chores, completions, skipped, pendingApprovals })
       useRewardStore.setState({ rewards, redemptions, coupons })
       useAchievementStore.setState({ earnedBadges })
       useChallengeStore.setState({ claimedBonuses })
+      useStickerStore.setState({ earnedStickers })
 
       // One-time migration
       if (!migrated.current) {
@@ -103,6 +105,16 @@ export default function App() {
             if (badges.length > 0) saveEarnedBadges(memberId, badges)
           }
         }
+        // Push localStorage stickers to Firestore if Firestore is empty
+        const localStickers = useStickerStore.getState().earnedStickers
+        if (Object.keys(earnedStickers).length === 0 && Object.keys(localStickers).length > 0) {
+          import('./lib/firestore-sync').then(({ saveEarnedStickers }) => {
+            for (const [memberId, stickerIds] of Object.entries(localStickers)) {
+              if (stickerIds.length > 0) saveEarnedStickers(memberId, stickerIds)
+            }
+          })
+        }
+
         const localBonuses = useChallengeStore.getState().claimedBonuses
         if (Object.keys(claimedBonuses).length === 0 && Object.keys(localBonuses).length > 0) {
           for (const key of Object.keys(localBonuses)) {

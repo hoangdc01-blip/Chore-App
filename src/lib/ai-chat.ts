@@ -3,8 +3,9 @@ import { getEnv } from './env'
 import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
 import { useRewardStore } from '../store/reward-store'
+import { useStickerStore } from '../store/sticker-store'
 import { computeKidStats, computeStreak } from './stats'
-import { getLevel } from '../types'
+import { getLevel, STICKER_CATEGORIES } from '../types'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -64,7 +65,13 @@ HOMEWORK HELP (math, science, Chinese only):
 - Science: simple kid-friendly facts with fun comparisons
 - Chinese: character + pinyin + meaning, 1-2 chars max
 
-MOTIVATION: Proactively encourage kids about pending chores. Mention streaks. If most chores are done, celebrate! If it's late and chores remain, gently remind.
+MOTIVATION: Proactively encourage kids about pending chores. Mention streaks. If most chores are done, celebrate! If it's late and chores remain, gently remind. Mention stickers they recently earned!
+
+STICKERS: Kids earn stickers by completing chores. Mention their collection progress. Get excited about rare/legendary stickers! Encourage completing full sets.
+
+STREAKS: Celebrate streak milestones enthusiastically (3, 7, 14, 30 days). If streak breaks, be gentle and encouraging - never punish. Say things like "Let's start a new streak today!"
+
+REWARD BALANCE: When in parent mode, if reward economy is unhealthy (kid needs >2 weeks to earn cheapest reward), proactively suggest adjustments like lowering reward costs or increasing chore points.
 
 PROGRESS: When asked about progress, use WEEKLY PROGRESS data. Be encouraging. Celebrate streaks.
 
@@ -159,6 +166,57 @@ function buildRewardContext(memberId: string): string {
   return `\n\nREWARD SHOP (${points} pts available):\n${rewardLines}${recentText}`
 }
 
+function buildStickerContext(memberId: string): string {
+  const store = useStickerStore.getState()
+  const earned = store.getEarnedStickers(memberId)
+  const total = store.catalog.length
+
+  if (earned.length === 0) return '\n\nSTICKER ALBUM: No stickers yet. Complete chores to earn stickers!'
+
+  const lastEarned = earned[earned.length - 1]
+  const progressLines = STICKER_CATEGORIES.map((cat) => {
+    const progress = store.getSetProgress(memberId, cat)
+    const complete = progress.earned === progress.total
+    return `  - ${cat}: ${progress.earned}/${progress.total}${complete ? ' COMPLETE!' : ''}`
+  }).join('\n')
+
+  return `\n\nSTICKER ALBUM (${earned.length}/${total} collected):
+Last earned: ${lastEarned.emoji} ${lastEarned.name} (${lastEarned.rarity})
+Set progress:
+${progressLines}`
+}
+
+function buildRewardBalanceAdvice(): string {
+  const members = useMemberStore.getState().members
+  const { rewards } = useRewardStore.getState()
+  const { chores, completions, skipped } = useChoreStore.getState()
+
+  if (members.length === 0 || rewards.length === 0) return ''
+
+  const now = new Date()
+  const weekStart = startOfWeek(now, { weekStartsOn: 0 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const cheapest = Math.min(...rewards.map((r) => r.cost))
+
+  const lines: string[] = []
+  for (const member of members) {
+    const weekStats = computeKidStats(member.id, chores, completions, skipped, weekStart, weekEnd)
+    const weeklyEarnings = weekStats.totalPoints
+    if (weeklyEarnings <= 0) {
+      lines.push(`  - ${member.name}: 0 pts/week, cannot earn cheapest reward (${cheapest} pts)`)
+      continue
+    }
+    const pointsNeeded = Math.max(0, cheapest - (member.points ?? 0))
+    const weeksToEarn = pointsNeeded > 0 ? Math.ceil(pointsNeeded / weeklyEarnings) : 0
+    if (weeksToEarn > 2) {
+      lines.push(`  - ${member.name}: ~${weeklyEarnings} pts/week, needs ${weeksToEarn} weeks for cheapest reward (${cheapest} pts) - UNHEALTHY`)
+    }
+  }
+
+  if (lines.length === 0) return ''
+  return `\n\nREWARD BALANCE (issues found):\n${lines.join('\n')}`
+}
+
 function buildChoresSummary(): string {
   const chores = useChoreStore.getState().chores
   const members = useMemberStore.getState().members
@@ -231,11 +289,26 @@ function buildChoreContext(memberId: string): string {
     motivation += ` Streak: ${streak} day${streak > 1 ? 's' : ''} ${streak >= 3 ? '\uD83D\uDD25' : ''}`
   }
 
+  // Enhanced streak context for milestones
+  const streakMilestones = [3, 7, 14, 30]
+  const hitMilestone = streakMilestones.find((m) => streak === m)
+  if (hitMilestone) {
+    motivation += ` MILESTONE: Just hit ${hitMilestone}-day streak! Celebrate!`
+  }
+
+  // Check if streak recently broke (yesterday was last streak day)
+  const kidChoresForBreak = allChores.filter(c => c.assigneeId === memberId)
+  const yesterdayStreak = computeStreak(memberId, kidChoresForBreak, comps, skip)
+  if (yesterdayStreak === 0 && streak === 0) {
+    // Check if there was a recent streak by looking at previous data
+    motivation += ' Streak is at 0 - encourage starting a new one!'
+  }
+
   return `\n\nCurrent kid: ${member.name} (ID: ${member.id}).
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
-${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId)
+${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId)
 }
 
 function buildGeneralContext(): string {
@@ -258,7 +331,7 @@ function buildGeneralContext(): string {
     return `  - ${m.name}: ${done}/${total} chores done (${m.points} points)`
   }).join('\n')
 
-  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}`
+  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice()
 }
 
 export function buildSystemPrompt(memberId: string | null): string {

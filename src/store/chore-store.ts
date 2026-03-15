@@ -19,9 +19,52 @@ import {
 import { useMemberStore } from './member-store'
 import { showToast } from './toast-store'
 import { useAchievementStore } from './achievement-store'
+import { useStickerStore } from './sticker-store'
 import { buildAchievementContext } from '../lib/achievements'
 import { computeStreak } from '../lib/stats'
 import { countCompletionsForMember } from '../types'
+
+// Streak milestone sticker IDs (mapped to specific themed stickers)
+const STREAK_STICKER_MAP: Record<number, string> = {
+  3: 's3',   // Star (space) for 3-day streak
+  7: 's1',   // Rocket (space) for 7-day streak
+  14: 's8',  // Galaxy (space, rare) for 14-day streak
+  30: 's10', // Shooting Star (space, legendary) for 30-day streak
+}
+
+function triggerStickerAward(memberId: string) {
+  setTimeout(() => {
+    const stickerStore = useStickerStore.getState()
+    // Check which categories were incomplete before awarding
+    const categoriesBefore = (['animals', 'space', 'food', 'sports', 'nature'] as const).map(
+      (cat) => ({ cat, complete: stickerStore.isSetComplete(memberId, cat) })
+    )
+
+    const sticker = stickerStore.awardRandomSticker(memberId)
+    if (!sticker) return
+
+    // Check if any set just completed — award 10 bonus points
+    for (const { cat, complete: wasBefore } of categoriesBefore) {
+      if (!wasBefore && stickerStore.isSetComplete(memberId, cat)) {
+        useMemberStore.getState().adjustPoints(memberId, 10)
+        showToast(`Set complete: ${cat}! +10 bonus points!`, 'success')
+      }
+    }
+
+    // Award streak milestone stickers
+    const { chores, completions, skipped } = useChoreStore.getState()
+    const kidChores = chores.filter((c) => c.assigneeId === memberId)
+    const streak = computeStreak(memberId, kidChores, completions, skipped)
+
+    const milestoneStickerId = STREAK_STICKER_MAP[streak]
+    if (milestoneStickerId) {
+      const awarded = stickerStore.awardSticker(memberId, milestoneStickerId)
+      if (awarded) {
+        showToast(`Streak sticker earned: ${awarded.emoji} ${awarded.name}!`, 'success')
+      }
+    }
+  }, 150)
+}
 
 function triggerAchievementCheck(memberId: string) {
   // Defer to avoid calling during state update
@@ -108,6 +151,7 @@ export const useChoreStore = create<ChoreState>()(
         if (!wasComplete) {
           setCompletion(key, choreId, memberId, date).catch(() => showToast('Sync failed. Please try again.', 'error'))
           triggerAchievementCheck(memberId)
+          triggerStickerAward(memberId)
         } else {
           removeCompletion(key).catch(() => showToast('Sync failed. Please try again.', 'error'))
         }
@@ -140,6 +184,7 @@ export const useChoreStore = create<ChoreState>()(
         removePendingApproval(key).catch(() => showToast('Sync failed.', 'error'))
         setCompletion(key, choreId, memberId, date).catch(() => showToast('Sync failed.', 'error'))
         triggerAchievementCheck(memberId)
+        triggerStickerAward(memberId)
       },
 
       rejectChore: (choreId, memberId, date) => {

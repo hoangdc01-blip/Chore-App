@@ -137,6 +137,19 @@ export interface RewardAction {
 }
 
 /** Parsed chore-creation request from AI chat */
+export interface Sticker {
+  id: string
+  emoji: string
+  name: string
+  category: StickerCategory
+  rarity: 'common' | 'rare' | 'legendary'
+}
+
+export type StickerCategory = 'animals' | 'space' | 'food' | 'sports' | 'nature'
+
+export const STICKER_CATEGORIES: StickerCategory[] = ['animals', 'space', 'food', 'sports', 'nature']
+
+/** Parsed chore-creation request from AI chat */
 export interface ChoreAction {
   name: string
   assigneeId: string

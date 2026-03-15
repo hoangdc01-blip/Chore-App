@@ -4,6 +4,7 @@ import { getLevel, STREAK_BADGES, countCompletionsForMember } from '../../types'
 import { getMemberColor } from '../../store/member-store'
 import { useChoreStore } from '../../store/chore-store'
 import BadgeGrid from '../achievements/BadgeGrid'
+import StickerAlbum from '../stickers/StickerAlbum'
 
 interface KidStatsCardProps {
   member: FamilyMember
@@ -97,6 +98,8 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
       </div>
 
       <BadgeGrid memberId={member.id} />
+
+      <StickerAlbum memberId={member.id} />
     </div>
   )
 }

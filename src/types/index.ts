@@ -165,7 +165,7 @@ export const STICKER_CATEGORIES: StickerCategory[] = ['animals', 'space', 'food'
 
 export interface DrawingResult {
   title: string
-  svg: string
+  imageDataUrl: string  // data:image/png;base64,...
 }
 
 /** Parsed chore-creation request from AI chat */

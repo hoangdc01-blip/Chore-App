@@ -8,7 +8,6 @@ import { useRoutineStore } from '../store/routine-store'
 import { useQuestStore } from '../store/quest-store'
 import { useAchievementStore } from '../store/achievement-store'
 import { computeKidStats, computeStreak } from './stats'
-import { getDrawingCatalog } from './drawing-library'
 import { getLevel, STICKER_CATEGORIES } from '../types'
 
 export interface ChatMessage {
@@ -153,18 +152,13 @@ TUTOR MODE: After checking homework, if the kid asks for help with an error, use
 - NEVER say the answer directly, even after 3 rounds. Let the kid discover it.
 - Encourage the kid to try again after each hint.
 
-DRAWING: When a kid asks you to draw something, pick the BEST match from the drawing library below and output EXACTLY this block:
+DRAWING: When a kid asks you to draw something, output EXACTLY this block at the END of your response:
 
-[DRAW_IMAGE id="cat" title="A cute kitty just for you!"]
-
-DRAWING LIBRARY:
-${getDrawingCatalog()}
+[DRAW_IMAGE title="description of what to draw"][/DRAW_IMAGE]
 
 Rules:
-- id: MUST be an exact ID from the library above
-- title: a fun, personalized title for the kid (e.g. "A magical unicorn for [kid name]!")
-- Pick the closest match to what the kid asks for. If they ask for "a pony", use "unicorn". If they ask for "Nemo", use "fish".
-- If NOTHING in the library matches at all, tell the kid you can't draw that yet but suggest something fun from the library instead
+- title: describe what the kid wants drawn in simple English (e.g. "a cute cat playing with yarn", "a magical unicorn with rainbow mane")
+- Just describe what they asked for in the title. The actual image will be generated separately.
 - Always write a fun, encouraging message BEFORE the [DRAW_IMAGE] block
 - NEVER put anything after the [/DRAW_IMAGE] tag
 - Output the block on a SINGLE LINE`

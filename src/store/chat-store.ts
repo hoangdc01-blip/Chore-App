@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
+import { generateImage } from '../lib/image-gen'
 import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult } from '../types'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
@@ -16,6 +17,7 @@ interface ChatState {
   isOpen: boolean
   isLoading: boolean
   isStreaming: boolean
+  isGeneratingImage: boolean
   error: string | null
   selectedMemberId: string | null
   abortController: AbortController | null
@@ -68,11 +70,43 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
   }
 }
 
+/** Post-process drawing result: call Gemini to generate the actual image */
+async function resolveDrawingImage(
+  drawingResult: DrawingResult,
+  messageIndex: number,
+  set: (partial: Partial<ChatState>) => void,
+  _get: () => ChatState
+): Promise<void> {
+  set({ isGeneratingImage: true, drawingResult, drawingMessageIndex: messageIndex })
+  try {
+    const result = await generateImage(drawingResult.title)
+    if (result) {
+      const imageDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`
+      set({
+        drawingResult: { title: drawingResult.title, imageDataUrl },
+        isGeneratingImage: false,
+      })
+    } else {
+      // Gemini failed - show error in drawing card
+      set({
+        drawingResult: { title: drawingResult.title, imageDataUrl: '' },
+        isGeneratingImage: false,
+      })
+    }
+  } catch {
+    set({
+      drawingResult: { title: drawingResult.title, imageDataUrl: '' },
+      isGeneratingImage: false,
+    })
+  }
+}
+
 export const useChatStore = create<ChatState>()((set, get) => ({
   messages: [],
   isOpen: false,
   isLoading: false,
   isStreaming: false,
+  isGeneratingImage: false,
   error: null,
   selectedMemberId: null,
   abortController: null,
@@ -157,9 +191,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
-            drawingResult: drawingResult ?? get().drawingResult,
-            drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
           })
+          // Generate image via Gemini if drawing was requested
+          if (drawingResult) {
+            resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          }
         }
         // Auto-read aloud if enabled
         const batchTextToRead = displayText || batchLastMsg.content
@@ -256,9 +292,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
-            drawingResult: drawingResult ?? get().drawingResult,
-            drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
           })
+          // Generate image via Gemini if drawing was requested
+          if (drawingResult) {
+            resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          }
         }
         // Auto-read aloud if enabled
         const textToRead = displayText || lastMsg.content
@@ -331,9 +369,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
               pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
               homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
               homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
-              drawingResult: drawingResult ?? get().drawingResult,
-              drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
             })
+            // Generate image via Gemini if drawing was requested
+            if (drawingResult) {
+              resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+            }
           }
           // Auto-read aloud if enabled
           const fallbackTextToRead = displayText || fallbackLastMsg.content

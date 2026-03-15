@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   format,
   addMonths,
@@ -14,16 +14,19 @@ import {
   isSameDay,
   isToday,
   isSameMonth,
+  isSameWeek,
   eachDayOfInterval,
+  eachWeekOfInterval,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, MapPin, Clock, Pencil, Trash2, X, Printer } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, X, Printer } from 'lucide-react'
 import { useClassStore } from '../../store/class-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
-import { getMonthDays } from '../../lib/calendar'
+import { getMonthDays, getWeekDays } from '../../lib/calendar'
 import type { ExtraClass, RecurrenceType, CalendarViewMode, ClassOccurrence } from '../../types'
 import { cn } from '../../lib/utils'
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAYS_LONG = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
   { value: 'none', label: 'Once' },
@@ -36,7 +39,7 @@ const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const TIME_SLOTS = Array.from({ length: 16 }, (_, i) => i + 6) // 6am to 9pm (6..21)
+const HOURS = Array.from({ length: 19 }, (_, i) => i + 5) // 5am to 11pm, matching chore calendar
 
 interface ClassFormData {
   name: string
@@ -67,11 +70,10 @@ const emptyForm = (): ClassFormData => ({
 })
 
 function formatHour(hour: number): string {
-  if (hour === 0 || hour === 12) return hour === 0 ? '12 AM' : '12 PM'
-  return hour < 12 ? `${hour} AM` : `${hour - 12} PM`
+  return `${String(hour).padStart(2, '0')}:00`
 }
 
-function parseTimeToHour(time: string): number {
+function getHourFromTime(time: string): number {
   const [h] = time.split(':').map(Number)
   return h
 }
@@ -99,20 +101,142 @@ const TEXT_HEX_MAP: Record<string, string> = {
   'text-amber-900': '#78350f',
 }
 
+// ── Class card components matching ChoreCard patterns ──
+
+function ClassCardCompact({ occ, onClick }: { occ: ClassOccurrence; onClick: () => void }) {
+  const members = useMemberStore((s) => s.members)
+  const member = members.find((m) => m.id === occ.classItem.assigneeId)
+  const color = member ? getMemberColor(member) : null
+
+  const cardClasses = color
+    ? `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    : 'bg-white dark:bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      className={`flex items-center gap-1 xl:gap-1.5 rounded-lg px-1.5 xl:px-2 py-1 text-xs xl:text-sm cursor-pointer transition-colors ${cardClasses}`}
+    >
+      {occ.classItem.emoji && (
+        <span className="shrink-0 text-sm xl:text-xs">{occ.classItem.emoji}</span>
+      )}
+      <span className="truncate font-semibold">
+        {occ.classItem.startTime && (
+          <span className="font-normal text-muted-foreground hidden xl:inline">{occ.classItem.startTime} </span>
+        )}
+        {occ.classItem.name}
+      </span>
+      {member?.avatar ? (
+        <img src={member.avatar} alt="" className="shrink-0 h-4 w-4 rounded-full object-cover ml-auto hidden xl:block" />
+      ) : null}
+    </div>
+  )
+}
+
+function ClassCardFull({ occ, onClick }: { occ: ClassOccurrence; onClick: () => void }) {
+  const members = useMemberStore((s) => s.members)
+  const member = members.find((m) => m.id === occ.classItem.assigneeId)
+  const color = member ? getMemberColor(member) : null
+
+  const cardClasses = color
+    ? `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    : 'bg-white dark:bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 min-h-[48px] text-sm cursor-pointer transition-colors ${cardClasses}`}
+    >
+      {occ.classItem.emoji && (
+        <span className="shrink-0 text-lg">{occ.classItem.emoji}</span>
+      )}
+      <div className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold truncate">
+          {occ.classItem.name}
+        </span>
+        <span className="block text-xs text-muted-foreground">
+          {member?.name ?? 'Unassigned'}
+          {occ.classItem.startTime && ` \u00b7 ${occ.classItem.startTime}`}
+          {occ.classItem.endTime && `-${occ.classItem.endTime}`}
+          {occ.classItem.location && ` \u00b7 ${occ.classItem.location}`}
+        </span>
+      </div>
+      {member?.avatar ? (
+        <img src={member.avatar} alt="" className="shrink-0 h-7 w-7 rounded-full object-cover" />
+      ) : member ? (
+        <span className={`shrink-0 h-7 w-7 rounded-full ${color?.dot ?? 'bg-muted-foreground'} text-white text-xs font-bold flex items-center justify-center`}>
+          {member.name.charAt(0).toUpperCase()}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 export default function ClassCalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<ClassFormData>(emptyForm())
   const [kidFilter, setKidFilter] = useState<Set<string>>(new Set())
 
+  // Mobile month view: selected day
+  const [monthSelectedDay, setMonthSelectedDay] = useState<Date>(new Date())
+  // Mobile week view: selected day index
+  const [weekSelectedDayIndex, setWeekSelectedDayIndex] = useState(0)
+
+  // Picker state (matching CalendarHeader)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerMonth, setPickerMonth] = useState(() => startOfMonth(currentDate))
+  const [pickerYear, setPickerYear] = useState(() => currentDate.getFullYear())
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
   const { classes, addClass, removeClass, updateClass, getOccurrencesForRange } = useClassStore()
   const members = useMemberStore((s) => s.members)
 
-  // If kidFilter is empty, show all (no filter active)
   const isFilterActive = kidFilter.size > 0
+
+  // Sync picker context when currentDate changes
+  useEffect(() => {
+    setPickerMonth(startOfMonth(currentDate))
+    setPickerYear(currentDate.getFullYear())
+  }, [currentDate])
+
+  // Close on outside click
+  useEffect(() => {
+    if (!pickerOpen) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [pickerOpen])
+
+  // Close picker when view mode changes
+  useEffect(() => {
+    setPickerOpen(false)
+  }, [viewMode])
+
+  // Sync month selected day when currentDate changes (matching MonthView)
+  useEffect(() => {
+    const monthDays = getMonthDays(currentDate)
+    const today = monthDays.find((d) => isToday(d))
+    if (today) {
+      setMonthSelectedDay(today)
+    } else {
+      const firstOfMonth = monthDays.find((d) => isSameMonth(d, currentDate))
+      if (firstOfMonth) setMonthSelectedDay(firstOfMonth)
+    }
+  }, [currentDate])
+
+  // Sync week selected day index when currentDate changes (matching WeekView)
+  useEffect(() => {
+    const days = getWeekDays(currentDate)
+    const todayIdx = days.findIndex((d) => isToday(d))
+    setWeekSelectedDayIndex(todayIdx >= 0 ? todayIdx : 0)
+  }, [currentDate])
 
   // Compute date ranges based on view mode
   const { rangeStart, rangeEnd } = useMemo(() => {
@@ -129,62 +253,51 @@ export default function ClassCalendarView() {
         rangeEnd: endOfWeek(currentDate, { weekStartsOn: 0 }),
       }
     } else {
-      // day
       return { rangeStart: currentDate, rangeEnd: currentDate }
     }
   }, [currentDate, viewMode])
-
-  const days = useMemo(() => {
-    if (viewMode === 'month') return getMonthDays(currentDate)
-    if (viewMode === 'week') return eachDayOfInterval({ start: rangeStart, end: rangeEnd })
-    return [currentDate]
-  }, [currentDate, viewMode, rangeStart, rangeEnd])
 
   const occurrences = useMemo(
     () => getOccurrencesForRange(rangeStart, rangeEnd),
     [classes, rangeStart.getTime(), rangeEnd.getTime()]
   )
 
-  // Filter occurrences by kid
   const filteredOccurrences = useMemo(() => {
     if (!isFilterActive) return occurrences
     return occurrences.filter((occ) => kidFilter.has(occ.classItem.assigneeId))
   }, [occurrences, kidFilter, isFilterActive])
 
   const occByDate = useMemo(() => {
-    const map: Record<string, ClassOccurrence[]> = {}
+    const map = new Map<string, ClassOccurrence[]>()
     for (const occ of filteredOccurrences) {
-      if (!map[occ.date]) map[occ.date] = []
-      map[occ.date].push(occ)
+      const existing = map.get(occ.date) ?? []
+      existing.push(occ)
+      map.set(occ.date, existing)
     }
     return map
   }, [filteredOccurrences])
 
-  const selectedDayStr = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null
-  const selectedOccs = selectedDayStr ? (occByDate[selectedDayStr] ?? []) : []
-
-  // Navigation
-  const navigatePrev = () => {
-    if (viewMode === 'month') setCurrentDate(subMonths(currentDate, 1))
-    else if (viewMode === 'week') setCurrentDate(subWeeks(currentDate, 1))
-    else setCurrentDate(subDays(currentDate, 1))
+  // Navigation — matching CalendarView exactly
+  const handlePrev = () => {
+    setCurrentDate((d) => {
+      if (viewMode === 'month') return subMonths(d, 1)
+      if (viewMode === 'week') return subWeeks(d, 1)
+      return subDays(d, 1)
+    })
   }
 
-  const navigateNext = () => {
-    if (viewMode === 'month') setCurrentDate(addMonths(currentDate, 1))
-    else if (viewMode === 'week') setCurrentDate(addWeeks(currentDate, 1))
-    else setCurrentDate(addDays(currentDate, 1))
+  const handleNext = () => {
+    setCurrentDate((d) => {
+      if (viewMode === 'month') return addMonths(d, 1)
+      if (viewMode === 'week') return addWeeks(d, 1)
+      return addDays(d, 1)
+    })
   }
 
-  const headerTitle = useMemo(() => {
-    if (viewMode === 'month') return format(currentDate, 'MMMM yyyy')
-    if (viewMode === 'week') {
-      const ws = startOfWeek(currentDate, { weekStartsOn: 0 })
-      const we = endOfWeek(currentDate, { weekStartsOn: 0 })
-      return `${format(ws, 'MMM d')} - ${format(we, 'MMM d, yyyy')}`
-    }
-    return format(currentDate, 'EEEE, MMMM d, yyyy')
-  }, [currentDate, viewMode])
+  const handleToday = () => {
+    setCurrentDate(new Date())
+    setPickerOpen(false)
+  }
 
   const toggleKidFilter = (memberId: string) => {
     setKidFilter((prev) => {
@@ -198,11 +311,15 @@ export default function ClassCalendarView() {
     })
   }
 
-  const openAdd = () => {
+  const openAdd = (date?: Date, time?: string) => {
     setEditingId(null)
     const f = emptyForm()
-    const targetDay = selectedDay ?? (viewMode === 'day' ? currentDate : null)
-    if (targetDay) f.startDate = format(targetDay, 'yyyy-MM-dd')
+    if (date) f.startDate = format(date, 'yyyy-MM-dd')
+    if (time) {
+      f.startTime = time
+      const hour = parseInt(time.split(':')[0], 10)
+      f.endTime = `${String(hour + 1).padStart(2, '0')}:00`
+    }
     if (members.length > 0) f.assigneeId = members[0].id
     setForm(f)
     setDialogOpen(true)
@@ -263,7 +380,8 @@ export default function ClassCalendarView() {
       (occ) => !isFilterActive || kidFilter.has(occ.classItem.assigneeId)
     )
 
-    // Build lookup: date -> hour -> occurrences
+    const timeSlots = Array.from({ length: 16 }, (_, i) => i + 6)
+
     const grid: Record<string, Record<number, ClassOccurrence[]>> = {}
     for (const day of weekDays) {
       const dateStr = format(day, 'yyyy-MM-dd')
@@ -271,13 +389,12 @@ export default function ClassCalendarView() {
     }
     for (const occ of weekOccs) {
       if (!occ.classItem.startTime) continue
-      const hour = parseTimeToHour(occ.classItem.startTime)
+      const hour = getHourFromTime(occ.classItem.startTime)
       if (!grid[occ.date]) continue
       if (!grid[occ.date][hour]) grid[occ.date][hour] = []
       grid[occ.date][hour].push(occ)
     }
 
-    // Also collect classes without time
     const noTimeOccs: Record<string, ClassOccurrence[]> = {}
     for (const occ of weekOccs) {
       if (!occ.classItem.startTime) {
@@ -309,6 +426,7 @@ export default function ClassCalendarView() {
     }
 
     const hasNoTimeClasses = Object.values(noTimeOccs).some((arr) => arr.length > 0)
+    const formatPrintHour = (h: number) => `${String(h).padStart(2, '0')}:00`
 
     const html = `<!DOCTYPE html>
 <html><head>
@@ -343,10 +461,10 @@ ${hasNoTimeClasses ? `<tr>
   <td class="time-col" style="font-style:italic;">No time</td>
   ${weekDays.map((d) => `<td>${buildCell(noTimeOccs[format(d, 'yyyy-MM-dd')])}</td>`).join('')}
 </tr>` : ''}
-${TIME_SLOTS.map(
+${timeSlots.map(
   (hour) =>
     `<tr>
-      <td class="time-col">${formatHour(hour)}</td>
+      <td class="time-col">${formatPrintHour(hour)}</td>
       ${weekDays
         .map((d) => {
           const dateStr = format(d, 'yyyy-MM-dd')
@@ -367,527 +485,767 @@ ${TIME_SLOTS.map(
     }
   }, [currentDate, classes, members, kidFilter, isFilterActive])
 
-  // ---- RENDER HELPERS ----
+  // ── HEADER — matching CalendarHeader exactly ──
+  const triggerClasses = 'flex items-center gap-2 rounded-lg border border-border px-3 py-2 hover:bg-muted transition-colors w-full xl:w-auto'
+  const todayBtnClasses = 'shrink-0 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors'
 
-  const renderKidFilter = () => {
-    if (members.length === 0) return null
+  const renderHeader = () => {
+    // ── DAY VIEW HEADER ──
+    if (viewMode === 'day') {
+      const pickerMonthStart = startOfMonth(pickerMonth)
+      const pickerMonthEnd = endOfMonth(pickerMonth)
+      const calStart = startOfWeek(pickerMonthStart, { weekStartsOn: 0 })
+      const calEnd = endOfWeek(pickerMonthEnd, { weekStartsOn: 0 })
+      const pickerDays = eachDayOfInterval({ start: calStart, end: calEnd })
+
+      return (
+        <div className="flex items-center gap-2 px-4 py-3">
+          <button onClick={handlePrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+            <ChevronLeft size={20} />
+          </button>
+
+          <div className="relative flex-1 xl:flex-none" ref={dropdownRef}>
+            <button onClick={() => setPickerOpen((o) => !o)} className={triggerClasses}>
+              <span className="text-base font-semibold truncate">
+                {format(currentDate, 'EEEE, MMMM d, yyyy')}
+              </span>
+              <ChevronDown size={16} className={`shrink-0 text-muted-foreground transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {pickerOpen && (
+              <div className="absolute top-full left-0 right-0 xl:left-auto xl:right-auto xl:w-[320px] mt-1 z-50 rounded-xl border border-border bg-background shadow-lg picker-dropdown">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+                  <button onClick={() => setPickerMonth((m) => subMonths(m, 1))} className="rounded-md p-1 hover:bg-muted transition-colors">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="text-sm font-bold">{format(pickerMonth, 'MMMM yyyy')}</span>
+                  <button onClick={() => setPickerMonth((m) => addMonths(m, 1))} className="rounded-md p-1 hover:bg-muted transition-colors">
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 px-2 pt-2">
+                  {WEEKDAYS_SHORT.map((d, i) => (
+                    <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 px-2 pb-3">
+                  {pickerDays.map((day) => {
+                    const dateKey = format(day, 'yyyy-MM-dd')
+                    const inMonth = isSameMonth(day, pickerMonth)
+                    const today = isToday(day)
+                    const selected = isSameDay(day, currentDate)
+                    const hasTasks = occByDate.has(dateKey)
+                    return (
+                      <button
+                        key={dateKey}
+                        onClick={() => { setCurrentDate(day); setPickerOpen(false) }}
+                        className={`flex flex-col items-center py-1 rounded-lg transition-colors ${selected ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                      >
+                        <span className={`text-sm font-medium w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                          today && selected ? 'bg-primary text-primary-foreground'
+                            : today ? 'bg-primary text-primary-foreground'
+                            : selected ? 'bg-foreground text-background'
+                            : inMonth ? 'text-foreground' : 'text-muted-foreground/40'
+                        }`}>
+                          {format(day, 'd')}
+                        </span>
+                        {hasTasks
+                          ? <span className={`h-1.5 w-1.5 rounded-full mt-0.5 ${today || selected ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
+                          : <span className="h-1.5 mt-0.5" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleToday} className={todayBtnClasses}>Today</button>
+
+          <button onClick={handleNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )
+    }
+
+    // ── WEEK VIEW HEADER ──
+    if (viewMode === 'week') {
+      const monthStart = startOfMonth(pickerMonth)
+      const monthEnd = endOfMonth(pickerMonth)
+      const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 })
+
+      const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
+      const weekLabel = `${format(currentWeekStart, 'MMM d')} \u2013 ${format(endOfWeek(currentWeekStart, { weekStartsOn: 0 }), 'MMM d, yyyy')}`
+
+      return (
+        <div className="flex items-center gap-2 px-4 py-3">
+          <button onClick={handlePrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+            <ChevronLeft size={20} />
+          </button>
+
+          <div className="relative flex-1 xl:flex-none" ref={dropdownRef}>
+            <button onClick={() => setPickerOpen((o) => !o)} className={triggerClasses}>
+              <span className="text-base font-semibold truncate">{weekLabel}</span>
+              <ChevronDown size={16} className={`shrink-0 text-muted-foreground transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {pickerOpen && (
+              <div className="absolute top-full left-0 right-0 xl:left-auto xl:right-auto xl:w-[300px] mt-1 z-50 rounded-xl border border-border bg-background shadow-lg picker-dropdown">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+                  <button onClick={() => setPickerMonth((m) => subMonths(m, 1))} className="rounded-md p-1 hover:bg-muted transition-colors">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="text-sm font-bold">{format(pickerMonth, 'MMMM yyyy')}</span>
+                  <button onClick={() => setPickerMonth((m) => addMonths(m, 1))} className="rounded-md p-1 hover:bg-muted transition-colors">
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="py-1 max-h-[280px] overflow-y-auto">
+                  {weekStarts.map((ws) => {
+                    const we = endOfWeek(ws, { weekStartsOn: 0 })
+                    const isCurrentWeek = isSameWeek(ws, currentDate, { weekStartsOn: 0 })
+                    const hasToday = eachDayOfInterval({ start: ws, end: we }).some((d) => isToday(d))
+                    const label = `${format(ws, 'MMM d')} \u2013 ${format(we, 'MMM d')}`
+
+                    return (
+                      <button
+                        key={format(ws, 'yyyy-MM-dd')}
+                        onClick={() => { setCurrentDate(ws); setPickerOpen(false) }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 ${
+                          isCurrentWeek
+                            ? 'bg-primary/10 text-primary font-bold'
+                            : 'hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        <span className="flex-1">{label}</span>
+                        {hasToday && (
+                          <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">Today</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleToday} className={todayBtnClasses}>Today</button>
+
+          <button onClick={handleNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )
+    }
+
+    // ── MONTH VIEW HEADER ──
+    const MONTH_NAMES = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ]
+    const currentMonth = currentDate.getMonth()
+    const currentYear = currentDate.getFullYear()
+    const nowMonth = new Date().getMonth()
+    const nowYear = new Date().getFullYear()
+
     return (
-      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border overflow-x-auto no-scrollbar shrink-0">
-        <span className="text-xs font-semibold text-muted-foreground mr-1 shrink-0">Filter:</span>
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button onClick={handlePrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+          <ChevronLeft size={20} />
+        </button>
+
+        <div className="relative flex-1 xl:flex-none" ref={dropdownRef}>
+          <button onClick={() => setPickerOpen((o) => !o)} className={triggerClasses}>
+            <span className="text-base font-semibold truncate">
+              {format(currentDate, 'MMMM yyyy')}
+            </span>
+            <ChevronDown size={16} className={`shrink-0 text-muted-foreground transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {pickerOpen && (
+            <div className="absolute top-full left-0 right-0 xl:left-auto xl:right-auto xl:w-[280px] mt-1 z-50 rounded-xl border border-border bg-background shadow-lg picker-dropdown">
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+                <button onClick={() => setPickerYear((y) => y - 1)} className="rounded-md p-1 hover:bg-muted transition-colors">
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="text-sm font-bold">{pickerYear}</span>
+                <button onClick={() => setPickerYear((y) => y + 1)} className="rounded-md p-1 hover:bg-muted transition-colors">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1 p-3">
+                {MONTH_NAMES.map((name, idx) => {
+                  const isSelected = idx === currentMonth && pickerYear === currentYear
+                  const isNow = idx === nowMonth && pickerYear === nowYear
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => { setCurrentDate(new Date(pickerYear, idx, 1)); setPickerOpen(false) }}
+                      className={`rounded-lg px-2 py-2.5 text-sm font-medium transition-colors ${
+                        isSelected
+                          ? 'bg-primary text-primary-foreground'
+                          : isNow
+                            ? 'bg-primary/15 text-primary font-bold'
+                            : 'hover:bg-muted text-foreground'
+                      }`}
+                    >
+                      {name.slice(0, 3)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button onClick={handleToday} className={todayBtnClasses}>Today</button>
+
+        <button onClick={handleNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+          <ChevronRight size={20} />
+        </button>
+      </div>
+    )
+  }
+
+  // ── FILTER BAR — matching FilterBar exactly ──
+  const renderFilterBar = () => {
+    return (
+      <div className="flex gap-2 px-3 py-2 overflow-x-auto no-scrollbar border-b border-border bg-background">
+        {/* All chip — matching status filter style */}
+        <button
+          onClick={() => setKidFilter(new Set())}
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] ${
+            !isFilterActive
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          All
+        </button>
+
+        {/* Divider */}
+        <div className="shrink-0 w-px bg-border self-stretch my-0.5" />
+
+        {/* Kid chips — matching FilterBar member chips */}
         {members.map((member) => {
           const color = getMemberColor(member)
-          const active = !isFilterActive || kidFilter.has(member.id)
+          const active = isFilterActive && kidFilter.has(member.id)
           return (
             <button
               key={member.id}
               onClick={() => toggleKidFilter(member.id)}
-              className={cn(
-                'px-2.5 py-1 rounded-full text-xs font-bold transition-all shrink-0',
-                active ? `${color.bg} ${color.text}` : 'bg-muted/50 text-muted-foreground/50'
-              )}
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 ${
+                active
+                  ? `${color.bg} ${color.text}`
+                  : !isFilterActive
+                    ? `${color.bg} ${color.text}`
+                    : 'bg-muted text-muted-foreground opacity-50'
+              }`}
             >
+              {member.avatar ? (
+                <img src={member.avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
+              ) : (
+                <span className={`h-4 w-4 rounded-full ${color.dot} inline-flex items-center justify-center text-white text-[10px] font-bold`}>
+                  {member.name.charAt(0).toUpperCase()}
+                </span>
+              )}
               {member.name}
             </button>
           )
         })}
-        {isFilterActive && (
-          <button
-            onClick={() => setKidFilter(new Set())}
-            className="px-2 py-1 rounded-full text-xs font-medium text-muted-foreground hover:bg-muted transition-colors shrink-0"
-          >
-            Clear
-          </button>
-        )}
+
+        {/* Action buttons — Export/Print + Add */}
+        <div className="shrink-0 w-px bg-border self-stretch my-0.5" />
+        <button
+          onClick={exportWeeklyPdf}
+          className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 bg-muted text-muted-foreground hover:text-foreground"
+          title="Print weekly timetable"
+        >
+          <Printer size={14} />
+          <span className="hidden sm:inline">Print</span>
+        </button>
+        <button
+          onClick={() => openAdd()}
+          className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 bg-primary text-primary-foreground"
+        >
+          <Plus size={14} />
+          Add Class
+        </button>
       </div>
     )
   }
 
+  // ── MONTH VIEW — matching MonthView exactly ──
   const renderMonthView = () => {
     const monthDays = getMonthDays(currentDate)
+    const selectedDay = monthSelectedDay
+    const setSelectedDay = setMonthSelectedDay
+
+    const selectedDateKey = format(selectedDay, 'yyyy-MM-dd')
+    const selectedDayOccurrences = occByDate.get(selectedDateKey) ?? []
+
     return (
-      <div className="flex-1 overflow-auto min-h-0 p-2">
-        <div className="grid grid-cols-7 mb-1">
-          {DAYS.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">
-              {d}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Desktop: traditional grid matching MonthView */}
+        <div className="hidden xl:flex xl:flex-col xl:flex-1">
+          <div className="grid grid-cols-7">
+            {WEEKDAYS_LONG.map((day) => (
+              <div
+                key={day}
+                className="border border-border px-2 py-2 text-sm font-bold text-foreground text-center bg-muted"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 flex-1">
+            {monthDays.map((day) => {
+              const dateKey = format(day, 'yyyy-MM-dd')
+              const dayOccs = occByDate.get(dateKey) ?? []
+              const today = isToday(day)
+              const inMonth = isSameMonth(day, currentDate)
+
+              return (
+                <div
+                  key={dateKey}
+                  onDoubleClick={() => openAdd(day)}
+                  className={`border border-border p-1 cursor-pointer hover:bg-accent/50 transition-colors min-h-[100px] ${
+                    today ? 'bg-primary/12' : !inMonth ? 'bg-muted/60' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span
+                      className={`text-sm font-semibold leading-none ${
+                        today
+                          ? 'bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center'
+                          : !inMonth
+                            ? 'text-muted-foreground'
+                            : 'text-foreground'
+                      }`}
+                    >
+                      {format(day, 'd')}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5 overflow-hidden">
+                    {dayOccs.map((occ) => (
+                      <ClassCardCompact
+                        key={`${occ.classId}-${occ.date}`}
+                        occ={occ}
+                        onClick={() => openEdit(occ.classItem)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Mobile: compact mini calendar + selected day tasks — matching MonthView mobile */}
+        <div className="flex-1 flex flex-col overflow-hidden xl:hidden">
+          {/* Mini calendar grid */}
+          <div className="shrink-0 px-2 pt-2 pb-1">
+            <div className="grid grid-cols-7 mb-1">
+              {WEEKDAYS_SHORT.map((day, i) => (
+                <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {monthDays.map((day) => {
+                const dateKey = format(day, 'yyyy-MM-dd')
+                const inMonth = isSameMonth(day, currentDate)
+                const today = isToday(day)
+                const isSelected = isSameDay(day, selectedDay)
+                const dayOccs = occByDate.get(dateKey) ?? []
+                const hasTasks = dayOccs.length > 0
+
+                return (
+                  <button
+                    key={dateKey}
+                    onClick={() => setSelectedDay(day)}
+                    className={`flex flex-col items-center py-1.5 rounded-lg transition-colors ${
+                      isSelected ? 'bg-primary/20' : ''
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${
+                        today && isSelected
+                          ? 'bg-primary text-primary-foreground'
+                          : today
+                            ? 'bg-primary text-primary-foreground'
+                            : isSelected
+                              ? 'bg-foreground text-background'
+                              : inMonth
+                                ? 'text-foreground'
+                                : 'text-muted-foreground/40'
+                      }`}
+                    >
+                      {format(day, 'd')}
+                    </span>
+                    {hasTasks ? (
+                      <span className="h-1.5 w-1.5 rounded-full mt-0.5 bg-primary" />
+                    ) : (
+                      <span className="h-1.5 mt-0.5" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Divider with selected date label */}
+          <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-y border-border bg-muted">
+            <span className="text-sm font-bold text-foreground">
+              {format(selectedDay, 'EEEE, MMM d')}
+            </span>
+            {isToday(selectedDay) && (
+              <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">Today</span>
+            )}
+            <span className="ml-auto text-xs text-muted-foreground">
+              {selectedDayOccurrences.length} {selectedDayOccurrences.length === 1 ? 'class' : 'classes'}
+            </span>
+          </div>
+
+          {/* Selected day's classes */}
+          <div className="flex-1 overflow-y-auto">
+            {selectedDayOccurrences.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 px-4">
+                <p className="text-3xl mb-2">📅</p>
+                <p className="font-semibold">No classes on this day</p>
+                <button
+                  onClick={() => openAdd(selectedDay)}
+                  className="text-sm text-primary mt-2 hover:underline"
+                >
+                  Tap to add one
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 space-y-2">
+                {selectedDayOccurrences.map((occ) => (
+                  <ClassCardFull
+                    key={`${occ.classId}-${occ.date}`}
+                    occ={occ}
+                    onClick={() => openEdit(occ.classItem)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── WEEK VIEW — matching WeekView exactly (CSS grid, not table) ──
+  const renderWeekView = () => {
+    const days = getWeekDays(currentDate)
+    const selectedDayIndex = weekSelectedDayIndex
+    const setSelectedDayIndex = setWeekSelectedDayIndex
+
+    function getTimedOccurrences(dateKey: string, hour: number) {
+      return (occByDate.get(dateKey) ?? []).filter(
+        (occ) => occ.classItem.startTime && getHourFromTime(occ.classItem.startTime) === hour
+      )
+    }
+
+    function getAllDayOccurrences(dateKey: string) {
+      return (occByDate.get(dateKey) ?? []).filter((occ) => !occ.classItem.startTime)
+    }
+
+    const selectedDay = days[selectedDayIndex]
+    const selectedDateKey = format(selectedDay, 'yyyy-MM-dd')
+    const selectedDayOccurrences = occByDate.get(selectedDateKey) ?? []
+
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Desktop: timeline grid — matching WeekView exactly */}
+        <div className="hidden xl:flex xl:flex-col xl:flex-1 overflow-auto">
+          {/* Header row */}
+          <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+            <div className="border border-border bg-muted" />
+            {days.map((day) => {
+              const today = isToday(day)
+              return (
+                <div
+                  key={format(day, 'yyyy-MM-dd')}
+                  className={`border border-border px-2 py-1.5 text-center bg-muted ${today ? 'bg-primary/20' : ''}`}
+                >
+                  <span className="text-sm font-bold text-foreground">{format(day, 'EEE')}</span>
+                  <br />
+                  <span
+                    className={`text-base font-bold ${
+                      today
+                        ? 'bg-primary text-primary-foreground rounded-full inline-flex items-center justify-center w-7 h-7'
+                        : 'text-foreground'
+                    }`}
+                  >
+                    {format(day, 'd')}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* All-day row */}
+          <div className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+            <div className="border border-border px-1 py-1 text-sm text-muted-foreground font-semibold flex items-start justify-end pr-2">
+              All day
+            </div>
+            {days.map((day) => {
+              const dateKey = format(day, 'yyyy-MM-dd')
+              const allDay = getAllDayOccurrences(dateKey)
+              const todayCol = isToday(day)
+              return (
+                <div
+                  key={dateKey}
+                  onClick={() => openAdd(day)}
+                  className={`border border-border p-1 min-h-[36px] cursor-pointer hover:bg-accent/50 transition-colors ${todayCol ? 'bg-primary/12' : ''}`}
+                >
+                  <div className="space-y-0.5">
+                    {allDay.map((occ) => (
+                      <ClassCardCompact key={`${occ.classId}-${occ.date}`} occ={occ} onClick={() => openEdit(occ.classItem)} />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Time grid */}
+          {HOURS.map((hour) => (
+            <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+              <div className="border border-border px-1 text-xs text-muted-foreground font-semibold flex items-start justify-end pr-2 pt-0.5 h-[60px]">
+                {formatHour(hour)}
+              </div>
+              {days.map((day) => {
+                const dateKey = format(day, 'yyyy-MM-dd')
+                const hourOccs = getTimedOccurrences(dateKey, hour)
+                const todayCol = isToday(day)
+                return (
+                  <div
+                    key={dateKey}
+                    onClick={() => openAdd(day, `${String(hour).padStart(2, '0')}:00`)}
+                    className={`border border-border p-0.5 h-[60px] cursor-pointer hover:bg-accent/50 transition-colors overflow-hidden ${todayCol ? 'bg-primary/12' : ''}`}
+                  >
+                    <div className="space-y-0.5">
+                      {hourOccs.map((occ) => (
+                        <ClassCardCompact key={`${occ.classId}-${occ.date}`} occ={occ} onClick={() => openEdit(occ.classItem)} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-0.5">
-          {monthDays.map((day) => {
-            const dateStr = format(day, 'yyyy-MM-dd')
-            const dayOccs = occByDate[dateStr] ?? []
-            const isCurrentMonth = isSameMonth(day, currentDate)
-            const isSelected = selectedDay ? isSameDay(day, selectedDay) : false
-            const today = isToday(day)
 
-            return (
-              <button
-                key={dateStr}
-                onClick={() => setSelectedDay(day)}
-                onDoubleClick={(e) => {
-                  e.stopPropagation()
-                  setEditingId(null)
-                  const f = emptyForm()
-                  f.startDate = format(day, 'yyyy-MM-dd')
-                  if (members.length > 0) f.assigneeId = members[0].id
-                  setForm(f)
-                  setDialogOpen(true)
-                }}
-                className={cn(
-                  'min-h-[80px] p-1 rounded-lg border text-left transition-colors flex flex-col',
-                  isCurrentMonth ? 'bg-card' : 'bg-muted/30',
-                  isSelected ? 'border-primary ring-1 ring-primary' : 'border-border/50',
-                  'hover:border-primary/50'
-                )}
-              >
-                <span
-                  className={cn(
-                    'text-xs font-medium mb-0.5 w-6 h-6 flex items-center justify-center rounded-full',
-                    today && 'bg-primary text-white',
-                    !today && !isCurrentMonth && 'text-muted-foreground/50',
-                    !today && isCurrentMonth && 'text-foreground'
-                  )}
+        {/* Mobile: horizontal day selector + task list — matching WeekView mobile */}
+        <div className="flex-1 flex flex-col overflow-hidden xl:hidden">
+          {/* Day selector row */}
+          <div className="flex shrink-0 border-b border-border bg-muted">
+            {days.map((day, idx) => {
+              const today = isToday(day)
+              const dateKey = format(day, 'yyyy-MM-dd')
+              const dayOccs = occByDate.get(dateKey) ?? []
+              const isSelected = idx === selectedDayIndex
+              const hasTasks = dayOccs.length > 0
+
+              return (
+                <button
+                  key={dateKey}
+                  onClick={() => setSelectedDayIndex(idx)}
+                  className={`flex-1 flex flex-col items-center py-2 transition-colors relative ${
+                    isSelected ? 'bg-primary/20' : ''
+                  }`}
                 >
-                  {format(day, 'd')}
-                </span>
-                {dayOccs.slice(0, 3).map((occ) => {
-                  const member = members.find((m) => m.id === occ.classItem.assigneeId)
-                  const color = member ? getMemberColor(member) : null
-                  return (
-                    <div
-                      key={occ.classId + occ.date}
-                      className={cn(
-                        'text-[10px] leading-tight truncate rounded px-1 py-0.5 mb-0.5 font-medium',
-                        color?.bg ?? 'bg-blue-100 dark:bg-blue-900/30',
-                        color?.text ?? 'text-blue-700 dark:text-blue-300'
-                      )}
-                      title={`${occ.classItem.emoji ?? ''} ${occ.classItem.name}`}
-                    >
-                      {occ.classItem.emoji ? `${occ.classItem.emoji} ` : ''}
-                      {occ.classItem.name}
-                    </div>
-                  )
-                })}
-                {dayOccs.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground">+{dayOccs.length - 3} more</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  const renderWeekView = () => {
-    const weekDays = eachDayOfInterval({ start: rangeStart, end: rangeEnd })
-
-    // Build grid: hour -> day -> occurrences
-    const timeGrid: Record<number, Record<string, ClassOccurrence[]>> = {}
-    for (const hour of TIME_SLOTS) {
-      timeGrid[hour] = {}
-      for (const day of weekDays) {
-        timeGrid[hour][format(day, 'yyyy-MM-dd')] = []
-      }
-    }
-
-    const noTimeOccs: Record<string, ClassOccurrence[]> = {}
-    for (const day of weekDays) {
-      noTimeOccs[format(day, 'yyyy-MM-dd')] = []
-    }
-
-    for (const occ of filteredOccurrences) {
-      if (occ.classItem.startTime) {
-        const hour = parseTimeToHour(occ.classItem.startTime)
-        if (timeGrid[hour]?.[occ.date]) {
-          timeGrid[hour][occ.date].push(occ)
-        }
-      } else {
-        if (noTimeOccs[occ.date]) {
-          noTimeOccs[occ.date].push(occ)
-        }
-      }
-    }
-
-    const hasNoTimeClasses = Object.values(noTimeOccs).some((arr) => arr.length > 0)
-
-    return (
-      <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full border-collapse table-fixed">
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className="w-20 bg-card border border-border p-1 text-xs font-semibold text-muted-foreground">
-                Time
-              </th>
-              {weekDays.map((day) => {
-                const today = isToday(day)
-                return (
-                  <th
-                    key={format(day, 'yyyy-MM-dd')}
-                    className={cn(
-                      'bg-card border border-border p-2 text-center',
-                      today && 'bg-primary/5'
-                    )}
+                  <span className={`text-xs font-semibold ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {format(day, 'EEE')}
+                  </span>
+                  <span
+                    className={`text-sm font-bold mt-0.5 w-7 h-7 flex items-center justify-center rounded-full ${
+                      today && isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : today
+                          ? 'bg-primary text-primary-foreground'
+                          : isSelected
+                            ? 'bg-foreground text-background'
+                            : 'text-foreground'
+                    }`}
                   >
-                    <div className="text-sm font-semibold text-muted-foreground">{format(day, 'EEE')}</div>
-                    <div
-                      className={cn(
-                        'text-base font-bold mt-0.5 w-8 h-8 flex items-center justify-center rounded-full mx-auto',
-                        today && 'bg-primary text-white'
+                    {format(day, 'd')}
+                  </span>
+                  {hasTasks && (
+                    <div className="flex gap-0.5 mt-1">
+                      {dayOccs.slice(0, 3).map((_, i) => (
+                        <span key={i} className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
+                      ))}
+                      {dayOccs.length > 3 && (
+                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary/120' : 'bg-muted-foreground/30'}`} />
                       )}
-                    >
-                      {format(day, 'd')}
                     </div>
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {hasNoTimeClasses && (
-              <tr>
-                <td className="border border-border p-2 text-xs text-muted-foreground text-right pr-2 align-top font-medium italic">
-                  No time
-                </td>
-                {weekDays.map((day) => {
-                  const dateStr = format(day, 'yyyy-MM-dd')
-                  const occs = noTimeOccs[dateStr]
-                  return (
-                    <td
-                      key={dateStr}
-                      className={cn(
-                        'border border-border p-0.5 align-top cursor-pointer hover:bg-muted/30 transition-colors',
-                        isToday(day) && 'bg-primary/5'
-                      )}
-                      onClick={() => {
-                        setEditingId(null)
-                        const f = emptyForm()
-                        f.startDate = format(day, 'yyyy-MM-dd')
-                        if (members.length > 0) f.assigneeId = members[0].id
-                        setForm(f)
-                        setDialogOpen(true)
-                      }}
-                    >
-                      {occs.map((occ) => renderWeekCell(occ))}
-                    </td>
-                  )
-                })}
-              </tr>
+                  )}
+                  {!hasTasks && <div className="h-1.5 mt-1" />}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Selected day's classes */}
+          <div className="flex-1 overflow-y-auto">
+            {selectedDayOccurrences.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 px-4">
+                <p className="text-3xl mb-2">📋</p>
+                <p className="font-semibold">No classes on {format(selectedDay, 'EEEE')}</p>
+                <button
+                  onClick={() => openAdd(selectedDay)}
+                  className="text-sm text-primary mt-2 hover:underline"
+                >
+                  Tap to add one
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 space-y-2">
+                {selectedDayOccurrences.map((occ) => (
+                  <ClassCardFull
+                    key={`${occ.classId}-${occ.date}`}
+                    occ={occ}
+                    onClick={() => openEdit(occ.classItem)}
+                  />
+                ))}
+              </div>
             )}
-            {TIME_SLOTS.map((hour) => (
-              <tr key={hour}>
-                <td className="border border-border p-2 text-xs text-muted-foreground text-right pr-2 align-top font-medium">
-                  {formatHour(hour)}
-                </td>
-                {weekDays.map((day) => {
-                  const dateStr = format(day, 'yyyy-MM-dd')
-                  const occs = timeGrid[hour][dateStr]
-                  return (
-                    <td
-                      key={dateStr}
-                      className={cn(
-                        'border border-border p-0.5 align-top min-h-[60px] cursor-pointer hover:bg-muted/30 transition-colors',
-                        isToday(day) && 'bg-primary/5'
-                      )}
-                      onClick={() => {
-                        setEditingId(null)
-                        const f = emptyForm()
-                        f.startDate = format(day, 'yyyy-MM-dd')
-                        f.startTime = `${String(hour).padStart(2, '0')}:00`
-                        f.endTime = `${String(hour + 1).padStart(2, '0')}:00`
-                        if (members.length > 0) f.assigneeId = members[0].id
-                        setForm(f)
-                        setDialogOpen(true)
-                      }}
-                    >
-                      {occs.map((occ) => renderWeekCell(occ))}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     )
   }
 
-  const renderWeekCell = (occ: ClassOccurrence) => {
-    const member = members.find((m) => m.id === occ.classItem.assigneeId)
-    const color = member ? getMemberColor(member) : null
-    return (
-      <button
-        key={occ.classId + occ.date}
-        onClick={(e) => { e.stopPropagation(); openEdit(occ.classItem) }}
-        className={cn(
-          'w-full text-left rounded p-1.5 mb-0.5 transition-opacity hover:opacity-80',
-          color?.bg ?? 'bg-blue-100 dark:bg-blue-900/30',
-          color?.text ?? 'text-blue-700 dark:text-blue-300'
-        )}
-      >
-        <div className="text-xs font-bold leading-tight truncate">
-          {occ.classItem.emoji ? `${occ.classItem.emoji} ` : ''}
-          {occ.classItem.name}
-        </div>
-        {member && <div className="text-[11px] leading-tight truncate opacity-80">{member.name}</div>}
-        {occ.classItem.startTime && (
-          <div className="text-[11px] leading-tight opacity-70">
-            {occ.classItem.startTime}
-            {occ.classItem.endTime ? `-${occ.classItem.endTime}` : ''}
-          </div>
-        )}
-        {occ.classItem.location && (
-          <div className="text-[11px] leading-tight truncate opacity-70">{occ.classItem.location}</div>
-        )}
-      </button>
-    )
-  }
-
+  // ── DAY VIEW — matching DayView exactly ──
   const renderDayView = () => {
-    const dateStr = format(currentDate, 'yyyy-MM-dd')
-    const dayOccs = occByDate[dateStr] ?? []
+    const dateKey = format(currentDate, 'yyyy-MM-dd')
     const today = isToday(currentDate)
+    const dayOccurrences = occByDate.get(dateKey) ?? []
 
-    // Sort by time
-    const withTime = dayOccs.filter((o) => o.classItem.startTime).sort((a, b) => (a.classItem.startTime ?? '').localeCompare(b.classItem.startTime ?? ''))
-    const withoutTime = dayOccs.filter((o) => !o.classItem.startTime)
-
-    const allSorted = [...withTime, ...withoutTime]
+    const timed = dayOccurrences.filter((occ) => occ.classItem.startTime).sort((a, b) => (a.classItem.startTime! < b.classItem.startTime! ? -1 : 1))
+    const allDay = dayOccurrences.filter((occ) => !occ.classItem.startTime)
 
     return (
-      <div className="flex-1 overflow-auto min-h-0 p-4">
-        {allSorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-sm">No classes scheduled for this day</p>
-            <button
-              onClick={openAdd}
-              className="mt-3 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-medium">Add class for this day</span>
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 max-w-lg mx-auto">
-            {allSorted.map((occ) => {
-              const member = members.find((m) => m.id === occ.classItem.assigneeId)
-              const color = member ? getMemberColor(member) : null
-              return (
-                <div
-                  key={occ.classId + occ.date}
-                  className={cn(
-                    'flex items-start gap-3 p-3 rounded-xl border border-border/50',
-                    color ? `${color.accent} border-l-4` : 'border-l-4 border-l-blue-500',
-                    'bg-card'
-                  )}
-                >
-                  <div className="flex flex-col items-center min-w-[50px]">
-                    {occ.classItem.startTime ? (
-                      <>
-                        <span className="text-sm font-bold text-foreground">{occ.classItem.startTime}</span>
-                        {occ.classItem.endTime && (
-                          <span className="text-[10px] text-muted-foreground">{occ.classItem.endTime}</span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">No time</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {occ.classItem.emoji && <span className="text-lg">{occ.classItem.emoji}</span>}
-                      <span className="font-bold text-foreground text-sm">{occ.classItem.name}</span>
-                      {member && (
-                        <span
-                          className={cn(
-                            'text-xs px-1.5 py-0.5 rounded-full font-medium',
-                            color?.bg,
-                            color?.text
-                          )}
-                        >
-                          {member.name}
-                        </span>
-                      )}
-                    </div>
-                    {occ.classItem.location && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <MapPin size={10} />
-                        {occ.classItem.location}
-                      </div>
-                    )}
-                    {occ.classItem.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{occ.classItem.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => openEdit(occ.classItem)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Edit class"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                </div>
-              )
-            })}
-            <button
-              onClick={openAdd}
-              className="mt-3 w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-medium">Add class for this day</span>
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  const renderSelectedDayPanel = () => {
-    if (!selectedDay || viewMode !== 'month') return null
-    return (
-      <div className="border-t border-border bg-card px-4 py-3 max-h-[35vh] overflow-auto shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-foreground text-sm">{format(selectedDay, 'EEEE, MMMM d')}</h3>
-          <button
-            onClick={() => setSelectedDay(null)}
-            className="p-1 rounded hover:bg-muted"
-            aria-label="Close detail panel"
-          >
-            <X size={14} />
-          </button>
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Summary bar */}
+        <div
+          className={`flex items-center gap-2 px-4 py-2 border-b border-border ${
+            today ? 'bg-primary/12' : 'bg-muted/60'
+          }`}
+        >
+          <span className="text-sm text-muted-foreground">
+            {dayOccurrences.length} {dayOccurrences.length === 1 ? 'class' : 'classes'}
+          </span>
         </div>
-        {selectedOccs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No classes scheduled</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {selectedOccs.map((occ) => {
-              const member = members.find((m) => m.id === occ.classItem.assigneeId)
-              const color = member ? getMemberColor(member) : null
-              return (
-                <div
-                  key={occ.classId + occ.date}
-                  className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border/50"
-                >
-                  <span className="text-2xl">{occ.classItem.emoji || ''}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground text-sm">{occ.classItem.name}</span>
-                      {member && (
-                        <span
-                          className={cn(
-                            'text-xs px-1.5 py-0.5 rounded-full font-medium',
-                            color?.bg,
-                            color?.text
-                          )}
-                        >
-                          {member.name}
-                        </span>
-                      )}
-                    </div>
-                    {(occ.classItem.startTime || occ.classItem.endTime) && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                        <Clock size={10} />
-                        {occ.classItem.startTime}
-                        {occ.classItem.endTime ? ` - ${occ.classItem.endTime}` : ''}
-                      </div>
-                    )}
-                    {occ.classItem.location && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                        <MapPin size={10} />
-                        {occ.classItem.location}
-                      </div>
-                    )}
-                    {occ.classItem.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{occ.classItem.description}</p>
-                    )}
+
+        {/* Class list */}
+        <div className="flex-1 overflow-y-auto">
+          {dayOccurrences.length === 0 ? (
+            <div className="text-center text-muted-foreground py-16 px-4">
+              <p className="text-4xl mb-3">📅</p>
+              <p className="text-lg font-semibold">No classes {today ? 'today' : 'on this day'}</p>
+              <button
+                onClick={() => openAdd(currentDate)}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors min-h-[44px]"
+              >
+                <Plus size={18} />
+                Add a class
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 space-y-2">
+              {/* All-day classes */}
+              {allDay.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">All Day</p>
+                  <div className="space-y-2">
+                    {allDay.map((occ) => (
+                      <ClassCardFull
+                        key={`${occ.classId}-${occ.date}`}
+                        occ={occ}
+                        onClick={() => openEdit(occ.classItem)}
+                      />
+                    ))}
                   </div>
-                  <button
-                    onClick={() => openEdit(occ.classItem)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Edit class"
-                  >
-                    <Pencil size={14} />
-                  </button>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              )}
+
+              {/* Timed classes */}
+              {timed.length > 0 && (
+                <div>
+                  {allDay.length > 0 && (
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1 mt-3">Scheduled</p>
+                  )}
+                  <div className="space-y-2">
+                    {timed.map((occ) => (
+                      <ClassCardFull
+                        key={`${occ.classId}-${occ.date}`}
+                        occ={occ}
+                        onClick={() => openEdit(occ.classItem)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Floating add button — matching DayView */}
+        <button
+          onClick={() => openAdd(currentDate)}
+          className="absolute bottom-4 left-4 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all flex items-center justify-center"
+          title="Add class"
+        >
+          <Plus size={22} />
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={navigatePrev}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-            aria-label="Previous"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <h2 className="text-lg font-bold text-foreground min-w-[180px] text-center">{headerTitle}</h2>
-          <button
-            onClick={navigateNext}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-            aria-label="Next"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            {(['month', 'week', 'day'] as CalendarViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={cn(
-                  'px-2.5 py-1 text-xs font-semibold transition-colors capitalize',
-                  viewMode === mode
-                    ? 'bg-primary text-white'
-                    : 'bg-card text-muted-foreground hover:bg-muted'
-                )}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-          {/* Export PDF button */}
-          <button
-            onClick={exportWeeklyPdf}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            aria-label="Export weekly timetable to PDF"
-            title="Print weekly timetable"
-          >
-            <Printer size={14} />
-            <span className="hidden sm:inline">Print</span>
-          </button>
-          {/* Add class button */}
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            <Plus size={16} />
-            Add Class
-          </button>
+    <div className="flex-1 flex flex-col overflow-hidden xl:overflow-hidden">
+      {/* Header — matching CalendarHeader + view mode toggle */}
+      <div className="flex items-center border-b border-border">
+        <div className="flex-1">{renderHeader()}</div>
+        <div className="flex gap-1 rounded-lg bg-muted p-1 mr-4">
+          {(['day', 'week', 'month'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setViewMode(m)}
+              className={`rounded-md px-2 xl:px-3 py-1.5 text-sm font-medium transition-colors min-h-[36px] ${
+                viewMode === m
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {m.charAt(0).toUpperCase() + m.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Kid filter */}
-      {renderKidFilter()}
+      {/* Filter bar — matching FilterBar */}
+      {renderFilterBar()}
 
       {/* Calendar content */}
-      {viewMode === 'month' && renderMonthView()}
-      {viewMode === 'week' && renderWeekView()}
-      {viewMode === 'day' && renderDayView()}
-
-      {/* Selected day detail panel (month view only) */}
-      {renderSelectedDayPanel()}
+      {viewMode === 'month' ? (
+        renderMonthView()
+      ) : viewMode === 'week' ? (
+        renderWeekView()
+      ) : (
+        renderDayView()
+      )}
 
       {/* Add/Edit Class Dialog */}
       {dialogOpen && (
@@ -1094,7 +1452,7 @@ ${TIME_SLOTS.map(
               <button
                 onClick={handleSave}
                 disabled={!form.name.trim() || !form.assigneeId}
-                className="px-4 py-2 rounded-lg text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:opacity-90 disabled:opacity-40 transition-opacity"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-colors"
               >
                 {editingId ? 'Save' : 'Add Class'}
               </button>

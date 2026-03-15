@@ -111,26 +111,79 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Secret Emoji (passcode)</label>
+            <label className="block text-sm font-medium mb-1">Emoji Password (4 emojis)</label>
+            {/* 4-slot display */}
+            <div className="flex gap-2 justify-center mb-3">
+              {Array.from({ length: 4 }).map((_, i) => {
+                const emojis = emojiPasscode ? [...emojiPasscode] : []
+                return (
+                  <div
+                    key={i}
+                    className={`w-11 h-11 rounded-lg border-2 flex items-center justify-center text-lg transition-all ${
+                      emojis[i]
+                        ? 'border-primary bg-primary/10 scale-105'
+                        : 'border-border bg-muted/50'
+                    }`}
+                  >
+                    {emojis[i] || ''}
+                  </div>
+                )
+              })}
+            </div>
+            {/* Emoji grid */}
             <div className="grid grid-cols-6 gap-2">
               {EMOJI_OPTIONS.map((e) => (
                 <button
                   key={e}
                   type="button"
-                  onClick={() => setEmojiPasscode(emojiPasscode === e ? undefined : e)}
-                  className={`h-11 w-full rounded-lg text-xl flex items-center justify-center transition-all ${
-                    emojiPasscode === e
-                      ? 'bg-primary/15 ring-2 ring-primary scale-110'
-                      : 'bg-muted hover:bg-accent'
-                  }`}
+                  onClick={() => {
+                    const emojis = emojiPasscode ? [...emojiPasscode] : []
+                    if (emojis.length < 4) {
+                      setEmojiPasscode((emojiPasscode || '') + e)
+                    }
+                  }}
+                  disabled={(emojiPasscode?.length ?? 0) >= 4}
+                  className={`h-11 w-full rounded-lg text-xl flex items-center justify-center transition-all
+                    ${(emojiPasscode?.length ?? 0) >= 4 ? 'opacity-40 cursor-not-allowed' : 'bg-muted hover:bg-accent'}`}
                 >
                   {e}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {emojiPasscode ? `Selected: ${emojiPasscode}` : 'Optional — kid taps this emoji to log in'}
-            </p>
+            {/* Action buttons */}
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-muted-foreground">
+                {emojiPasscode && emojiPasscode.length === 4
+                  ? `Password set: ${[...emojiPasscode].join('')}`
+                  : emojiPasscode && emojiPasscode.length > 0
+                    ? `${4 - emojiPasscode.length} more to go`
+                    : 'Optional — tap 4 emojis to set a password'}
+              </p>
+              <div className="flex gap-1">
+                {emojiPasscode && emojiPasscode.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const emojis = [...emojiPasscode]
+                      emojis.pop()
+                      setEmojiPasscode(emojis.length > 0 ? emojis.join('') : undefined)
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded transition-colors"
+                  >
+                    Undo
+                  </button>
+                )}
+                {emojiPasscode && (
+                  <button
+                    type="button"
+                    onClick={() => setEmojiPasscode(undefined)}
+                    className="text-xs text-destructive hover:text-destructive/80 px-2 py-1 rounded transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>
@@ -142,7 +195,7 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
               placeholder="e.g., responds to praise, competitive, needs gentle reminders"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Helps Buddy adjust its tone when chatting with this kid
+              Helps Váu Váu adjust its tone when chatting with this kid
             </p>
           </div>
 

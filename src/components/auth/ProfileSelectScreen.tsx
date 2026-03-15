@@ -31,12 +31,13 @@ export default function ProfileSelectScreen() {
 
   // Kid emoji login state
   const [selectedKid, setSelectedKid] = useState<FamilyMember | null>(null)
+  const [emojiInput, setEmojiInput] = useState<string[]>([])
   const [kidError, setKidError] = useState('')
   const [kidShake, setKidShake] = useState(false)
   const [kidAttempts, setKidAttempts] = useState(0)
   const [kidLockedUntil, setKidLockedUntil] = useState<number | null>(null)
   const [kidCountdown, setKidCountdown] = useState('')
-  const [successEmoji, setSuccessEmoji] = useState<string | null>(null)
+  const [kidSuccess, setKidSuccess] = useState(false)
 
   const members = useMemberStore((s) => s.members)
   const enterParentMode = useAppStore((s) => s.enterParentMode)
@@ -151,6 +152,8 @@ export default function ProfileSelectScreen() {
 
   // ── Kid emoji login logic ──
 
+  const EMOJI_PASSWORD_LENGTH = 4
+
   const handleKidClick = (member: FamilyMember) => {
     if (!member.emojiPasscode) {
       // No passcode set — enter directly
@@ -158,9 +161,10 @@ export default function ProfileSelectScreen() {
       return
     }
     setSelectedKid(member)
+    setEmojiInput([])
     setKidError('')
     setKidAttempts(0)
-    setSuccessEmoji(null)
+    setKidSuccess(false)
   }
 
   const doKidLogin = async (memberId: string) => {
@@ -170,33 +174,53 @@ export default function ProfileSelectScreen() {
   }
 
   const handleEmojiTap = (emoji: string) => {
-    if (!selectedKid || isKidLockedOut || successEmoji) return
+    if (!selectedKid || isKidLockedOut || kidSuccess) return
+    if (emojiInput.length >= EMOJI_PASSWORD_LENGTH) return
 
-    if (emoji === selectedKid.emojiPasscode) {
-      // Correct!
-      setSuccessEmoji(emoji)
-      setKidError('')
-      setTimeout(() => doKidLogin(selectedKid.id), 600)
-    } else {
-      // Wrong
-      const next = kidAttempts + 1
-      setKidAttempts(next)
-      if (next >= MAX_ATTEMPTS) {
-        setKidLockedUntil(Date.now() + LOCKOUT_MS)
-        setKidError('Too many tries! Wait a bit.')
+    const next = [...emojiInput, emoji]
+    setEmojiInput(next)
+    setKidError('')
+
+    if (next.length === EMOJI_PASSWORD_LENGTH) {
+      const entered = next.join('')
+      // Support both 4-emoji passwords and legacy single-emoji passcodes
+      const passcode = selectedKid.emojiPasscode || ''
+      const isLegacySingle = [...passcode].length === 1
+
+      if (entered === passcode || (isLegacySingle && next[0] === passcode)) {
+        // Correct!
+        setKidSuccess(true)
+        setTimeout(() => doKidLogin(selectedKid.id), 600)
       } else {
-        setKidError('Try again!')
+        // Wrong
+        const nextAttempts = kidAttempts + 1
+        setKidAttempts(nextAttempts)
+        if (nextAttempts >= MAX_ATTEMPTS) {
+          setKidLockedUntil(Date.now() + LOCKOUT_MS)
+          setKidError('Too many tries! Wait a bit.')
+        } else {
+          setKidError(`Wrong password. ${MAX_ATTEMPTS - nextAttempts} attempts left.`)
+        }
+        setKidShake(true)
+        setTimeout(() => {
+          setKidShake(false)
+          setEmojiInput([])
+        }, 500)
       }
-      setKidShake(true)
-      setTimeout(() => setKidShake(false), 500)
     }
+  }
+
+  const handleEmojiDelete = () => {
+    if (!selectedKid || isKidLockedOut || kidSuccess) return
+    setEmojiInput((prev) => prev.slice(0, -1))
+    setKidError('')
   }
 
   // Escape key for kid emoji screen
   useEffect(() => {
     if (!selectedKid) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setSelectedKid(null); setKidError(''); setSuccessEmoji(null) }
+      if (e.key === 'Escape') { setSelectedKid(null); setEmojiInput([]); setKidError(''); setKidSuccess(false) }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -211,7 +235,7 @@ export default function ProfileSelectScreen() {
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
         <div className="flex flex-col items-center w-full max-w-[320px] animate-fade-in-up">
           <button
-            onClick={() => { setSelectedKid(null); setKidError(''); setSuccessEmoji(null) }}
+            onClick={() => { setSelectedKid(null); setEmojiInput([]); setKidError(''); setKidSuccess(false) }}
             className="self-start mb-10 flex items-center gap-1.5 text-[13px] tracking-wide transition-colors
               text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-400"
           >
@@ -230,23 +254,28 @@ export default function ProfileSelectScreen() {
             )}
           </div>
           <h2 className="text-lg tracking-wide mb-1 font-normal text-neutral-900 dark:text-neutral-100">{selectedKid.name}</h2>
-          <p className="text-[13px] tracking-wide mb-8 text-neutral-400 dark:text-neutral-500">Tap your secret emoji</p>
+          <p className="text-[13px] tracking-wide mb-8 text-neutral-400 dark:text-neutral-500">Enter your emoji password</p>
 
-          {/* Single emoji slot */}
-          <div className={`mb-8 ${kidShake ? 'animate-shake' : ''}`}>
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-all duration-300
-                ${successEmoji
-                  ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 scale-[1.15]'
-                  : 'bg-neutral-100 dark:bg-neutral-900 border-2 border-neutral-300 dark:border-neutral-700'}`}
-            >
-              {successEmoji || ''}
-            </div>
+          {/* 4 emoji slots */}
+          <div className={`flex gap-3 justify-center mb-6 ${kidShake ? 'animate-shake' : ''}`}>
+            {Array.from({ length: EMOJI_PASSWORD_LENGTH }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-2xl transition-all duration-200
+                  ${kidSuccess
+                    ? 'border-green-300 dark:border-green-700 bg-green-100 dark:bg-green-900/30 scale-105'
+                    : emojiInput[i]
+                      ? 'border-primary bg-primary/10 scale-110'
+                      : 'border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900'}`}
+              >
+                {emojiInput[i] || ''}
+              </div>
+            ))}
           </div>
 
           {/* Status message */}
           <div className="h-6 flex items-center justify-center mb-6">
-            {successEmoji ? (
+            {kidSuccess ? (
               <p className="text-[13px] tracking-wide text-green-500 dark:text-green-400">Welcome!</p>
             ) : kidError ? (
               <p className="text-[13px] text-center text-red-500">{kidError}</p>
@@ -255,13 +284,13 @@ export default function ProfileSelectScreen() {
             ) : null}
           </div>
 
-          {/* Emoji grid — 4x3 */}
-          <div className="grid grid-cols-4 gap-3 w-full">
+          {/* Emoji grid — 4 columns + backspace */}
+          <div className="grid grid-cols-4 gap-3 w-full max-w-[280px] mx-auto">
             {EMOJI_OPTIONS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => handleEmojiTap(emoji)}
-                disabled={isKidLockedOut || !!successEmoji}
+                disabled={isKidLockedOut || kidSuccess || emojiInput.length >= EMOJI_PASSWORD_LENGTH}
                 className="aspect-square rounded-2xl text-3xl flex items-center justify-center
                   transition-all duration-150 active:scale-90
                   disabled:opacity-20 disabled:cursor-not-allowed
@@ -271,6 +300,21 @@ export default function ProfileSelectScreen() {
                 {emoji}
               </button>
             ))}
+            {/* Empty cells to align backspace to last column */}
+            <div />
+            <div />
+            <div />
+            <button
+              onClick={handleEmojiDelete}
+              disabled={isKidLockedOut || kidSuccess || emojiInput.length === 0}
+              className="aspect-square rounded-2xl text-lg flex items-center justify-center
+                transition-all duration-150 active:scale-90
+                disabled:opacity-20 disabled:cursor-not-allowed
+                bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800
+                hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600"
+            >
+              <Delete size={20} />
+            </button>
           </div>
         </div>
       </div>
@@ -370,10 +414,10 @@ export default function ProfileSelectScreen() {
         {/* Header */}
         <div className="animate-fade-in-up text-center mb-14">
           <h1 className="text-[28px] tracking-tight mb-2 font-light text-neutral-900 dark:text-neutral-100">
-            Family Chores
+            Váu Váu AI &#x1F427;
           </h1>
           <p className="text-[14px] tracking-wide text-neutral-400 dark:text-neutral-500">
-            Who's using the app?
+            Your family's AI assistant
           </p>
         </div>
 

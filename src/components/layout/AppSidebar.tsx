@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   MessageCircle,
   Calendar,
+  GraduationCap,
   BarChart3,
   Gamepad2,
   Gift,
@@ -59,6 +60,7 @@ const AI_TOOLS: ToolItem[] = [
 
 const FAMILY_ITEMS: NavItem[] = [
   { view: 'calendar', icon: Calendar, label: 'Chore Calendar' },
+  { view: 'classes', icon: GraduationCap, label: 'Extra Classes' },
   { view: 'dashboard', icon: BarChart3, label: 'Dashboard', parentOnly: true },
   { view: 'rewards', icon: Gift, label: 'Rewards' },
   { view: 'coupons', icon: Ticket, label: 'Coupons', kidOnly: true },

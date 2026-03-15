@@ -11,7 +11,6 @@ import GameMenu from './games/GameMenu'
 import LanguageView from './components/language/LanguageView'
 import ClassCalendarView from './components/classes/ClassCalendarView'
 import Toaster from './components/ui/Toaster'
-import { cn } from './lib/utils'
 const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
 const ChatPage = lazy(() => import('./components/chat/ChatPage'))
 import BadgeCelebration from './components/achievements/BadgeCelebration'
@@ -39,7 +38,6 @@ export default function App() {
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenMemberIds, setHiddenMemberIds] = useState<Set<string>>(new Set())
-  const [calendarTab, setCalendarTab] = useState<'chores' | 'classes'>('chores')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [oldSidebarOpen, setOldSidebarOpen] = useState(false)
   const [syncing, setSyncing] = useState(true)
@@ -271,38 +269,9 @@ export default function App() {
             <ChatPage />
           </Suspense>
         ) : activeView === 'calendar' ? (
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Tab bar */}
-            <div className="flex border-b border-border shrink-0">
-              <button
-                onClick={() => setCalendarTab('chores')}
-                className={cn(
-                  'flex-1 py-2.5 text-sm font-bold text-center transition-colors',
-                  calendarTab === 'chores'
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Chore Calendar
-              </button>
-              <button
-                onClick={() => setCalendarTab('classes')}
-                className={cn(
-                  'flex-1 py-2.5 text-sm font-bold text-center transition-colors',
-                  calendarTab === 'classes'
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Extra Classes
-              </button>
-            </div>
-            {calendarTab === 'chores' ? (
-              <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
-            ) : (
-              <ClassCalendarView />
-            )}
-          </div>
+          <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
+        ) : activeView === 'classes' ? (
+          <ClassCalendarView />
         ) : activeView === 'dashboard' ? (
           <Dashboard />
         ) : activeView === 'language' ? (

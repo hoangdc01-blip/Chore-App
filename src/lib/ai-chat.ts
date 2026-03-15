@@ -664,7 +664,35 @@ export interface BuddyContext {
 
 function buildStoryContext(ctx: BuddyContext): string {
   const step = ctx.storyStep ?? 0
-  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest. When telling a story, include [DRAW_IMAGE] blocks to illustrate key scenes — kids love pictures!`
+
+  const storyThemes = [
+    'a magical underwater kingdom with talking fish',
+    'a journey through a candy forest where trees are made of chocolate',
+    'a trip to the moon in a rocket made of cardboard boxes',
+    'a treasure hunt in a haunted friendly castle',
+    'a day at a school for baby dragons',
+    'a race through the clouds with friendly birds',
+    'an adventure in a tiny world inside a garden',
+    'a visit to a village of friendly robots',
+    'a magical train ride through different seasons',
+    'a rescue mission to save a baby unicorn',
+    'a cooking competition with forest animals',
+    'a journey inside a giant magical book',
+    'building a treehouse in the tallest tree in the world',
+    'a snowman who comes to life and wants to see the ocean',
+    'a music festival in the jungle with animal bands',
+    'discovering a secret door in the attic that leads to another world',
+    'a superhero day where everyone gets one superpower',
+    'a boat adventure on a river of rainbow colors',
+    'a camping trip where the stars tell stories',
+    'a birthday party for the oldest turtle in the world',
+  ]
+
+  // Pick a theme based on story step and day to ensure variety
+  const themeIndex = (step + Math.floor(Date.now() / 86400000)) % storyThemes.length
+  const theme = storyThemes[themeIndex]
+
+  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. Today's adventure theme: ${theme}. Current story step: ${step}. Tell a NEW and UNIQUE story every time — never repeat a previous story. Make it exciting, fun, and age-appropriate for 4-7 year olds. Use vivid descriptions. Include [DRAW_IMAGE] blocks to illustrate key scenes — kids love pictures! Each story should have a beginning, middle, and end within 3-5 messages.`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {

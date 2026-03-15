@@ -11,6 +11,28 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
   const isGeneratingImage = isGenerating
   const hasImage = !!result.imageDataUrl
 
+  // Story illustrations: show only the image, no buttons
+  if (result.style === 'illustration') {
+    if (!isGeneratingImage && !hasImage) return null
+    return (
+      <div className="mb-3 ml-10">
+        <div className="bg-white rounded-xl border border-border overflow-hidden inline-block max-w-[350px]">
+          {isGeneratingImage ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="w-8 h-8 rounded-full border-3 border-purple-200 border-t-purple-500 animate-spin" />
+            </div>
+          ) : hasImage ? (
+            <img
+              src={result.imageDataUrl}
+              alt=""
+              className="w-full h-auto"
+            />
+          ) : null}
+        </div>
+      </div>
+    )
+  }
+
   const downloadAsPng = useCallback(() => {
     if (!result.imageDataUrl) return
     const link = document.createElement('a')

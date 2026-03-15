@@ -254,16 +254,13 @@ export async function speak(text: string, lang?: string): Promise<void> {
   const cleaned = cleanForSpeech(text)
   if (!cleaned || cleaned.length < 2) return
 
-  const detectedLang = lang || detectTTSLang(cleaned)
+  const detectedLang = 'en-US'
 
-  // Try Kokoro for supported languages (English, Chinese, Japanese, Korean, French)
-  // Vietnamese falls back to Web Speech API
-  if (detectedLang !== 'vi-VN') {
-    const kokoroOk = await checkKokoroAvailable()
-    if (kokoroOk) {
-      const success = await speakWithKokoro(cleaned)
-      if (success) return // Kokoro handled it
-    }
+  // Try Kokoro TTS first (always English)
+  const kokoroOk = await checkKokoroAvailable()
+  if (kokoroOk) {
+    const success = await speakWithKokoro(cleaned)
+    if (success) return // Kokoro handled it
   }
 
   // Fallback: Web Speech API

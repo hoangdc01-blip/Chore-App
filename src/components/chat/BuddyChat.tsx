@@ -15,6 +15,32 @@ import DrawingCard from './DrawingCard'
 import PresentationCard from './PresentationCard'
 import Input from '../ui/Input'
 
+/** Strip action block tags from message content so users never see raw [TAG]...[/TAG] text.
+ *  This handles complete blocks, incomplete/partial blocks during streaming,
+ *  and opening tags that haven't closed yet. */
+function cleanMessageContent(content: string): string {
+  return content
+    // Strip complete blocks
+    .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*?\[\/DRAW_IMAGE\]/g, '')
+    .replace(/\[GENERATE_PRESENTATION\][\s\S]*?\[\/GENERATE_PRESENTATION\]/g, '')
+    .replace(/\[HOMEWORK_CHECK\][\s\S]*?\[\/HOMEWORK_CHECK\]/g, '')
+    .replace(/\[CREATE_CHORE\][\s\S]*?\[\/CREATE_CHORE\]/g, '')
+    .replace(/\[REDEEM_REWARD\][\s\S]*?\[\/REDEEM_REWARD\]/g, '')
+    // Strip incomplete/partial blocks (during streaming — open tag present but no close tag yet)
+    .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*$/g, '')
+    .replace(/\[GENERATE_PRESENTATION\][\s\S]*$/g, '')
+    .replace(/\[HOMEWORK_CHECK\][\s\S]*$/g, '')
+    .replace(/\[CREATE_CHORE\][\s\S]*$/g, '')
+    .replace(/\[REDEEM_REWARD\][\s\S]*$/g, '')
+    // Strip opening tags still being typed (partial tag name)
+    .replace(/\[DRAW_IMAGE.*$/g, '')
+    .replace(/\[GENERATE_P.*$/g, '')
+    .replace(/\[HOMEWORK_C.*$/g, '')
+    .replace(/\[CREATE_C.*$/g, '')
+    .replace(/\[REDEEM_R.*$/g, '')
+    .trim()
+}
+
 const KID_QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
@@ -40,6 +66,7 @@ function ChatBubble({
   message,
   isUser,
   emoji,
+  isActionGenerating,
   isSpeakingThis,
   onSpeak,
   onStop,
@@ -47,11 +74,13 @@ function ChatBubble({
   message: ChatMessage
   isUser: boolean
   emoji: string
+  isActionGenerating?: boolean
   isSpeakingThis?: boolean
   onSpeak?: () => void
   onStop?: () => void
 }) {
-  const showTTS = !isUser && isTTSAvailable() && message.content.trim().length > 0
+  const displayContent = isUser ? message.content : cleanMessageContent(message.content)
+  const showTTS = !isUser && isTTSAvailable() && displayContent.length > 0
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
@@ -74,7 +103,9 @@ function ChatBubble({
               className="rounded-xl max-w-full mb-2"
             />
           )}
-          {message.content}
+          {displayContent || (isActionGenerating ? (
+            <span className="text-muted-foreground italic">Creating something special...</span>
+          ) : null)}
         </div>
         {showTTS && (
           <button
@@ -156,6 +187,7 @@ export default function BuddyChat() {
     homeworkCheckResult,
     homeworkCheckMessageIndex,
     dismissHomeworkResult,
+    isGeneratingImage,
     drawings,
     generatingDrawingIndex,
     dismissDrawing,
@@ -469,6 +501,14 @@ export default function BuddyChat() {
                   message={msg}
                   isUser={msg.role === 'user'}
                   emoji={buddyEmoji}
+                  isActionGenerating={
+                    msg.role === 'assistant' && (
+                      isGeneratingImage ||
+                      generatingDrawingIndex === originalIndex ||
+                      generatingPresentationIndex === originalIndex ||
+                      isStreaming
+                    )
+                  }
                   isSpeakingThis={speakingMsgIndex === originalIndex}
                   onSpeak={() => handleSpeak(originalIndex, msg.content)}
                   onStop={handleStopSpeaking}

@@ -8,6 +8,7 @@ import type { ChatMessage } from '../../lib/ai-chat'
 import { BUDDY_CHARACTERS } from '../../types'
 import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
+import HomeworkResultCard from './HomeworkResultCard'
 import Input from '../ui/Input'
 
 const KID_QUICK_ACTIONS = [
@@ -19,6 +20,7 @@ const KID_QUICK_ACTIONS = [
   { label: "Is it fair? \u2696\uFE0F", text: "Is it fair that I have to do this chore? Why do I have so many chores?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
+  { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
   { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
 ]
@@ -125,6 +127,9 @@ export default function BuddyChat() {
     pendingRewardMessageIndex,
     acceptRewardAction,
     cancelRewardAction,
+    homeworkCheckResult,
+    homeworkCheckMessageIndex,
+    dismissHomeworkResult,
     buddyCharacter,
     storyProgress,
     selectBuddyCharacter,
@@ -420,6 +425,14 @@ export default function BuddyChat() {
                       action={pendingRewardAction}
                       onAccept={acceptRewardAction}
                       onCancel={cancelRewardAction}
+                    />
+                )}
+                {msg.role === 'assistant' &&
+                  homeworkCheckResult &&
+                  homeworkCheckMessageIndex === originalIndex && (
+                    <HomeworkResultCard
+                      result={homeworkCheckResult}
+                      onDismiss={dismissHomeworkResult}
                     />
                 )}
               </div>

@@ -151,6 +151,17 @@ export interface RewardAction {
   memberId: string
 }
 
+export interface HomeworkCheckResult {
+  subject: string
+  totalProblems: number
+  correct: number
+  errors: Array<{
+    problem: string
+    kidAnswer: string
+    hint: string
+  }>
+}
+
 /** Parsed chore-creation request from AI chat */
 export interface Sticker {
   id: string

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
-import type { ChoreAction, RewardAction, BuddyCharacter } from '../types'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, BuddyCharacter } from '../types'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
 import { useMemberStore } from './member-store'
@@ -26,6 +26,10 @@ interface ChatState {
   pendingRewardAction: RewardAction | null
   pendingRewardMessageIndex: number | null
 
+  homeworkCheckResult: HomeworkCheckResult | null
+  homeworkCheckMessageIndex: number | null
+  checkedHomeworks: Record<string, string>
+
   buddyCharacter: BuddyCharacter | null
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
@@ -41,6 +45,7 @@ interface ChatState {
   cancelChoreAction: () => void
   acceptRewardAction: () => void
   cancelRewardAction: () => void
+  dismissHomeworkResult: () => void
   selectBuddyCharacter: (character: BuddyCharacter) => void
   advanceStory: (memberId: string) => void
 }
@@ -74,6 +79,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   pendingRewardAction: null,
   pendingRewardMessageIndex: null,
 
+  homeworkCheckResult: null,
+  homeworkCheckMessageIndex: null,
+  checkedHomeworks: {},
+
   buddyCharacter: null,
   storyProgress: {},
   lastGreetingDate: {},
@@ -98,7 +107,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     try {
       const buddyCtx = buildBuddyCtx(get())
-      const systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+
+      // Check homework limit if image is attached
+      if (image && get().selectedMemberId) {
+        const today = format(new Date(), 'yyyy-MM-dd')
+        const key = `${get().selectedMemberId}:${today}`
+        if (get().checkedHomeworks[key]) {
+          systemPrompt += '\n\nHOMEWORK_LIMIT: This kid already checked homework today. Tell them they can check again tomorrow.'
+        }
+      }
 
       // Track first message of the day and advance story
       const memberId = get().selectedMemberId
@@ -126,22 +144,33 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const assistantMsg: ChatMessage = { role: 'assistant', content: reply }
       set({ messages: [...get().messages, assistantMsg], isLoading: false })
 
-      // Post-process: extract chore/reward actions from the assistant response
+      // Post-process: extract chore/reward/homework actions from the assistant response
       const batchFinalMessages = get().messages
       const batchLastMsg = batchFinalMessages[batchFinalMessages.length - 1]
       if (batchLastMsg?.role === 'assistant' && batchLastMsg.content) {
-        const { displayText, choreAction, rewardAction } = parseChatResponse(batchLastMsg.content)
-        if (choreAction || rewardAction || displayText !== batchLastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult } = parseChatResponse(batchLastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || displayText !== batchLastMsg.content) {
           const updatedMessages = [
             ...batchFinalMessages.slice(0, -1),
             { ...batchLastMsg, content: displayText },
           ]
+          const homeworkUpdates: Partial<ChatState> = {}
+          if (homeworkResult) {
+            homeworkUpdates.homeworkCheckResult = homeworkResult
+            homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
+            const mid = get().selectedMemberId
+            if (mid) {
+              const today = format(new Date(), 'yyyy-MM-dd')
+              homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
+            }
+          }
           set({
             messages: updatedMessages,
             pendingChoreAction: choreAction,
             pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
             pendingRewardAction: rewardAction,
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+            ...homeworkUpdates,
           })
         }
       }
@@ -176,7 +205,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     try {
       const buddyCtx = buildBuddyCtx(get())
-      const systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+      let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+
+      // Check homework limit if image is attached
+      if (allMessages.some(m => !!m.image) && get().selectedMemberId) {
+        const today = format(new Date(), 'yyyy-MM-dd')
+        const key = `${get().selectedMemberId}:${today}`
+        if (get().checkedHomeworks[key]) {
+          systemPrompt += '\n\nHOMEWORK_LIMIT: This kid already checked homework today. Tell them they can check again tomorrow.'
+        }
+      }
 
       // Track first message of the day and advance story
       const memberId = get().selectedMemberId
@@ -217,22 +255,33 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       clearTimeout(timeoutId)
       set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })
 
-      // Post-process: extract chore/reward actions from the assistant response
+      // Post-process: extract chore/reward/homework actions from the assistant response
       const finalMessages = get().messages
       const lastMsg = finalMessages[finalMessages.length - 1]
       if (lastMsg?.role === 'assistant' && lastMsg.content) {
-        const { displayText, choreAction, rewardAction } = parseChatResponse(lastMsg.content)
-        if (choreAction || rewardAction || displayText !== lastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult } = parseChatResponse(lastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || displayText !== lastMsg.content) {
           const updatedMessages = [
             ...finalMessages.slice(0, -1),
             { ...lastMsg, content: displayText },
           ]
+          const homeworkUpdates: Partial<ChatState> = {}
+          if (homeworkResult) {
+            homeworkUpdates.homeworkCheckResult = homeworkResult
+            homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
+            const mid = get().selectedMemberId
+            if (mid) {
+              const today = format(new Date(), 'yyyy-MM-dd')
+              homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
+            }
+          }
           set({
             messages: updatedMessages,
             pendingChoreAction: choreAction,
             pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
             pendingRewardAction: rewardAction,
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+            ...homeworkUpdates,
           })
         }
       }
@@ -282,22 +331,33 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           lastResponseTimeMs: Date.now() - startTime,
         })
 
-        // Post-process fallback: extract chore/reward actions from the assistant response
+        // Post-process fallback: extract chore/reward/homework actions from the assistant response
         const fallbackFinalMessages = get().messages
         const fallbackLastMsg = fallbackFinalMessages[fallbackFinalMessages.length - 1]
         if (fallbackLastMsg?.role === 'assistant' && fallbackLastMsg.content) {
-          const { displayText, choreAction, rewardAction } = parseChatResponse(fallbackLastMsg.content)
-          if (choreAction || rewardAction || displayText !== fallbackLastMsg.content) {
+          const { displayText, choreAction, rewardAction, homeworkResult } = parseChatResponse(fallbackLastMsg.content)
+          if (choreAction || rewardAction || homeworkResult || displayText !== fallbackLastMsg.content) {
             const updatedMessages = [
               ...fallbackFinalMessages.slice(0, -1),
               { ...fallbackLastMsg, content: displayText },
             ]
+            const homeworkUpdates: Partial<ChatState> = {}
+            if (homeworkResult) {
+              homeworkUpdates.homeworkCheckResult = homeworkResult
+              homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
+              const mid = get().selectedMemberId
+              if (mid) {
+                const today = format(new Date(), 'yyyy-MM-dd')
+                homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
+              }
+            }
             set({
               messages: updatedMessages,
               pendingChoreAction: choreAction,
               pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
               pendingRewardAction: rewardAction,
               pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+              ...homeworkUpdates,
             })
           }
         }
@@ -330,6 +390,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ pendingRewardAction: null, pendingRewardMessageIndex: null })
   },
 
+  dismissHomeworkResult: () => {
+    set({ homeworkCheckResult: null, homeworkCheckMessageIndex: null })
+  },
+
   selectBuddyCharacter: (character) => {
     set({ buddyCharacter: character })
   },
@@ -345,5 +409,5 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ isLoading: false, isStreaming: false, abortController: null })
   },
 
-  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null }),
+  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null }),
 }))

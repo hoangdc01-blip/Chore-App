@@ -1,9 +1,10 @@
-import type { ChoreAction, RewardAction, RecurrenceType } from '../types'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, RecurrenceType } from '../types'
 import { useMemberStore } from '../store/member-store'
 import { useRewardStore } from '../store/reward-store'
 
 const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
 const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
+const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
   'none', 'daily', 'weekly', 'biweekly', 'monthly', 'custom'
@@ -13,29 +14,34 @@ export interface ParsedChatAction {
   displayText: string
   choreAction: ChoreAction | null
   rewardAction: RewardAction | null
+  homeworkResult: HomeworkCheckResult | null
 }
 
 export function parseChatResponse(rawText: string): ParsedChatAction {
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
+  const homeworkMatch = rawText.match(HOMEWORK_REGEX)
 
-  if (!choreMatch && !rewardMatch) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
       .replace(/\[REDEEM_REWARD\][\s\S]*$/, '')
+      .replace(/\[HOMEWORK_CHECK\][\s\S]*$/, '')
       .trim()
-    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null }
+    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null }
   }
 
   let displayText = rawText
     .replace(ACTION_REGEX, '')
     .replace(REDEEM_REGEX, '')
+    .replace(HOMEWORK_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
   let choreAction: ChoreAction | null = null
   let rewardAction: RewardAction | null = null
+  let homeworkResult: HomeworkCheckResult | null = null
 
   if (choreMatch) {
     try {
@@ -55,7 +61,16 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     }
   }
 
-  return { displayText: displayText || 'Here you go!', choreAction, rewardAction }
+  if (homeworkMatch) {
+    try {
+      const parsed = JSON.parse(homeworkMatch[1].trim())
+      homeworkResult = validateHomeworkResult(parsed)
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult }
 }
 
 function validateChoreAction(data: unknown): ChoreAction | null {
@@ -140,6 +155,37 @@ function validateRewardAction(data: unknown): RewardAction | null {
     cost: reward.cost,
     memberId: member.id,
   }
+}
+
+function validateHomeworkResult(data: unknown): HomeworkCheckResult | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+
+  const subject = String(obj.subject ?? '')
+  const validSubjects = ['math', 'reading', 'writing', 'science', 'vietnamese', 'chinese']
+  if (!validSubjects.includes(subject)) return null
+
+  const totalProblems = Number(obj.totalProblems)
+  if (!Number.isFinite(totalProblems) || totalProblems < 1) return null
+
+  const correct = Number(obj.correct)
+  if (!Number.isFinite(correct) || correct < 0 || correct > totalProblems) return null
+
+  const errors: HomeworkCheckResult['errors'] = []
+  if (Array.isArray(obj.errors)) {
+    for (const err of obj.errors) {
+      if (!err || typeof err !== 'object') continue
+      const e = err as Record<string, unknown>
+      const problem = String(e.problem ?? '').trim()
+      const kidAnswer = String(e.kidAnswer ?? '').trim()
+      const hint = String(e.hint ?? '').trim()
+      if (problem && kidAnswer && hint) {
+        errors.push({ problem, kidAnswer, hint })
+      }
+    }
+  }
+
+  return { subject, totalProblems, correct, errors }
 }
 
 export function getMemberNameById(id: string): string {

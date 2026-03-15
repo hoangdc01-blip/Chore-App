@@ -254,13 +254,16 @@ export async function speak(text: string, lang?: string): Promise<void> {
   const cleaned = cleanForSpeech(text)
   if (!cleaned || cleaned.length < 2) return
 
-  const detectedLang = 'en-US'
+  const detectedLang = lang || 'en-US'
 
-  // Try Kokoro TTS first (always English)
-  const kokoroOk = await checkKokoroAvailable()
-  if (kokoroOk) {
-    const success = await speakWithKokoro(cleaned)
-    if (success) return // Kokoro handled it
+  // Only use Kokoro for English without explicit lang override (chat/stories)
+  // Language learning needs browser voices for precise pronunciation
+  if (!lang) {
+    const kokoroOk = await checkKokoroAvailable()
+    if (kokoroOk) {
+      const success = await speakWithKokoro(cleaned)
+      if (success) return
+    }
   }
 
   // Fallback: Web Speech API

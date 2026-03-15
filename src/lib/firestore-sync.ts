@@ -207,6 +207,14 @@ export async function saveRoutineProgress(key: string, progress: { routineId: st
   await setDoc(doc(db, 'routineProgress', key), clean(progress))
 }
 
+// ── Quests ──
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function saveQuestDoc(quest: { id: string } & Record<string, any>): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'quests', quest.id), clean(quest))
+}
+
 // ── Claimed Bonuses ──
 
 export async function setClaimedBonus(key: string): Promise<void> {

@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
 import { BUDDY_CHARACTERS } from '../../types'
+import { useQuestStore } from '../../store/quest-store'
 import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
 import HomeworkResultCard from './HomeworkResultCard'
@@ -32,6 +33,7 @@ const PARENT_QUICK_ACTIONS = [
   { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
   { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
   { label: "Check fairness \u2696\uFE0F", text: "Are the chores fairly distributed among the kids? Any rotation suggestions?" },
+  { label: "Weekly report \u{1F4CB}", text: "Give me a weekly report on how the kids are doing with their chores." },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
@@ -157,6 +159,18 @@ export default function BuddyChat() {
       setSelectedMemberId(members[0].id)
     }
   }, [isKidMode, activeKidId, selectedMemberId, setSelectedMemberId, members])
+
+  // Generate today's quest and check completion on chat open
+  useEffect(() => {
+    if (isOpen) {
+      const questStore = useQuestStore.getState()
+      questStore.generateDailyQuest()
+      const todayQuest = questStore.getTodayQuest()
+      if (todayQuest && !todayQuest.completed) {
+        questStore.checkQuestCompletion(todayQuest.id)
+      }
+    }
+  }, [isOpen])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

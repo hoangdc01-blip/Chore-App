@@ -5,6 +5,8 @@ import { useChoreStore } from '../store/chore-store'
 import { useRewardStore } from '../store/reward-store'
 import { useStickerStore } from '../store/sticker-store'
 import { useRoutineStore } from '../store/routine-store'
+import { useQuestStore } from '../store/quest-store'
+import { useAchievementStore } from '../store/achievement-store'
 import { computeKidStats, computeStreak } from './stats'
 import { getLevel, STICKER_CATEGORIES } from '../types'
 
@@ -73,6 +75,10 @@ STICKERS: Kids earn stickers by completing chores. Mention their collection prog
 STREAKS: Celebrate streak milestones enthusiastically (3, 7, 14, 30 days). If streak breaks, be gentle and encouraging - never punish. Say things like "Let's start a new streak today!"
 
 REWARD BALANCE: When in parent mode, if reward economy is unhealthy (kid needs >2 weeks to earn cheapest reward), proactively suggest adjustments like lowering reward costs or increasing chore points.
+
+QUESTS: If there's a team quest active, encourage both teammates. Mention their partner's progress. Celebrate when both complete!
+
+WEEKLY REPORT: When the parent asks for a weekly report, use the WEEKLY REPORT DATA to generate a comprehensive but concise summary. Include: each kid's progress, highlights, concerns, and specific suggestions for improvement.
 
 PROGRESS: When asked about progress, use WEEKLY PROGRESS data. Be encouraging. Celebrate streaks.
 
@@ -382,6 +388,120 @@ function buildRoutineContext(memberId: string): string {
   return '\n\n' + parts.join('\n')
 }
 
+function buildQuestContext(memberId?: string | null): string {
+  const quest = useQuestStore.getState().getTodayQuest()
+  if (!quest) return ''
+
+  const members = useMemberStore.getState().members
+  const kid1 = members.find((m) => m.id === quest.member1Id)
+  const kid2 = members.find((m) => m.id === quest.member2Id)
+  if (!kid1 || !kid2) return ''
+
+  // Check progress for both kids
+  const store = useChoreStore.getState()
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+  const occurrences = store.getOccurrencesForRange(todayStart, todayEnd)
+
+  const getProgress = (mid: string) => {
+    const memberOccs = occurrences.filter((o) => o.chore.assigneeId === mid && !o.isSkipped)
+    const done = memberOccs.filter((o) => o.isCompleted).length
+    const total = memberOccs.length
+    return { done, total }
+  }
+
+  const p1 = getProgress(quest.member1Id)
+  const p2 = getProgress(quest.member2Id)
+
+  const statusText = quest.completed
+    ? 'COMPLETED! Both teammates finished all chores!'
+    : `${kid1.name} done ${p1.done}/${p1.total}, ${kid2.name} done ${p2.done}/${p2.total}`
+
+  // If a specific kid is chatting, highlight their teammate
+  let partnerNote = ''
+  if (memberId === quest.member1Id) {
+    partnerNote = ` Your teammate is ${kid2.name}!`
+  } else if (memberId === quest.member2Id) {
+    partnerNote = ` Your teammate is ${kid1.name}!`
+  }
+
+  return `\n\nTEAM QUEST: ${kid1.name} + ${kid2.name} are teamed up today! ${quest.bonusPoints} bonus points each if BOTH complete all chores. Status: ${statusText}${partnerNote}`
+}
+
+function buildWeeklyReportContext(): string {
+  const members = useMemberStore.getState().members
+  if (members.length === 0) return ''
+
+  const { chores, completions, skipped } = useChoreStore.getState()
+  const now = new Date()
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 })
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+
+  const kidLines: string[] = []
+  for (const member of members) {
+    const thisWeek = computeKidStats(member.id, chores, completions, skipped, thisWeekStart, thisWeekEnd)
+    const lastWeek = computeKidStats(member.id, chores, completions, skipped, lastWeekStart, lastWeekEnd)
+    const level = getLevel(member.points)
+    const streak = computeStreak(member.id, chores.filter((c) => c.assigneeId === member.id), completions, skipped)
+
+    // Stickers earned this week (approximate by checking earned count)
+    const stickerStore = useStickerStore.getState()
+    const earnedStickers = stickerStore.getEarnedStickers(member.id)
+
+    // Achievements
+    const achievementStore = useAchievementStore.getState()
+    const badges = achievementStore.getEarnedBadges(member.id)
+
+    // Trend
+    const trend = thisWeek.completionRate > lastWeek.completionRate
+      ? 'improving'
+      : thisWeek.completionRate < lastWeek.completionRate
+        ? 'declining'
+        : 'stable'
+
+    kidLines.push(
+      `  ${member.name}:
+    This week: ${thisWeek.completedCount}/${thisWeek.totalCount} (${thisWeek.completionRate}%), ${thisWeek.totalPoints} pts earned
+    Last week: ${lastWeek.completedCount}/${lastWeek.totalCount} (${lastWeek.completionRate}%), ${lastWeek.totalPoints} pts earned
+    Trend: ${trend}
+    Streak: ${streak} days
+    Level: ${level.level} - ${level.title} (${member.points} XP total)
+    Stickers collected: ${earnedStickers.length}/${stickerStore.catalog.length}
+    Achievements earned: ${badges.length}`
+    )
+  }
+
+  // Reward economy
+  const { rewards } = useRewardStore.getState()
+  let rewardEconomy = ''
+  if (rewards.length > 0) {
+    const cheapest = Math.min(...rewards.map((r) => r.cost))
+    const economyLines = members.map((m) => {
+      const weekStats = computeKidStats(m.id, chores, completions, skipped, thisWeekStart, thisWeekEnd)
+      const weeklyEarnings = weekStats.totalPoints
+      if (weeklyEarnings <= 0) return `    ${m.name}: 0 pts/week - cannot earn rewards`
+      const pointsNeeded = Math.max(0, cheapest - (m.points ?? 0))
+      const weeksToEarn = pointsNeeded > 0 ? Math.ceil(pointsNeeded / weeklyEarnings) : 0
+      return `    ${m.name}: ~${weeklyEarnings} pts/week, ${weeksToEarn > 0 ? `${weeksToEarn} weeks to cheapest reward` : 'can afford cheapest reward now'}`
+    })
+    rewardEconomy = `\n  Reward economy (cheapest: ${cheapest} pts):\n${economyLines.join('\n')}`
+  }
+
+  // Quest participation this week
+  const quests = useQuestStore.getState().quests
+  const weekQuests = quests.filter((q) => {
+    return q.date >= format(thisWeekStart, 'yyyy-MM-dd') && q.date <= format(thisWeekEnd, 'yyyy-MM-dd')
+  })
+  const completedQuests = weekQuests.filter((q) => q.completed)
+  const questLine = `\n  Team quests this week: ${completedQuests.length}/${weekQuests.length} completed`
+
+  return `\n\nWEEKLY REPORT DATA:\n${kidLines.join('\n')}${rewardEconomy}${questLine}`
+}
+
 const REMINDER_STYLES = [
   'Style: countdown (X chores left today!)',
   'Style: challenge (can you beat yesterday?)',
@@ -459,7 +579,7 @@ function buildChoreContext(memberId: string): string {
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
-${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId) + buildFairnessContext()
+${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId) + buildFairnessContext() + buildQuestContext(memberId)
 }
 
 function buildGeneralContext(): string {
@@ -482,7 +602,7 @@ function buildGeneralContext(): string {
     return `  - ${m.name}: ${done}/${total} chores done (${m.points} points)`
   }).join('\n')
 
-  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice() + buildFairnessContext() + buildRotationAdvice()
+  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice() + buildFairnessContext() + buildRotationAdvice() + buildQuestContext() + buildWeeklyReportContext()
 }
 
 export interface BuddyContext {

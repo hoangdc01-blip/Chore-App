@@ -26,7 +26,7 @@ export async function generateImage(prompt: string): Promise<{ imageBase64: stri
         prompt: kidSafePrompt,
         negative_prompt: negativePrompt,
         steps: 8,
-        cfg_scale: 2,
+        cfg_scale: 4,
         width: 1024,
         height: 1024,
         sampler_name: 'Euler a',

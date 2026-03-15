@@ -472,6 +472,19 @@ export default function BuddyChat() {
         </div>
       )}
 
+      {/* Contextual "Explain more" suggestion after homework check */}
+      {messages.length > 0 && homeworkCheckResult && !isLoading && !isStreaming && (
+        <div className="px-4 pb-2 flex flex-wrap gap-2">
+          <button
+            onClick={() => handleQuickAction("Explain more please, I don't understand")}
+            disabled={isLoading}
+            className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+          >
+            Explain more {'\uD83E\uDD14'}
+          </button>
+        </div>
+      )}
+
       {/* Pending image preview */}
       {pendingImage && (
         <div className="px-4 pt-2">

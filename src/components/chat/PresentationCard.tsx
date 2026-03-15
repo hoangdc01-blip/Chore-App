@@ -44,7 +44,19 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
       {isGenerating ? (
         <div className="flex flex-col items-center gap-3 py-4">
           <div className="w-10 h-10 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin" />
-          <p className="text-sm text-muted-foreground font-medium">Generating PowerPoint...</p>
+          <p className="text-sm text-muted-foreground font-medium">
+            {result.imageProgress
+              ? `Generating slide images (${result.imageProgress.current}/${result.imageProgress.total})...`
+              : 'Generating PowerPoint...'}
+          </p>
+          {result.imageProgress && (
+            <div className="w-full max-w-48 bg-muted rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                style={{ width: `${(result.imageProgress.current / result.imageProgress.total) * 100}%` }}
+              />
+            </div>
+          )}
         </div>
       ) : hasPptx ? (
         <div className="flex gap-2 mb-2">

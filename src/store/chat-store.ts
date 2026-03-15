@@ -129,7 +129,18 @@ async function resolvePresentationFile(
     presentations: { ...get().presentations, [messageIndex]: pendingResult },
   })
   try {
-    const blob = await generatePptx(action)
+    const onProgress = (current: number, total: number) => {
+      const currentResult = get().presentations[messageIndex]
+      if (currentResult) {
+        set({
+          presentations: {
+            ...get().presentations,
+            [messageIndex]: { ...currentResult, imageProgress: { current, total } },
+          },
+        })
+      }
+    }
+    const blob = await generatePptx(action, onProgress)
     const pptxDataUrl = URL.createObjectURL(blob)
     set({
       presentations: {

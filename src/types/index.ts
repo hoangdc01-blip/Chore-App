@@ -184,6 +184,7 @@ export interface PresentationResult {
   slideCount: number
   slides: PresentationSlide[]
   pptxDataUrl?: string  // generated pptx as data URL for download
+  imageProgress?: { current: number; total: number }  // image generation progress
 }
 
 /** Parsed chore-creation request from AI chat */

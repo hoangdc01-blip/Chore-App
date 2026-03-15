@@ -1,5 +1,6 @@
 import PptxGenJS from 'pptxgenjs'
 import type { PresentationAction } from '../types'
+import { generateImage } from './image-gen'
 
 // Vibrant color themes
 const THEMES = {
@@ -9,23 +10,95 @@ const THEMES = {
   sunset: ['BF360C', 'D84315', 'E64A19', 'F4511E', 'FF5722', 'FF6E40', 'FF8A65', 'FFAB91'],
 }
 
-export async function generatePptx(action: PresentationAction): Promise<Blob> {
+/** Strip emoji characters from a string */
+function stripEmojis(text: string): string {
+  return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '').trim()
+}
+
+/** Generate images in parallel batches of a given size */
+async function generateImagesInBatches(
+  prompts: (string | null)[],
+  batchSize: number,
+  onProgress?: (current: number, total: number) => void,
+): Promise<(string | null)[]> {
+  const results: (string | null)[] = new Array(prompts.length).fill(null)
+  const total = prompts.filter(p => p !== null).length
+  let completed = 0
+
+  for (let i = 0; i < prompts.length; i += batchSize) {
+    const batch = prompts.slice(i, i + batchSize)
+    const batchResults = await Promise.all(
+      batch.map(async (prompt) => {
+        if (prompt === null) return null
+        try {
+          const result = await generateImage(prompt, 'illustration')
+          completed++
+          onProgress?.(completed, total)
+          return result?.imageBase64 ?? null
+        } catch {
+          completed++
+          onProgress?.(completed, total)
+          return null
+        }
+      })
+    )
+    batchResults.forEach((r, batchIdx) => {
+      results[i + batchIdx] = r
+    })
+  }
+
+  return results
+}
+
+export async function generatePptx(
+  action: PresentationAction,
+  onProgress?: (current: number, total: number) => void,
+): Promise<Blob> {
   const prs = new PptxGenJS()
   prs.layout = 'LAYOUT_16x9'
 
   const colors = THEMES.jungle // default theme
   const totalSlides = action.slides.length + 2 // title + content + end
 
+  // Build image prompts: title slide + content slides (skip end slide)
+  const imagePrompts: (string | null)[] = [
+    stripEmojis(action.title), // title slide image
+    ...action.slides.map(slide => stripEmojis(slide.title)),
+  ]
+
+  // Generate all images in parallel batches of 2
+  const images = await generateImagesInBatches(imagePrompts, 2, onProgress)
+  const titleImage = images[0]
+  const slideImages = images.slice(1)
+
   // Title slide
   const titleSlide = prs.addSlide()
   titleSlide.background = { color: colors[0] }
-  titleSlide.addText(action.title, {
-    x: 0.5, y: 1, w: 9, h: 2.5,
-    fontSize: 40, bold: true, color: 'FFFFFF',
-    align: 'center', valign: 'middle',
-    fontFace: 'Arial Black',
-    shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.4 },
-  })
+
+  if (titleImage) {
+    // With image: text on top, hero image centered below
+    titleSlide.addText(action.title, {
+      x: 0.5, y: 0.3, w: 9, h: 1.5,
+      fontSize: 40, bold: true, color: 'FFFFFF',
+      align: 'center', valign: 'middle',
+      fontFace: 'Arial Black',
+      shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.4 },
+    })
+    titleSlide.addImage({
+      data: `data:image/png;base64,${titleImage}`,
+      x: 3, y: 1.8, w: 3.5, h: 3.5,
+      rounding: true,
+      shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.3 },
+    })
+  } else {
+    titleSlide.addText(action.title, {
+      x: 0.5, y: 1, w: 9, h: 2.5,
+      fontSize: 40, bold: true, color: 'FFFFFF',
+      align: 'center', valign: 'middle',
+      fontFace: 'Arial Black',
+      shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.4 },
+    })
+  }
   titleSlide.addText('Made with AI Buddy \u{1F427}', {
     x: 0.5, y: 4.2, w: 9, h: 0.5,
     fontSize: 16, color: 'C8E6C9', align: 'center', fontFace: 'Arial',
@@ -40,6 +113,7 @@ export async function generatePptx(action: PresentationAction): Promise<Blob> {
     const s = prs.addSlide()
     const bgColor = colors[i % colors.length]
     const accentColor = colors[(i + 3) % colors.length]
+    const imageBase64 = slideImages[i]
 
     s.background = { color: bgColor }
 
@@ -49,29 +123,31 @@ export async function generatePptx(action: PresentationAction): Promise<Blob> {
       fill: { color: accentColor },
     })
 
-    // Emoji (large, top right)
-    if (slide.emoji) {
+    // Slide title - narrower if image present
+    const titleWidth = imageBase64 ? 5 : 8
+    s.addText(slide.title, {
+      x: 0.5, y: 0.2, w: titleWidth, h: 0.9,
+      fontSize: 30, bold: true, color: 'FFFFFF',
+      fontFace: 'Arial Black',
+      shadow: { type: 'outer', blur: 4, offset: 2, color: '000000', opacity: 0.3 },
+    })
+
+    // Emoji (top right) - only if no image
+    if (slide.emoji && !imageBase64) {
       s.addText(slide.emoji, {
         x: 8.5, y: 0.2, w: 1, h: 1,
         fontSize: 44, align: 'center',
       })
     }
 
-    // Slide title
-    s.addText(slide.title, {
-      x: 0.5, y: 0.2, w: 8, h: 0.9,
-      fontSize: 30, bold: true, color: 'FFFFFF',
-      fontFace: 'Arial Black',
-      shadow: { type: 'outer', blur: 4, offset: 2, color: '000000', opacity: 0.3 },
-    })
-
     // Divider line
     s.addShape(prs.ShapeType.rect, {
-      x: 0.5, y: 1.15, w: 4, h: 0.04,
+      x: 0.5, y: 1.15, w: imageBase64 ? 3 : 4, h: 0.04,
       fill: { color: 'FFFFFF' },
     })
 
-    // Content bullets
+    // Content bullets - narrower if image present
+    const contentWidth = imageBase64 ? 5 : 8.8
     const bullets = slide.content.split('\n').filter(Boolean).map(line => ({
       text: line.replace(/^[-\u2022]\s*/, ''),
       options: {
@@ -84,10 +160,20 @@ export async function generatePptx(action: PresentationAction): Promise<Blob> {
     }))
 
     s.addText(bullets, {
-      x: 0.6, y: 1.4, w: 8.8, h: 3.8,
+      x: 0.6, y: 1.4, w: contentWidth, h: 3.8,
       valign: 'top',
       lineSpacingMultiple: 1.2,
     })
+
+    // Add image on right side if available
+    if (imageBase64) {
+      s.addImage({
+        data: `data:image/png;base64,${imageBase64}`,
+        x: 5.5, y: 1.3, w: 4, h: 3.5,
+        rounding: true,
+        shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.3 },
+      })
+    }
 
     // Slide number
     s.addText(`${i + 2} / ${totalSlides}`, {
@@ -96,7 +182,7 @@ export async function generatePptx(action: PresentationAction): Promise<Blob> {
     })
   })
 
-  // Thank you / end slide
+  // Thank you / end slide (no image generation)
   const endSlide = prs.addSlide()
   endSlide.background = { color: colors[0] }
   endSlide.addText('Thank You!', {

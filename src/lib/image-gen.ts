@@ -12,9 +12,13 @@ const getBaseUrl = () => {
 
 const IMAGE_GEN_TIMEOUT = 60_000
 
-export async function generateImage(prompt: string): Promise<{ imageBase64: string; mimeType: string } | null> {
-  const kidSafePrompt = `${prompt}, simple coloring book style, thick black outlines, clean lines, white background, simple shapes, minimal detail, cute cartoon, for young children to color, no shading, no gradients, flat colors`
-  const negativePrompt = 'scary, violent, dark, realistic, nsfw, ugly, deformed, blurry, text, watermark, signature, detailed, complex, shading, gradients, artistic, abstract, photorealistic'
+export async function generateImage(prompt: string, style: 'coloring' | 'illustration' = 'coloring'): Promise<{ imageBase64: string; mimeType: string } | null> {
+  const kidSafePrompt = style === 'coloring'
+    ? `${prompt}, simple coloring book style, thick black outlines, clean lines, white background, simple shapes, minimal detail, cute cartoon, for young children to color, no shading, no gradients, flat colors`
+    : `${prompt}, educational illustration, colorful, detailed, digital art, vibrant, kid-friendly, white background`
+  const negativePrompt = style === 'coloring'
+    ? 'scary, violent, dark, realistic, nsfw, ugly, deformed, blurry, text, watermark, signature, detailed, complex, shading, gradients, artistic, abstract, photorealistic'
+    : 'scary, violent, dark, nsfw, ugly, deformed, blurry, text, watermark, signature, photorealistic, abstract'
 
   try {
     const baseUrl = getBaseUrl()

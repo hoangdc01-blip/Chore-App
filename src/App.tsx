@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import type { CalendarViewMode, AppView } from './types'
 import Header from './components/layout/Header'
+import AppSidebar from './components/layout/AppSidebar'
 import Sidebar from './components/layout/Sidebar'
 import CalendarView from './components/calendar/CalendarView'
 import Dashboard from './components/dashboard/Dashboard'
@@ -8,8 +9,10 @@ import RewardShop from './components/rewards/RewardShop'
 import MyCoupons from './components/rewards/MyCoupons'
 import GameMenu from './games/GameMenu'
 import LanguageView from './components/language/LanguageView'
+import ClassCalendarView from './components/classes/ClassCalendarView'
 import Toaster from './components/ui/Toaster'
 const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
+const ChatPage = lazy(() => import('./components/chat/ChatPage'))
 import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
@@ -31,11 +34,12 @@ import { getThemeById } from './lib/kid-themes'
 import OfflineBanner from './components/layout/OfflineBanner'
 
 export default function App() {
-  const [activeView, setActiveView] = useState<AppView>('calendar')
+  const [activeView, setActiveView] = useState<AppView>('chat')
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenMemberIds, setHiddenMemberIds] = useState<Set<string>>(new Set())
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [oldSidebarOpen, setOldSidebarOpen] = useState(false)
   const [syncing, setSyncing] = useState(true)
 
   const unlocked = useAuthStore((s) => s.unlocked)
@@ -143,10 +147,10 @@ export default function App() {
     return unsubscribe
   }, [unlocked])
 
-  // When entering kid mode, ensure calendar view + reset to kid's default view
+  // When entering kid mode, default to chat view
   useEffect(() => {
     if (mode === 'kid') {
-      setActiveView('calendar')
+      setActiveView('chat')
     }
   }, [mode])
 
@@ -254,16 +258,22 @@ export default function App() {
         onMenuToggle={() => setSidebarOpen((o) => !o)}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          hiddenMemberIds={hiddenMemberIds}
-          onToggleMember={toggleMemberFilter}
+        <AppSidebar
+          activeView={activeView}
+          onActiveViewChange={setActiveView}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        {activeView === 'calendar' ? (
+        {activeView === 'chat' ? (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+            <ChatPage />
+          </Suspense>
+        ) : activeView === 'calendar' ? (
           <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
         ) : activeView === 'dashboard' ? (
           <Dashboard />
+        ) : activeView === 'classes' ? (
+          <ClassCalendarView />
         ) : activeView === 'language' ? (
           <LanguageView />
         ) : activeView === 'games' ? (
@@ -275,10 +285,21 @@ export default function App() {
         )}
       </div>
       <Toaster />
-      <Suspense fallback={null}>
-        <BuddyChat />
-      </Suspense>
+      {/* Floating BuddyChat on non-chat views */}
+      {activeView !== 'chat' && (
+        <Suspense fallback={null}>
+          <BuddyChat />
+        </Suspense>
+      )}
       <BadgeCelebration />
+
+      {/* Old sidebar for member management — accessible from settings or other means */}
+      <Sidebar
+        hiddenMemberIds={hiddenMemberIds}
+        onToggleMember={toggleMemberFilter}
+        open={oldSidebarOpen}
+        onClose={() => setOldSidebarOpen(false)}
+      />
     </div>
   )
 }

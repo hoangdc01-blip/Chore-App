@@ -2,7 +2,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly
 
 export type CalendarViewMode = 'month' | 'week' | 'day'
 
-export type AppView = 'chat' | 'calendar' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language'
+export type AppView = 'chat' | 'calendar' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language' | 'classes'
 
 export interface FamilyMember {
   id: string
@@ -190,6 +190,27 @@ export interface PresentationResult {
   pptxDataUrl?: string  // generated pptx as data URL for download
   contentProgress?: { current: number; total: number }  // slide content generation progress
   imageProgress?: { current: number; total: number }  // image generation progress
+}
+
+export interface ExtraClass {
+  id: string
+  name: string
+  description?: string
+  emoji?: string
+  assigneeId: string
+  startDate: string        // yyyy-MM-dd
+  endDate?: string         // yyyy-MM-dd
+  startTime?: string       // HH:mm
+  endTime?: string         // HH:mm
+  recurrence: RecurrenceType
+  customDays?: number[]
+  location?: string
+}
+
+export interface ClassOccurrence {
+  classId: string
+  date: string
+  classItem: ExtraClass
 }
 
 /** Parsed chore-creation request from AI chat */

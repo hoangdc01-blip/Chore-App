@@ -10,15 +10,14 @@ interface Props {
 export default function DrawingCard({ result, isGenerating = false, onDismiss }: Props) {
   const isGeneratingImage = isGenerating
   const hasImage = !!result.imageDataUrl
-  const isSvg = result.imageDataUrl?.startsWith('data:image/svg') ?? false
 
   const downloadAsPng = useCallback(() => {
     if (!result.imageDataUrl) return
     const link = document.createElement('a')
-    link.download = `${result.title}.${isSvg ? 'svg' : 'png'}`
+    link.download = `${result.title}.png`
     link.href = result.imageDataUrl
     link.click()
-  }, [result.title, result.imageDataUrl, isSvg])
+  }, [result.title, result.imageDataUrl])
 
   const handlePrintA4 = useCallback(() => {
     if (!result.imageDataUrl) return
@@ -86,10 +85,10 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
             className="w-full h-auto max-h-[250px] object-contain rounded"
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 py-6">
+          <div className="flex flex-col items-center gap-2 py-6 px-4">
             <span className="text-3xl">{'\u{1F61E}'}</span>
-            <p className="text-sm text-muted-foreground text-center">
-              Could not generate the image. Make sure Stable Diffusion is running (AUTOMATIC1111 or Draw Things app).
+            <p className="text-sm text-muted-foreground text-center whitespace-pre-line">
+              {result.error || 'Could not generate the image. Make sure Draw Things is running with API server enabled.'}
             </p>
           </div>
         )}
@@ -101,7 +100,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
             onClick={downloadAsPng}
             className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm font-bold transition-colors"
           >
-            {isSvg ? 'Download SVG' : 'Download PNG'} {'\u{1F4F7}'}
+            Download PNG {'\u{1F4F7}'}
           </button>
           <button
             onClick={handlePrintA4}

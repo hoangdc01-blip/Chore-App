@@ -2,7 +2,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly
 
 export type CalendarViewMode = 'month' | 'week' | 'day'
 
-export type AppView = 'calendar' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language'
+export type AppView = 'chat' | 'calendar' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language'
 
 export interface FamilyMember {
   id: string
@@ -128,7 +128,7 @@ export const STREAK_BADGES = [
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
-export const BUDDY_CHARACTER = { name: 'Buddy', type: 'penguin', emoji: '\u{1F427}' } as const
+export const BUDDY_CHARACTER = { name: 'Váu Váu', type: 'penguin', emoji: '\u{1F427}' } as const
 
 /** Parsed reward-redemption request from AI chat */
 export interface RewardAction {
@@ -166,6 +166,7 @@ export const STICKER_CATEGORIES: StickerCategory[] = ['animals', 'space', 'food'
 export interface DrawingResult {
   title: string
   imageDataUrl: string  // data:image/png;base64,...
+  error?: string
 }
 
 export interface PresentationSlide {

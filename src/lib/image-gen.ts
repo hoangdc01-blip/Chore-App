@@ -20,35 +20,33 @@ export async function generateImage(prompt: string, style: 'coloring' | 'illustr
     ? 'scary, violent, dark, realistic, nsfw, ugly, deformed, blurry, text, watermark, signature, detailed, complex, shading, gradients, artistic, abstract, photorealistic'
     : 'scary, violent, dark, nsfw, ugly, deformed, blurry, text, watermark, signature, photorealistic, abstract'
 
-  try {
-    const baseUrl = getBaseUrl()
-    const res = await fetch(`${baseUrl}/sdapi/v1/txt2img`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(IMAGE_GEN_TIMEOUT),
-      body: JSON.stringify({
-        prompt: kidSafePrompt,
-        negative_prompt: negativePrompt,
-        steps: 8,
-        cfg_scale: 4,
-        width: 1024,
-        height: 1024,
-        sampler_name: 'Euler a',
-        n_iter: 1,
-        batch_size: 1,
-      })
+  const baseUrl = getBaseUrl()
+  const res = await fetch(`${baseUrl}/sdapi/v1/txt2img`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(IMAGE_GEN_TIMEOUT),
+    body: JSON.stringify({
+      prompt: kidSafePrompt,
+      negative_prompt: negativePrompt,
+      steps: 8,
+      cfg_scale: 4,
+      width: 1024,
+      height: 1024,
+      sampler_name: 'Euler a',
+      n_iter: 1,
+      batch_size: 1,
     })
+  })
 
-    if (!res.ok) throw new Error(`SD API error: ${res.status}`)
-
-    const data = await res.json()
-    const base64Image = data.images?.[0]
-    if (!base64Image) return null
-
-    return { imageBase64: base64Image, mimeType: 'image/png' }
-  } catch {
-    return null
+  if (!res.ok) {
+    throw new Error(`API returned status ${res.status}: ${res.statusText}`)
   }
+
+  const data = await res.json()
+  const base64Image = data.images?.[0]
+  if (!base64Image) return null
+
+  return { imageBase64: base64Image, mimeType: 'image/png' }
 }
 
 export async function isImageGenAvailable(): Promise<boolean> {

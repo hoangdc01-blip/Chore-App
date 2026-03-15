@@ -70,7 +70,7 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
   }
 }
 
-/** Post-process drawing result: call Gemini to generate the actual image */
+/** Post-process drawing result: call Stable Diffusion to generate the actual image */
 async function resolveDrawingImage(
   drawingResult: DrawingResult,
   messageIndex: number,
@@ -87,7 +87,7 @@ async function resolveDrawingImage(
         isGeneratingImage: false,
       })
     } else {
-      // Gemini failed - show error in drawing card
+      // SD failed - show error in drawing card
       set({
         drawingResult: { title: drawingResult.title, imageDataUrl: '' },
         isGeneratingImage: false,
@@ -192,7 +192,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
           })
-          // Generate image via Gemini if drawing was requested
+          // Generate image via Stable Diffusion if drawing was requested
           if (drawingResult) {
             resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
           }
@@ -293,7 +293,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
           })
-          // Generate image via Gemini if drawing was requested
+          // Generate image via Stable Diffusion if drawing was requested
           if (drawingResult) {
             resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
           }
@@ -370,7 +370,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
               homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
               homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
             })
-            // Generate image via Gemini if drawing was requested
+            // Generate image via Stable Diffusion if drawing was requested
             if (drawingResult) {
               resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
             }

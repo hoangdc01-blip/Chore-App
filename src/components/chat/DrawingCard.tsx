@@ -67,7 +67,7 @@ export default function DrawingCard({ result, onDismiss }: Props) {
           <div className="flex flex-col items-center gap-2 py-6">
             <span className="text-3xl">{'\u{1F61E}'}</span>
             <p className="text-sm text-muted-foreground text-center">
-              Could not generate the image. Check your Gemini API key or try again later.
+              Could not generate the image. Make sure Stable Diffusion is running (AUTOMATIC1111 or Draw Things app).
             </p>
           </div>
         )}

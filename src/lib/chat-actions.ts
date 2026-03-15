@@ -225,25 +225,21 @@ function validatePresentationAction(data: unknown): PresentationAction | null {
   const title = typeof obj.title === 'string' ? obj.title.trim() : ''
   if (!title) return null
 
-  if (!Array.isArray(obj.slides) || obj.slides.length === 0) return null
+  if (!Array.isArray(obj.topics) || obj.topics.length === 0) return null
 
-  // Cap at 50 slides maximum
-  const rawSlides = obj.slides.slice(0, 50)
+  // Cap at 50 topics maximum, filter to valid strings
+  const topics: string[] = obj.topics
+    .slice(0, 50)
+    .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+    .map((t: string) => t.trim())
 
-  const slides: PresentationAction['slides'] = []
-  for (const raw of rawSlides) {
-    if (!raw || typeof raw !== 'object') continue
-    const s = raw as Record<string, unknown>
-    const slideTitle = typeof s.title === 'string' ? s.title.trim() : ''
-    const slideContent = typeof s.content === 'string' ? s.content.trim() : ''
-    if (!slideTitle || !slideContent) continue
-    const emoji = typeof s.emoji === 'string' && s.emoji ? s.emoji : undefined
-    slides.push({ title: slideTitle, content: slideContent, emoji })
-  }
+  if (topics.length === 0) return null
 
-  if (slides.length === 0) return null
+  const slideCount = typeof obj.slideCount === 'number' && obj.slideCount > 0
+    ? Math.min(obj.slideCount, 50)
+    : topics.length
 
-  return { title, slides }
+  return { title, slideCount, topics }
 }
 
 export function getMemberNameById(id: string): string {

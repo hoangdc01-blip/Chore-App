@@ -18,6 +18,25 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
     link.click()
   }, [result.title, result.pptxDataUrl])
 
+  // Determine progress stage
+  const isContentStage = isGenerating && result.contentProgress && !result.imageProgress
+  const isImageStage = isGenerating && result.imageProgress
+
+  // Use topics for preview during generation, slides after generation
+  const previewItems = result.slides.length > 0
+    ? result.slides.map((s, i) => ({ index: i, emoji: s.emoji, label: s.title }))
+    : result.topics.map((t, i) => ({ index: i, emoji: undefined, label: t }))
+
+  // Calculate overall progress for progress bar
+  let progressPercent = 0
+  if (isContentStage && result.contentProgress) {
+    // Content is first half (0-50%)
+    progressPercent = (result.contentProgress.current / result.contentProgress.total) * 50
+  } else if (isImageStage && result.imageProgress) {
+    // Images are second half (50-100%)
+    progressPercent = 50 + (result.imageProgress.current / result.imageProgress.total) * 50
+  }
+
   return (
     <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
       <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
@@ -30,13 +49,13 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
         <span className="text-xs text-muted-foreground">({result.slideCount} slides)</span>
       </div>
 
-      {/* Slide preview list */}
+      {/* Slide/topic preview list */}
       <div className="bg-muted rounded-lg p-2 mb-3 space-y-1">
-        {result.slides.map((slide, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <span className="text-xs font-bold text-muted-foreground w-5 text-right shrink-0">{i + 1}.</span>
-            {slide.emoji && <span className="text-sm">{slide.emoji}</span>}
-            <span className="text-foreground truncate">{slide.title}</span>
+        {previewItems.map((item) => (
+          <div key={item.index} className="flex items-center gap-2 text-sm">
+            <span className="text-xs font-bold text-muted-foreground w-5 text-right shrink-0">{item.index + 1}.</span>
+            {item.emoji && <span className="text-sm">{item.emoji}</span>}
+            <span className="text-foreground truncate">{item.label}</span>
           </div>
         ))}
       </div>
@@ -45,15 +64,17 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
         <div className="flex flex-col items-center gap-3 py-4">
           <div className="w-10 h-10 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin" />
           <p className="text-sm text-muted-foreground font-medium">
-            {result.imageProgress
-              ? `Generating slide images (${result.imageProgress.current}/${result.imageProgress.total})...`
-              : 'Generating PowerPoint...'}
+            {isContentStage && result.contentProgress
+              ? `Writing slide content (${result.contentProgress.current}/${result.contentProgress.total})...`
+              : isImageStage && result.imageProgress
+                ? `Generating slide images (${result.imageProgress.current}/${result.imageProgress.total})...`
+                : 'Preparing presentation...'}
           </p>
-          {result.imageProgress && (
+          {(isContentStage || isImageStage) && (
             <div className="w-full max-w-48 bg-muted rounded-full h-2 overflow-hidden">
               <div
                 className="bg-blue-500 h-full rounded-full transition-all duration-300"
-                style={{ width: `${(result.imageProgress.current / result.imageProgress.total) * 100}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           )}

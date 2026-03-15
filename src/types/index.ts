@@ -176,14 +176,17 @@ export interface PresentationSlide {
 
 export interface PresentationAction {
   title: string
-  slides: PresentationSlide[]
+  slideCount: number
+  topics: string[]
 }
 
 export interface PresentationResult {
   title: string
   slideCount: number
+  topics: string[]
   slides: PresentationSlide[]
   pptxDataUrl?: string  // generated pptx as data URL for download
+  contentProgress?: { current: number; total: number }  // slide content generation progress
   imageProgress?: { current: number; total: number }  // image generation progress
 }
 

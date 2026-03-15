@@ -1,4 +1,5 @@
 import { format, startOfWeek, endOfWeek, subWeeks, subDays } from 'date-fns'
+import type { PresentationSlide } from '../types'
 import { getEnv } from './env'
 import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
@@ -174,18 +175,15 @@ Rules:
 
 PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXACTLY this block at the END of your response:
 
-[GENERATE_PRESENTATION]{"title":"Main Title","slides":[{"title":"Slide Title","content":"Point 1\nPoint 2\nPoint 3","emoji":"🦕"}]}[/GENERATE_PRESENTATION]
+[GENERATE_PRESENTATION]{"title":"All About Dinosaurs","slideCount":10,"topics":["What are Dinosaurs","Triassic Period","Jurassic Period","T-Rex","Triceratops","Brachiosaurus","Velociraptor","How They Lived","The Extinction","Fossils and Birds Today"]}[/GENERATE_PRESENTATION]
 
 Rules:
-- Slide content must be in the same language the user used (English or Vietnamese). NEVER include Chinese characters in slides unless the presentation is specifically about Chinese language learning.
-- Generate the exact number of slides requested (no limit)
-- If no number specified, make 5-8 slides
-- Each slide: title (short), content (bullet points separated by \n, 3-5 points each), emoji
-- Make content educational, fun, and detailed
-- Use vivid descriptions and interesting facts
-- Match the tone to the audience (simple for kids, detailed for parents)
+- title: main presentation title
+- slideCount: exact number of slides requested (default 5-8 if not specified)
+- topics: array of slide topic names (one per slide), length must match slideCount
+- Just list the topics — do NOT generate the slide content here
+- Content in English or Vietnamese matching the user's language. NEVER include Chinese characters unless the presentation is specifically about Chinese language learning.
 - Write a friendly message BEFORE the block
-- Put ALL slides in a single JSON array — do NOT split across multiple blocks
 - NEVER put anything after the [/GENERATE_PRESENTATION] tag
 - Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
 
@@ -901,4 +899,43 @@ export async function streamFromOllama(
   }
 
   return fullText
+}
+
+/** Lightweight direct Ollama call to generate content for a single presentation slide */
+export async function generateSlideContentDirect(topic: string, presentationTitle: string): Promise<PresentationSlide> {
+  const ollamaBase = getEnv('VITE_OLLAMA_URL', 'http://localhost:11434')
+  const textModel = getEnv('VITE_OLLAMA_TEXT_MODEL', 'qwen2.5:7b')
+
+  try {
+    const res = await fetch(`${ollamaBase}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        model: textModel,
+        messages: [{
+          role: 'user',
+          content: `Write 4 fun educational bullet points about "${topic}" for a kids' presentation titled "${presentationTitle}". Return ONLY a JSON object: {"title":"Short Title","content":"Point 1\\nPoint 2\\nPoint 3\\nPoint 4","emoji":"\\ud83e\\udd95"}`
+        }],
+        stream: false,
+        options: { temperature: 0.7, num_predict: 300 }
+      })
+    })
+
+    const data = await res.json()
+    const text = data.message?.content || ''
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      return {
+        title: String(parsed.title || topic),
+        content: String(parsed.content || topic),
+        emoji: String(parsed.emoji || '')
+      }
+    }
+  } catch {
+    // Fallback to topic name
+  }
+
+  return { title: topic, content: `Learn about ${topic}`, emoji: '' }
 }

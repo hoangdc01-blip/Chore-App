@@ -1,6 +1,7 @@
 import PptxGenJS from 'pptxgenjs'
-import type { PresentationAction } from '../types'
+import type { PresentationAction, PresentationSlide } from '../types'
 import { generateImage } from './image-gen'
+import { generateSlideContentDirect } from './ai-chat'
 
 // Vibrant color themes
 const THEMES = {
@@ -52,31 +53,40 @@ async function generateImagesInBatches(
 
 export async function generatePptx(
   action: PresentationAction,
-  onProgress?: (current: number, total: number) => void,
-): Promise<Blob> {
+  onProgress?: (stage: 'content' | 'image', current: number, total: number) => void,
+): Promise<{ blob: Blob; slides: PresentationSlide[] }> {
+  // Step 1: Generate content for each slide via individual AI calls
+  const slides: PresentationSlide[] = []
+  for (let i = 0; i < action.topics.length; i++) {
+    onProgress?.('content', i + 1, action.topics.length)
+    const slide = await generateSlideContentDirect(action.topics[i], action.title)
+    slides.push(slide)
+  }
+
+  // Step 2: Generate images for each slide (in batches of 2)
+  const imagePrompts: (string | null)[] = [
+    stripEmojis(action.title), // title slide image
+    ...slides.map(slide => stripEmojis(slide.title)),
+  ]
+
+  const images = await generateImagesInBatches(imagePrompts, 2, (current, total) => {
+    onProgress?.('image', current, total)
+  })
+  const titleImage = images[0]
+  const slideImages = images.slice(1)
+
+  // Step 3: Build the PPTX
   const prs = new PptxGenJS()
   prs.layout = 'LAYOUT_16x9'
 
-  const colors = THEMES.jungle // default theme
-  const totalSlides = action.slides.length + 2 // title + content + end
-
-  // Build image prompts: title slide + content slides (skip end slide)
-  const imagePrompts: (string | null)[] = [
-    stripEmojis(action.title), // title slide image
-    ...action.slides.map(slide => stripEmojis(slide.title)),
-  ]
-
-  // Generate all images in parallel batches of 2
-  const images = await generateImagesInBatches(imagePrompts, 2, onProgress)
-  const titleImage = images[0]
-  const slideImages = images.slice(1)
+  const colors = THEMES.jungle
+  const totalSlides = slides.length + 2 // title + content + end
 
   // Title slide
   const titleSlide = prs.addSlide()
   titleSlide.background = { color: colors[0] }
 
   if (titleImage) {
-    // With image: text on top, hero image centered below
     titleSlide.addText(action.title, {
       x: 0.5, y: 0.3, w: 9, h: 1.5,
       fontSize: 40, bold: true, color: 'FFFFFF',
@@ -109,7 +119,7 @@ export async function generatePptx(
   })
 
   // Content slides with alternating accent colors
-  action.slides.forEach((slide, i) => {
+  slides.forEach((slide, i) => {
     const s = prs.addSlide()
     const bgColor = colors[i % colors.length]
     const accentColor = colors[(i + 3) % colors.length]
@@ -200,5 +210,6 @@ export async function generatePptx(
     fontSize: 10, color: 'A5D6A7', align: 'right',
   })
 
-  return await prs.write({ outputType: 'blob' }) as Blob
+  const blob = await prs.write({ outputType: 'blob' }) as Blob
+  return { blob, slides }
 }

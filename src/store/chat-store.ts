@@ -112,7 +112,7 @@ async function resolveDrawingImage(
   }
 }
 
-/** Post-process presentation action: generate PPTX blob and store result */
+/** Post-process presentation action: generate slide content + PPTX blob and store result */
 async function resolvePresentationFile(
   action: PresentationAction,
   messageIndex: number,
@@ -121,31 +121,35 @@ async function resolvePresentationFile(
 ): Promise<void> {
   const pendingResult: PresentationResult = {
     title: action.title,
-    slideCount: action.slides.length,
-    slides: action.slides,
+    slideCount: action.topics.length,
+    topics: action.topics,
+    slides: [],
   }
   set({
     generatingPresentationIndex: messageIndex,
     presentations: { ...get().presentations, [messageIndex]: pendingResult },
   })
   try {
-    const onProgress = (current: number, total: number) => {
+    const onProgress = (stage: 'content' | 'image', current: number, total: number) => {
       const currentResult = get().presentations[messageIndex]
       if (currentResult) {
+        const update = stage === 'content'
+          ? { contentProgress: { current, total } }
+          : { imageProgress: { current, total } }
         set({
           presentations: {
             ...get().presentations,
-            [messageIndex]: { ...currentResult, imageProgress: { current, total } },
+            [messageIndex]: { ...currentResult, ...update },
           },
         })
       }
     }
-    const blob = await generatePptx(action, onProgress)
+    const { blob, slides } = await generatePptx(action, onProgress)
     const pptxDataUrl = URL.createObjectURL(blob)
     set({
       presentations: {
         ...get().presentations,
-        [messageIndex]: { ...pendingResult, pptxDataUrl },
+        [messageIndex]: { ...pendingResult, slides, pptxDataUrl },
       },
       generatingPresentationIndex: null,
     })

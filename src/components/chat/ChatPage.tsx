@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Trash2, ImagePlus, Volume2, VolumeX, X, Palette, Presentation, PencilLine, BookOpen, GraduationCap } from 'lucide-react'
+import { Send, Trash2, ImagePlus, Volume2, VolumeX, X, Palette, Presentation, PencilLine, BookOpen, GraduationCap, FileText } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -15,6 +15,7 @@ import DrawingCard from './DrawingCard'
 import PresentationCard from './PresentationCard'
 import Input from '../ui/Input'
 import AiAvatar from './AiAvatar'
+import { isDocumentFile, extractDocumentText, getDocumentLabel } from '../../lib/doc-parser'
 
 /** Strip action block tags from message content */
 function cleanMessageContent(content: string): string {
@@ -152,6 +153,8 @@ function getImageFile(dt: DataTransfer): File | null {
 export default function ChatPage() {
   const [input, setInput] = useState('')
   const [pendingImage, setPendingImage] = useState<string | null>(null)
+  const [pendingDoc, setPendingDoc] = useState<{ name: string; label: string; text: string } | null>(null)
+  const [docLoading, setDocLoading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null)
   const dragCounterRef = useRef(0)
@@ -264,6 +267,19 @@ export default function ChatPage() {
     }
   }, [])
 
+  // Document handling
+  const processDocFile = useCallback(async (file: File) => {
+    try {
+      setDocLoading(true)
+      const text = await extractDocumentText(file)
+      setPendingDoc({ name: file.name, label: getDocumentLabel(file), text })
+    } catch {
+      setPendingDoc({ name: file.name, label: getDocumentLabel(file), text: '' })
+    } finally {
+      setDocLoading(false)
+    }
+  }, [])
+
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -291,9 +307,19 @@ export default function ChatPage() {
     e.stopPropagation()
     dragCounterRef.current = 0
     setIsDragging(false)
-    const file = getImageFile(e.dataTransfer)
-    if (file) processImageFile(file)
-  }, [processImageFile])
+    const imageFile = getImageFile(e.dataTransfer)
+    if (imageFile) {
+      processImageFile(imageFile)
+      return
+    }
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      const file = e.dataTransfer.files[i]
+      if (isDocumentFile(file)) {
+        processDocFile(file)
+        return
+      }
+    }
+  }, [processImageFile, processDocFile])
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -310,20 +336,37 @@ export default function ChatPage() {
 
   const handleFilePickerChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type.startsWith('image/')) processImageFile(file)
+    if (!file) { e.target.value = ''; return }
+    if (file.type.startsWith('image/')) {
+      processImageFile(file)
+    } else if (isDocumentFile(file)) {
+      processDocFile(file)
+    }
     e.target.value = ''
-  }, [processImageFile])
+  }, [processImageFile, processDocFile])
 
   // Send
   const handleSend = useCallback(async () => {
     const text = input.trim()
     const image = pendingImage
-    if ((!text && !image) || isLoading) return
-    const finalText = text || "What's in this picture?"
+    const doc = pendingDoc
+    if ((!text && !image && !doc) || isLoading) return
+
+    let finalText = text || (image ? "What's in this picture?" : '')
+
+    // Prepend document content
+    if (doc && doc.text) {
+      const docPrefix = `[Attached document: ${doc.name}]\n\n${doc.text}\n\n---\n\n`
+      finalText = docPrefix + (finalText || `I've attached a document called "${doc.name}". Can you help me with it?`)
+    } else if (doc && !doc.text) {
+      finalText = finalText || `I tried to attach "${doc.name}" but couldn't read it.`
+    }
+
     setInput('')
     setPendingImage(null)
+    setPendingDoc(null)
     await sendMessageStreaming(finalText, image ?? undefined)
-  }, [input, pendingImage, isLoading, sendMessageStreaming])
+  }, [input, pendingImage, pendingDoc, isLoading, sendMessageStreaming])
 
   const handleQuickAction = async (text: string) => {
     if (isLoading) return
@@ -402,7 +445,7 @@ export default function ChatPage() {
       {/* Drag overlay */}
       {isDragging && (
         <div className="absolute inset-0 z-10 bg-green-500/20 border-2 border-dashed border-green-500 rounded-xl flex items-center justify-center">
-          <p className="text-green-700 dark:text-green-300 font-bold text-lg">Drop image here</p>
+          <p className="text-green-700 dark:text-green-300 font-bold text-lg">Drop file here</p>
         </div>
       )}
 
@@ -604,11 +647,38 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Pending document preview */}
+      {pendingDoc && (
+        <div className="max-w-[800px] mx-auto px-4 pt-2">
+          <div className="relative inline-flex items-center gap-2 bg-muted rounded-lg px-3 py-2 border border-border">
+            <FileText size={16} className="text-blue-500 shrink-0" />
+            <span className="text-sm font-medium text-foreground truncate max-w-[200px]">{pendingDoc.name}</span>
+            <span className="text-xs text-muted-foreground">({pendingDoc.label})</span>
+            <button
+              onClick={() => setPendingDoc(null)}
+              className="ml-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center text-xs hover:bg-destructive/80 transition-colors shrink-0"
+              title="Remove document"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {docLoading && (
+        <div className="max-w-[800px] mx-auto px-4 pt-2">
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-4 h-4 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
+            Reading document...
+          </div>
+        </div>
+      )}
+
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf,.docx,.xlsx,.xls,.csv"
         className="hidden"
         onChange={handleFilePickerChange}
       />
@@ -639,7 +709,7 @@ export default function ChatPage() {
           )}
           <button
             onClick={handleSend}
-            disabled={(!input.trim() && !pendingImage) || !effectiveMemberId || isLoading}
+            disabled={(!input.trim() && !pendingImage && !pendingDoc) || !effectiveMemberId || isLoading}
             className="rounded-xl px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
             aria-label="Send message"
           >

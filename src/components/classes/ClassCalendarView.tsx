@@ -201,7 +201,8 @@ export default function ClassCalendarView() {
   const openAdd = () => {
     setEditingId(null)
     const f = emptyForm()
-    if (selectedDay) f.startDate = format(selectedDay, 'yyyy-MM-dd')
+    const targetDay = selectedDay ?? (viewMode === 'day' ? currentDate : null)
+    if (targetDay) f.startDate = format(targetDay, 'yyyy-MM-dd')
     if (members.length > 0) f.assigneeId = members[0].id
     setForm(f)
     setDialogOpen(true)
@@ -424,6 +425,15 @@ ${TIME_SLOTS.map(
               <button
                 key={dateStr}
                 onClick={() => setSelectedDay(day)}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  setEditingId(null)
+                  const f = emptyForm()
+                  f.startDate = format(day, 'yyyy-MM-dd')
+                  if (members.length > 0) f.assigneeId = members[0].id
+                  setForm(f)
+                  setDialogOpen(true)
+                }}
                 className={cn(
                   'min-h-[80px] p-1 rounded-lg border text-left transition-colors flex flex-col',
                   isCurrentMonth ? 'bg-card' : 'bg-muted/30',
@@ -546,7 +556,18 @@ ${TIME_SLOTS.map(
                   return (
                     <td
                       key={dateStr}
-                      className={cn('border border-border p-0.5 align-top', isToday(day) && 'bg-primary/5')}
+                      className={cn(
+                        'border border-border p-0.5 align-top cursor-pointer hover:bg-muted/30 transition-colors',
+                        isToday(day) && 'bg-primary/5'
+                      )}
+                      onClick={() => {
+                        setEditingId(null)
+                        const f = emptyForm()
+                        f.startDate = format(day, 'yyyy-MM-dd')
+                        if (members.length > 0) f.assigneeId = members[0].id
+                        setForm(f)
+                        setDialogOpen(true)
+                      }}
                     >
                       {occs.map((occ) => renderWeekCell(occ))}
                     </td>
@@ -566,9 +587,19 @@ ${TIME_SLOTS.map(
                     <td
                       key={dateStr}
                       className={cn(
-                        'border border-border p-0.5 align-top min-h-[60px]',
+                        'border border-border p-0.5 align-top min-h-[60px] cursor-pointer hover:bg-muted/30 transition-colors',
                         isToday(day) && 'bg-primary/5'
                       )}
+                      onClick={() => {
+                        setEditingId(null)
+                        const f = emptyForm()
+                        f.startDate = format(day, 'yyyy-MM-dd')
+                        f.startTime = `${String(hour).padStart(2, '0')}:00`
+                        f.endTime = `${String(hour + 1).padStart(2, '0')}:00`
+                        if (members.length > 0) f.assigneeId = members[0].id
+                        setForm(f)
+                        setDialogOpen(true)
+                      }}
                     >
                       {occs.map((occ) => renderWeekCell(occ))}
                     </td>
@@ -588,7 +619,7 @@ ${TIME_SLOTS.map(
     return (
       <button
         key={occ.classId + occ.date}
-        onClick={() => openEdit(occ.classItem)}
+        onClick={(e) => { e.stopPropagation(); openEdit(occ.classItem) }}
         className={cn(
           'w-full text-left rounded p-1.5 mb-0.5 transition-opacity hover:opacity-80',
           color?.bg ?? 'bg-blue-100 dark:bg-blue-900/30',
@@ -629,6 +660,13 @@ ${TIME_SLOTS.map(
         {allSorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <p className="text-sm">No classes scheduled for this day</p>
+            <button
+              onClick={openAdd}
+              className="mt-3 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              <Plus size={16} />
+              <span className="text-sm font-medium">Add class for this day</span>
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-2 max-w-lg mx-auto">
@@ -692,6 +730,13 @@ ${TIME_SLOTS.map(
                 </div>
               )
             })}
+            <button
+              onClick={openAdd}
+              className="mt-3 w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              <Plus size={16} />
+              <span className="text-sm font-medium">Add class for this day</span>
+            </button>
           </div>
         )}
       </div>

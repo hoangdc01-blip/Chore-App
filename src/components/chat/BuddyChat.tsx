@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
 import ChoreConfirmCard from './ChoreConfirmCard'
+import Input from '../ui/Input'
 
 const QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
@@ -432,7 +433,7 @@ export default function BuddyChat() {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border flex gap-2 sm:rounded-b-2xl">
-        <input
+        <Input
           ref={inputRef}
           type="text"
           value={input}
@@ -440,7 +441,7 @@ export default function BuddyChat() {
           onKeyDown={handleKeyDown}
           placeholder={effectiveMemberId ? "Ask Buddy anything..." : "Pick a kid first..."}
           disabled={!effectiveMemberId || isLoading}
-          className="flex-1 rounded-xl border border-border bg-muted px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          className="flex-1 rounded-xl bg-muted px-4 py-2.5 disabled:opacity-50"
         />
         {effectiveMemberId && (
           <>

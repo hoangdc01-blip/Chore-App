@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/app-store'
 import { fireConfetti } from '../../lib/confetti'
 import { showToast } from '../../store/toast-store'
 import RewardDialog from './RewardDialog'
+import Button from '../ui/Button'
 
 export default function RewardShop() {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -60,13 +61,13 @@ export default function RewardShop() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Reward Shop</h2>
         {!isKidMode && (
-          <button
+          <Button
             onClick={() => setDialogOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]"
+            className="flex items-center gap-1.5 rounded-lg"
           >
             <Plus size={16} />
             Add Reward
-          </button>
+          </Button>
         )}
       </div>
 

@@ -4,6 +4,8 @@ import { useMemberStore } from '../../store/member-store'
 import { MEMBER_COLORS, EMOJI_OPTIONS } from '../../types'
 import { resizeImageToDataURL } from '../../lib/image'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import Button from '../ui/Button'
+import Input from '../ui/Input'
 
 export default function MemberDialog() {
   const addMember = useMemberStore((s) => s.addMember)
@@ -63,13 +65,13 @@ export default function MemberDialog() {
 
   return (
     <>
-      <button
+      <Button
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px] w-full mt-2"
+        className="flex items-center justify-center gap-1.5 w-full mt-2"
       >
         <Plus size={16} />
         Add Kid
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>
@@ -110,12 +112,11 @@ export default function MemberDialog() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Name</label>
-                <input
+                <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Kid's name"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                   autoFocus
                 />
               </div>
@@ -162,20 +163,19 @@ export default function MemberDialog() {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => setOpen(false)}
-                  className="rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={!name.trim()}
-                  className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors min-h-[44px]"
                 >
                   Add
-                </button>
+                </Button>
               </div>
             </form>
           </div>

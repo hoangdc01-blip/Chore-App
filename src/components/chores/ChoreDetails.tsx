@@ -7,6 +7,8 @@ import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import { fireConfetti } from '../../lib/confetti'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import Button from '../ui/Button'
+import { cn } from '../../lib/utils'
 
 interface ChoreDetailsProps {
   occurrence: ChoreOccurrence | null
@@ -226,24 +228,25 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
             )}
             {!isKidMode && (
               <>
-                <button
+                <Button
+                  variant="secondary"
                   onClick={onEdit}
-                  className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2.5 text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
+                  className="flex items-center justify-center gap-1.5"
                 >
                   <Pencil size={16} />
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="destructive"
                   onClick={handleDelete}
-                  className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] ${
-                    confirmDelete
-                      ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 animate-pulse'
-                      : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                  }`}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5',
+                    confirmDelete && 'animate-pulse',
+                  )}
                 >
                   <Trash2 size={16} />
                   {confirmDelete && 'Confirm?'}
-                </button>
+                </Button>
               </>
             )}
           </div>

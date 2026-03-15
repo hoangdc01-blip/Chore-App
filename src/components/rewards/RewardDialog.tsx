@@ -3,6 +3,8 @@ import { X } from 'lucide-react'
 import { useRewardStore } from '../../store/reward-store'
 import { showToast } from '../../store/toast-store'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import Button from '../ui/Button'
+import Input from '../ui/Input'
 
 interface RewardDialogProps {
   open: boolean
@@ -67,12 +69,11 @@ export default function RewardDialog({ open, onClose }: RewardDialogProps) {
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Reward Name</label>
-            <input
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Ice cream treat"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
           </div>
@@ -97,7 +98,7 @@ export default function RewardDialog({ open, onClose }: RewardDialogProps) {
 
           <div>
             <label className="block text-sm font-medium mb-1">Cost (points)</label>
-            <input
+            <Input
               type="text"
               inputMode="numeric"
               value={costStr}
@@ -107,25 +108,23 @@ export default function RewardDialog({ open, onClose }: RewardDialogProps) {
               }}
               onBlur={() => { if (!costStr || parseInt(costStr) < 1) setCostStr('1') }}
               placeholder="Enter cost"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={!name.trim() || !costStr}
-              className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors min-h-[44px]"
             >
               Add Reward
-            </button>
+            </Button>
           </div>
         </form>
       </div>

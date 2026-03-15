@@ -2,6 +2,7 @@ import { Search, Calendar, BarChart3, Menu, Gift, Gamepad2, Ticket, Star } from 
 import type { CalendarViewMode, AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore } from '../../store/member-store'
+import Input from '../ui/Input'
 
 interface HeaderProps {
   activeView: AppView
@@ -69,12 +70,12 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
             {!isKidMode && (
               <div className="relative">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
+                <Input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder="Search chores..."
-                  className="rounded-md border border-border bg-background pl-8 pr-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring w-40 xl:w-48"
+                  className="pl-8 pr-3 py-1.5 w-40 xl:w-48"
                 />
               </div>
             )}
@@ -141,12 +142,12 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
         <div className="xl:hidden mt-2">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search chores..."
-              className="rounded-md border border-border bg-background pl-8 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring w-full"
+              className="pl-8 pr-3 py-2"
             />
           </div>
         </div>

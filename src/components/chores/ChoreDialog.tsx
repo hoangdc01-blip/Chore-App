@@ -7,6 +7,10 @@ import { showToast } from '../../store/toast-store'
 import type { Chore, RecurrenceType } from '../../types'
 import { DAY_LABELS } from '../../types'
 import EmojiPicker from '../ui/EmojiPicker'
+import Button from '../ui/Button'
+import Input from '../ui/Input'
+import Select from '../ui/Select'
+import { cn } from '../../lib/utils'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 interface ChoreDialogProps {
@@ -122,12 +126,11 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Chore Name</label>
-            <input
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Do the dishes"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
           </div>
@@ -148,7 +151,9 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add notes or details..."
               rows={2}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
+              className={cn(
+                'w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring resize-none',
+              )}
             />
           </div>
 
@@ -158,22 +163,21 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
               {members.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Add kids first</p>
               ) : (
-                <select
+                <Select
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Points</label>
-              <input
+              <Input
                 type="text"
                 inputMode="numeric"
                 value={pointsStr}
@@ -183,7 +187,6 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
                 }}
                 onBlur={() => { if (!pointsStr || parseInt(pointsStr) < 1) setPointsStr('1') }}
                 placeholder="Enter points"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -191,35 +194,33 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1">Start Date</label>
-              <input
+              <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
                 Time {!timeRequired && <span className="text-muted-foreground font-normal">(optional)</span>}
               </label>
-              <input
+              <Input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 required={timeRequired}
-                className={`w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring ${
-                  timeRequired && !startTime ? 'border-destructive' : 'border-border'
-                }`}
+                className={cn(
+                  timeRequired && !startTime ? 'border-destructive' : '',
+                )}
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">Recurrence</label>
-            <select
+            <Select
               value={recurrence}
               onChange={(e) => setRecurrence(e.target.value as RecurrenceType)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="none">One-time</option>
               <option value="daily">Daily</option>
@@ -227,7 +228,7 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
               <option value="biweekly">Biweekly</option>
               <option value="monthly">Monthly</option>
               <option value="custom">Custom days</option>
-            </select>
+            </Select>
           </div>
 
           {recurrence === 'custom' && (
@@ -256,20 +257,19 @@ export default function ChoreDialog({ open, onClose, defaultDate, defaultTime, e
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors min-h-[44px]"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={!name.trim() || !assigneeId || !pointsStr || (timeRequired && !startTime) || (recurrence === 'custom' && customDays.length === 0)}
-              className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors min-h-[44px]"
             >
               {editChore ? 'Save' : 'Add Chore'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

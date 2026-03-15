@@ -89,6 +89,21 @@ Rules for chore creation:
 - If the user doesn't specify who the chore is for, use the Current kid's ID
 - Always write a short fun message BEFORE the [CREATE_CHORE] block
 - NEVER put anything after the [/CREATE_CHORE] tag
+- Output the JSON on a SINGLE LINE, no line breaks inside the JSON
+
+REWARD REDEMPTION: When a kid wants to redeem a reward, output this block at the END of your response:
+
+[REDEEM_REWARD]{"rewardId":"exact-id","rewardName":"Name","rewardEmoji":"emoji","cost":10,"memberId":"exact-id"}[/REDEEM_REWARD]
+
+Rules for reward redemption:
+- rewardId: MUST be an exact ID from the REWARD SHOP list
+- rewardName: exact name from REWARD SHOP
+- rewardEmoji: exact emoji from REWARD SHOP
+- cost: exact cost from REWARD SHOP
+- memberId: MUST be an exact ID from FAMILY MEMBERS. Use Current kid's ID if not specified
+- Only output the block if the kid has ENOUGH points. If not enough, say how many more points needed — do NOT output the block
+- Always write a short fun message BEFORE the [REDEEM_REWARD] block
+- NEVER put anything after the [/REDEEM_REWARD] tag
 - Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
 
 function buildProgressContext(memberId: string): string {
@@ -124,7 +139,7 @@ function buildRewardContext(memberId: string): string {
   const rewardLines = rewards.slice(0, 10).map(r => {
     const affordable = points >= r.cost
     const tag = affordable ? 'you can afford this!' : `need ${r.cost - points} more points`
-    return `  - ${r.emoji} ${r.name}: ${r.cost} pts (${tag})`
+    return `  - ${r.emoji} ${r.name} (ID: ${r.id}): ${r.cost} pts (${tag})`
   }).join('\n')
 
   const memberRedemptions = redemptions

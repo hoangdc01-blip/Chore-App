@@ -127,6 +127,15 @@ export const STREAK_BADGES = [
 
 export const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
+/** Parsed reward-redemption request from AI chat */
+export interface RewardAction {
+  rewardId: string
+  rewardName: string
+  rewardEmoji: string
+  cost: number
+  memberId: string
+}
+
 /** Parsed chore-creation request from AI chat */
 export interface ChoreAction {
   name: string

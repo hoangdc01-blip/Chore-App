@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
 import ChoreConfirmCard from './ChoreConfirmCard'
+import RewardConfirmCard from './RewardConfirmCard'
 import Input from '../ui/Input'
 
 const QUICK_ACTIONS = [
@@ -17,6 +18,7 @@ const QUICK_ACTIONS = [
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
+  { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
 ]
 
 function ChatBubble({ message, isUser }: { message: ChatMessage; isUser: boolean }) {
@@ -104,6 +106,10 @@ export default function BuddyChat() {
     pendingChoreMessageIndex,
     acceptChoreAction,
     cancelChoreAction,
+    pendingRewardAction,
+    pendingRewardMessageIndex,
+    acceptRewardAction,
+    cancelRewardAction,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -358,6 +364,15 @@ export default function BuddyChat() {
                       action={pendingChoreAction}
                       onAccept={acceptChoreAction}
                       onCancel={cancelChoreAction}
+                    />
+                )}
+                {msg.role === 'assistant' &&
+                  pendingRewardAction &&
+                  pendingRewardMessageIndex === originalIndex && (
+                    <RewardConfirmCard
+                      action={pendingRewardAction}
+                      onAccept={acceptRewardAction}
+                      onCancel={cancelRewardAction}
                     />
                 )}
               </div>

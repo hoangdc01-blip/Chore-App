@@ -1,7 +1,9 @@
-import type { ChoreAction, RecurrenceType } from '../types'
+import type { ChoreAction, RewardAction, RecurrenceType } from '../types'
 import { useMemberStore } from '../store/member-store'
+import { useRewardStore } from '../store/reward-store'
 
 const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
+const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
   'none', 'daily', 'weekly', 'biweekly', 'monthly', 'custom'
@@ -10,29 +12,50 @@ const VALID_RECURRENCES: RecurrenceType[] = [
 export interface ParsedChatAction {
   displayText: string
   choreAction: ChoreAction | null
+  rewardAction: RewardAction | null
 }
 
 export function parseChatResponse(rawText: string): ParsedChatAction {
-  const match = rawText.match(ACTION_REGEX)
+  const choreMatch = rawText.match(ACTION_REGEX)
+  const rewardMatch = rawText.match(REDEEM_REGEX)
 
-  if (!match) {
+  if (!choreMatch && !rewardMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
-    const cleaned = rawText.replace(/\[CREATE_CHORE\][\s\S]*$/, '').trim()
-    return { displayText: cleaned || rawText, choreAction: null }
+    const cleaned = rawText
+      .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
+      .replace(/\[REDEEM_REWARD\][\s\S]*$/, '')
+      .trim()
+    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null }
   }
 
-  const displayText = rawText
+  let displayText = rawText
     .replace(ACTION_REGEX, '')
+    .replace(REDEEM_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
-  try {
-    const parsed = JSON.parse(match[1].trim())
-    const choreAction = validateChoreAction(parsed)
-    return { displayText: displayText || 'Here you go!', choreAction }
-  } catch {
-    return { displayText: displayText || rawText, choreAction: null }
+  let choreAction: ChoreAction | null = null
+  let rewardAction: RewardAction | null = null
+
+  if (choreMatch) {
+    try {
+      const parsed = JSON.parse(choreMatch[1].trim())
+      choreAction = validateChoreAction(parsed)
+    } catch {
+      // ignore parse errors
+    }
   }
+
+  if (rewardMatch) {
+    try {
+      const parsed = JSON.parse(rewardMatch[1].trim())
+      rewardAction = validateRewardAction(parsed)
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return { displayText: displayText || 'Here you go!', choreAction, rewardAction }
 }
 
 function validateChoreAction(data: unknown): ChoreAction | null {
@@ -88,6 +111,34 @@ function validateChoreAction(data: unknown): ChoreAction | null {
     startTime,
     description,
     customDays: recurrence === 'custom' ? customDays : undefined,
+  }
+}
+
+function validateRewardAction(data: unknown): RewardAction | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+
+  // Required: rewardId — must exist in reward store
+  const rewardId = String(obj.rewardId ?? '')
+  const { rewards } = useRewardStore.getState()
+  const reward = rewards.find(r => r.id === rewardId)
+  if (!reward) return null
+
+  // Required: memberId — must exist in member store
+  const memberId = String(obj.memberId ?? '')
+  const members = useMemberStore.getState().members
+  const member = members.find(m => m.id === memberId)
+  if (!member) return null
+
+  // Check member has enough points
+  if ((member.points ?? 0) < reward.cost) return null
+
+  return {
+    rewardId: reward.id,
+    rewardName: reward.name,
+    rewardEmoji: reward.emoji,
+    cost: reward.cost,
+    memberId: member.id,
   }
 }
 

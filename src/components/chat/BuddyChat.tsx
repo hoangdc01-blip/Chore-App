@@ -18,12 +18,10 @@ const KID_QUICK_ACTIONS = [
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
   { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
   { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
-  { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
-  { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
   { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
 ]
 
@@ -32,13 +30,11 @@ const PARENT_QUICK_ACTIONS = [
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
   { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
   { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
-  { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
   { label: "Check fairness \u2696\uFE0F", text: "Are the chores fairly distributed among the kids? Any rotation suggestions?" },
   { label: "Weekly report \u{1F4CB}", text: "Give me a weekly report on how the kids are doing with their chores." },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
-  { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
 ]
 
 function ChatBubble({ message, isUser, emoji }: { message: ChatMessage; isUser: boolean; emoji: string }) {

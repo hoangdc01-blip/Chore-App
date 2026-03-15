@@ -9,12 +9,26 @@ import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
 import Input from '../ui/Input'
 
-const QUICK_ACTIONS = [
+const KID_QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
   { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
   { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
   { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
+  { label: "Is it fair? \u2696\uFE0F", text: "Is it fair that I have to do this chore? Why do I have so many chores?" },
+  { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
+  { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
+  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
+  { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
+]
+
+const PARENT_QUICK_ACTIONS = [
+  { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
+  { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
+  { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
+  { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
+  { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
+  { label: "Check fairness \u2696\uFE0F", text: "Are the chores fairly distributed among the kids? Any rotation suggestions?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
@@ -407,7 +421,7 @@ export default function BuddyChat() {
       {/* Quick actions */}
       {messages.length === 0 && effectiveMemberId && (
         <div className="px-4 pb-2 flex flex-wrap gap-2">
-          {QUICK_ACTIONS.map((action) => (
+          {(isKidMode ? KID_QUICK_ACTIONS : PARENT_QUICK_ACTIONS).map((action) => (
             <button
               key={action.text}
               onClick={() => handleQuickAction(action.text)}

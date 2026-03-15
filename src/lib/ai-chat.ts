@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
+import { format, startOfWeek, endOfWeek, subWeeks, subDays } from 'date-fns'
 import { getEnv } from './env'
 import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
@@ -76,6 +76,10 @@ REWARD BALANCE: When in parent mode, if reward economy is unhealthy (kid needs >
 PROGRESS: When asked about progress, use WEEKLY PROGRESS data. Be encouraging. Celebrate streaks.
 
 REWARDS: When kids ask about rewards, tell them what they can afford and encourage saving.
+
+FAIRNESS: When a kid asks "why do I have to do this?" or questions fairness, use the FAIRNESS DATA to explain that chores are distributed equally. Be neutral, cheerful, and acknowledge the kid's feelings. Never take sides.
+
+ROTATION: In parent mode, when asked about chore rotation or fairness, use ROTATION ANALYSIS to suggest re-balancing. Be specific about which chores to swap.
 
 You help with: 1) Daily chores 2) Fun facts 3) Homework (math/science/Chinese)
 Never discuss anything inappropriate or scary. Be kind, patient, fun.`
@@ -244,6 +248,77 @@ function buildMemberDirectory(): string {
   return `\n\nFAMILY MEMBERS:\n${lines}`
 }
 
+function buildFairnessContext(): string {
+  const members = useMemberStore.getState().members
+  if (members.length === 0) return ''
+
+  const store = useChoreStore.getState()
+  const now = new Date()
+  const weekStart = startOfWeek(now, { weekStartsOn: 0 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const occurrences = store.getOccurrencesForRange(weekStart, weekEnd)
+
+  const lines = members.map(m => {
+    const memberOccs = occurrences.filter(o => o.chore.assigneeId === m.id)
+    const total = memberOccs.length
+    const completed = memberOccs.filter(o => o.isCompleted).length
+    const choreNames: Record<string, number> = {}
+    for (const o of memberOccs) {
+      choreNames[o.chore.name] = (choreNames[o.chore.name] || 0) + 1
+    }
+    const nameList = Object.entries(choreNames)
+      .map(([name, count]) => count > 1 ? `${name} x${count}` : name)
+      .join(', ')
+    return `  ${m.name}: ${total} chores this week, ${completed} completed (${nameList || 'none'})`
+  }).join('\n')
+
+  return `\n\nFAIRNESS DATA:\n${lines}`
+}
+
+function buildRotationAdvice(): string {
+  const members = useMemberStore.getState().members
+  if (members.length < 2) return ''
+
+  const store = useChoreStore.getState()
+  const now = new Date()
+  const twoWeeksAgo = subDays(now, 14)
+  const occurrences = store.getOccurrencesForRange(twoWeeksAgo, now)
+
+  // Group by chore name, then count per member
+  const choreByName: Record<string, Record<string, number>> = {}
+  for (const o of occurrences) {
+    if (!choreByName[o.chore.name]) choreByName[o.chore.name] = {}
+    const memberId = o.chore.assigneeId
+    choreByName[o.chore.name][memberId] = (choreByName[o.chore.name][memberId] || 0) + 1
+  }
+
+  const memberNameMap = new Map(members.map(m => [m.id, m.name]))
+  const lines: string[] = []
+
+  for (const [choreName, memberCounts] of Object.entries(choreByName)) {
+    const counts = Object.entries(memberCounts).map(([id, count]) => ({
+      name: memberNameMap.get(id) ?? id,
+      count,
+    }))
+    // Include members with 0 counts too
+    const allMemberCounts = members.map(m => {
+      const existing = counts.find(c => c.name === m.name)
+      return { name: m.name, count: existing?.count ?? 0 }
+    })
+    const allMax = Math.max(...allMemberCounts.map(c => c.count))
+    const allMin = Math.min(...allMemberCounts.map(c => c.count))
+
+    if (allMax === 0) continue
+
+    const distribution = allMemberCounts.map(c => `${c.name} ${c.count}x`).join(', ')
+    const imbalanced = allMax - allMin >= 3
+    lines.push(`  ${choreName}: ${distribution} ${imbalanced ? '-- IMBALANCED' : '-- balanced'}`)
+  }
+
+  if (lines.length === 0) return ''
+  return `\n\nROTATION ANALYSIS (last 2 weeks):\n${lines.join('\n')}`
+}
+
 function buildChoreContext(memberId: string): string {
   const members = useMemberStore.getState().members
   const member = members.find((m) => m.id === memberId)
@@ -308,7 +383,7 @@ function buildChoreContext(memberId: string): string {
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
-${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId)
+${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId) + buildFairnessContext()
 }
 
 function buildGeneralContext(): string {
@@ -331,7 +406,7 @@ function buildGeneralContext(): string {
     return `  - ${m.name}: ${done}/${total} chores done (${m.points} points)`
   }).join('\n')
 
-  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice()
+  return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice() + buildFairnessContext() + buildRotationAdvice()
 }
 
 export function buildSystemPrompt(memberId: string | null): string {

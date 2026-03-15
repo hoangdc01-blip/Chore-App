@@ -190,6 +190,23 @@ export async function saveEarnedStickers(memberId: string, stickerIds: string[])
   await setDoc(doc(db, 'stickers', memberId), { stickerIds })
 }
 
+// ── Routines ──
+
+export async function saveRoutine(routine: Record<string, unknown> & { id: string }): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'routines', routine.id), clean(routine))
+}
+
+export async function deleteRoutineDoc(id: string): Promise<void> {
+  if (!useFirebase) return
+  await deleteDoc(doc(db, 'routines', id))
+}
+
+export async function saveRoutineProgress(key: string, progress: { routineId: string; memberId: string; date: string; completedSteps: string[]; startedAt: string }): Promise<void> {
+  if (!useFirebase) return
+  await setDoc(doc(db, 'routineProgress', key), clean(progress))
+}
+
 // ── Claimed Bonuses ──
 
 export async function setClaimedBonus(key: string): Promise<void> {

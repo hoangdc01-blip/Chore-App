@@ -4,6 +4,7 @@ import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
 import { useRewardStore } from '../store/reward-store'
 import { useStickerStore } from '../store/sticker-store'
+import { useRoutineStore } from '../store/routine-store'
 import { computeKidStats, computeStreak } from './stats'
 import { getLevel, STICKER_CATEGORIES } from '../types'
 
@@ -321,6 +322,63 @@ function buildRotationAdvice(): string {
   return `\n\nROTATION ANALYSIS (last 2 weeks):\n${lines.join('\n')}`
 }
 
+function buildRoutineContext(memberId: string): string {
+  const { routines, getProgress, isRoutineTime } = useRoutineStore.getState()
+  const today = format(new Date(), 'yyyy-MM-dd')
+
+  const parts: string[] = []
+
+  for (const routine of routines) {
+    if (!routine.enabled) continue
+    if (!isRoutineTime(routine.type)) continue
+
+    const progress = getProgress(routine.id, memberId, today)
+    const completedSteps = new Set(progress?.completedSteps ?? [])
+    const totalSteps = routine.steps.length
+    const doneCount = completedSteps.size
+
+    if (doneCount >= totalSteps) continue // All done, skip
+
+    const remaining = routine.steps
+      .filter((s) => !completedSteps.has(s.id))
+      .map((s) => `${s.emoji} ${s.label}`)
+      .join(', ')
+    const doneList = routine.steps
+      .filter((s) => completedSteps.has(s.id))
+      .map((s) => `${s.emoji} ${s.label}`)
+      .join(', ')
+
+    if (routine.type === 'bedtime') {
+      parts.push(
+        `ROUTINE MODE: It's bedtime! Guide the kid through their bedtime routine. Steps done: ${doneCount}/${totalSteps}.${doneList ? ` Completed: ${doneList}.` : ''} Remaining: ${remaining}. Be gentle and calming.`
+      )
+    } else {
+      const [h, m] = routine.triggerTime.split(':').map(Number)
+      const deadlineHour = h + 2
+      const deadlineStr = `${String(deadlineHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      parts.push(
+        `ROUTINE MODE: It's morning! Deadline ${deadlineStr} is coming! Steps done: ${doneCount}/${totalSteps}.${doneList ? ` Completed: ${doneList}.` : ''} Remaining: ${remaining}. Add urgency!`
+      )
+    }
+  }
+
+  if (parts.length === 0) return ''
+  return '\n\n' + parts.join('\n')
+}
+
+const REMINDER_STYLES = [
+  'Style: countdown (X chores left today!)',
+  'Style: challenge (can you beat yesterday?)',
+  'Style: story-related (tie to adventure)',
+  'Style: reward-focused (X points away from reward!)',
+  'Style: fun comparison (you\'re doing better than last week!)',
+]
+
+function buildReminderStyleHint(reminderVariety: number): string {
+  const style = REMINDER_STYLES[reminderVariety % REMINDER_STYLES.length]
+  return `\n\nREMINDER_STYLE: ${style}`
+}
+
 function buildChoreContext(memberId: string): string {
   const members = useMemberStore.getState().members
   const member = members.find((m) => m.id === memberId)
@@ -416,6 +474,7 @@ export interface BuddyContext {
   storyStep?: number
   isFirstMessageToday?: boolean
   personalityNote?: string
+  reminderVariety?: number
 }
 
 function buildStoryContext(ctx: BuddyContext): string {
@@ -439,10 +498,22 @@ export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyConte
   const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
   let prompt = BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
 
+  if (memberId) {
+    prompt += buildRoutineContext(memberId)
+  }
+
   if (buddyCtx) {
     prompt += buildStoryContext(buddyCtx)
     prompt += buildPersonalityContext(buddyCtx)
     prompt += buildFirstMessageContext(buddyCtx)
+    if (buddyCtx.reminderVariety !== undefined) {
+      prompt += buildReminderStyleHint(buddyCtx.reminderVariety)
+    }
+  }
+
+  // Reminder instruction (appended to all kid-mode prompts)
+  if (memberId) {
+    prompt += '\n\nREMINDERS: When the kid has pending chores, use the suggested reminder style. Be creative and varied -- never use the same phrasing twice.'
   }
 
   return prompt

@@ -29,6 +29,7 @@ interface ChatState {
   buddyCharacter: BuddyCharacter | null
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
+  reminderVariety: number
 
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
@@ -55,6 +56,7 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
     storyStep: memberId ? (state.storyProgress[memberId] ?? 0) : 0,
     isFirstMessageToday: isFirstToday,
     personalityNote: member?.personalityNote,
+    reminderVariety: state.reminderVariety,
   }
 }
 
@@ -75,6 +77,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   buddyCharacter: null,
   storyProgress: {},
   lastGreetingDate: {},
+  reminderVariety: 0,
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -110,6 +113,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         }
         if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
       }
+
+      // Increment reminder variety for next message
+      set({ reminderVariety: get().reminderVariety + 1 })
 
       const windowed = messages.slice(-MAX_CONTEXT_MESSAGES)
       const allMessages: ChatMessage[] = [
@@ -185,6 +191,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         }
         if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
       }
+
+      // Increment reminder variety for next message
+      set({ reminderVariety: get().reminderVariety + 1 })
 
       const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
       const messagesForApi: ChatMessage[] = [

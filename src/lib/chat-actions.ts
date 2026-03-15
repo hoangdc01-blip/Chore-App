@@ -18,7 +18,7 @@ export interface ParsedChatAction {
   choreAction: ChoreAction | null
   rewardAction: RewardAction | null
   homeworkResult: HomeworkCheckResult | null
-  drawingResult: DrawingResult | null
+  drawingResults: DrawingResult[]
   presentationAction: PresentationAction | null
 }
 
@@ -26,10 +26,10 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)
-  const drawingMatch = rawText.match(DRAWING_REGEX)
+  const hasDrawings = DRAWING_REGEX.test(rawText)
   const presentationMatch = rawText.match(PRESENTATION_REGEX)
 
-  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch && !presentationMatch) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch && !hasDrawings && !presentationMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
@@ -38,14 +38,14 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
       .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*$/, '')
       .replace(/\[GENERATE_PRESENTATION\][\s\S]*$/, '')
       .trim()
-    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResult: null, presentationAction: null }
+    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResults: [], presentationAction: null }
   }
 
   let displayText = rawText
     .replace(ACTION_REGEX, '')
     .replace(REDEEM_REGEX, '')
     .replace(HOMEWORK_REGEX, '')
-    .replace(DRAWING_REGEX, '')
+    .replace(new RegExp(DRAWING_REGEX.source, 'g'), '')
     .replace(PRESENTATION_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
@@ -81,12 +81,13 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     }
   }
 
-  let drawingResult: DrawingResult | null = null
-  if (drawingMatch) {
-    const title = drawingMatch[1].trim()
+  const drawingResults: DrawingResult[] = []
+  const drawingMatches = rawText.matchAll(new RegExp(DRAWING_REGEX.source, 'g'))
+  for (const match of drawingMatches) {
+    const title = match[1]?.trim()
     if (title) {
-      const style = (drawingMatch[2]?.trim() === 'illustration') ? 'illustration' : 'coloring'
-      drawingResult = { title, imageDataUrl: '', style }
+      const style = (match[2]?.trim() === 'illustration') ? 'illustration' : 'coloring'
+      drawingResults.push({ title, imageDataUrl: '', style })
     }
   }
 
@@ -100,7 +101,7 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     }
   }
 
-  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult, drawingResult, presentationAction }
+  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult, drawingResults, presentationAction }
 }
 
 function validateChoreAction(data: unknown): ChoreAction | null {

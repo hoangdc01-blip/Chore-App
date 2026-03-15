@@ -35,7 +35,7 @@ interface ChatState {
   homeworkCheckResult: HomeworkCheckResult | null
   homeworkCheckMessageIndex: number | null
 
-  drawings: Record<number, DrawingResult>
+  drawings: Record<number, DrawingResult[]>
 
   presentations: Record<number, PresentationResult>
   generatingPresentationIndex: number | null
@@ -76,46 +76,51 @@ function buildBuddyCtx(state: ChatState): BuddyContext {
   }
 }
 
-/** Post-process drawing result: call Stable Diffusion to generate the actual image */
-async function resolveDrawingImage(
-  drawingResult: DrawingResult,
+/** Post-process drawing results: call Stable Diffusion to generate images sequentially */
+async function resolveDrawingImages(
+  drawingResults: DrawingResult[],
   messageIndex: number,
   set: (partial: Partial<ChatState>) => void,
   get: () => ChatState
 ): Promise<void> {
+  // Initialize with placeholder results
   set({
     isGeneratingImage: true,
     generatingDrawingIndex: messageIndex,
-    drawings: { ...get().drawings, [messageIndex]: drawingResult },
+    drawings: { ...get().drawings, [messageIndex]: drawingResults.map(d => ({ ...d })) },
   })
-  try {
-    const result = await generateImage(drawingResult.title, drawingResult.style || 'coloring')
-    if (result) {
-      const imageDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`
-      set({
-        drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl } },
-        isGeneratingImage: false,
-        generatingDrawingIndex: null,
-      })
-    } else {
-      set({
-        drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '', error: 'Draw Things returned no image. Make sure a model is loaded and the API server is enabled (Settings \u2192 API Server \u2192 Enable).' } },
-        isGeneratingImage: false,
-        generatingDrawingIndex: null,
-      })
+
+  // Generate images sequentially
+  for (let i = 0; i < drawingResults.length; i++) {
+    const dr = drawingResults[i]
+    try {
+      const result = await generateImage(dr.title, dr.style || 'coloring')
+      if (result) {
+        const imageDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`
+        const current = get().drawings[messageIndex] ?? []
+        const updated = [...current]
+        updated[i] = { ...dr, imageDataUrl }
+        set({ drawings: { ...get().drawings, [messageIndex]: updated } })
+      } else {
+        const current = get().drawings[messageIndex] ?? []
+        const updated = [...current]
+        updated[i] = { ...dr, imageDataUrl: '', error: 'Draw Things returned no image. Make sure a model is loaded and the API server is enabled.' }
+        set({ drawings: { ...get().drawings, [messageIndex]: updated } })
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+      const isConnectionError = errorMsg.includes('fetch') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('timeout')
+      const userMessage = isConnectionError
+        ? 'Cannot connect to Draw Things. Make sure the app is open with API Server enabled.'
+        : `Draw Things error: ${errorMsg}`
+      const current = get().drawings[messageIndex] ?? []
+      const updated = [...current]
+      updated[i] = { ...dr, imageDataUrl: '', error: userMessage }
+      set({ drawings: { ...get().drawings, [messageIndex]: updated } })
     }
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-    const isConnectionError = errorMsg.includes('fetch') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('timeout')
-    const userMessage = isConnectionError
-      ? 'Cannot connect to Draw Things. Make sure:\n1. Draw Things app is open\n2. API Server is enabled (Settings \u2192 API Server \u2192 Enable)\n3. Running on port 7860 (default)'
-      : `Draw Things error: ${errorMsg}`
-    set({
-      drawings: { ...get().drawings, [messageIndex]: { title: drawingResult.title, imageDataUrl: '', error: userMessage } },
-      isGeneratingImage: false,
-      generatingDrawingIndex: null,
-    })
   }
+
+  set({ isGeneratingImage: false, generatingDrawingIndex: null })
 }
 
 /** Post-process presentation action: generate slide content + PPTX blob and store result */
@@ -249,8 +254,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const batchFinalMessages = get().messages
       const batchLastMsg = batchFinalMessages[batchFinalMessages.length - 1]
       if (batchLastMsg?.role === 'assistant' && batchLastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(batchLastMsg.content)
-        if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== batchLastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(batchLastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== batchLastMsg.content) {
           const updatedMessages = [
             ...batchFinalMessages.slice(0, -1),
             { ...batchLastMsg, content: displayText },
@@ -264,9 +269,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
           })
-          // Generate image via Stable Diffusion if drawing was requested
-          if (drawingResult) {
-            resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          // Generate images via Stable Diffusion if drawings were requested
+          if (drawingResults.length > 0) {
+            resolveDrawingImages(drawingResults, updatedMessages.length - 1, set, get)
           }
           // Generate PPTX if presentation was requested
           if (presentationAction) {
@@ -354,8 +359,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const finalMessages = get().messages
       const lastMsg = finalMessages[finalMessages.length - 1]
       if (lastMsg?.role === 'assistant' && lastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(lastMsg.content)
-        if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== lastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(lastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== lastMsg.content) {
           const updatedMessages = [
             ...finalMessages.slice(0, -1),
             { ...lastMsg, content: displayText },
@@ -369,9 +374,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
             homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
           })
-          // Generate image via Stable Diffusion if drawing was requested
-          if (drawingResult) {
-            resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          // Generate images via Stable Diffusion if drawings were requested
+          if (drawingResults.length > 0) {
+            resolveDrawingImages(drawingResults, updatedMessages.length - 1, set, get)
           }
           // Generate PPTX if presentation was requested
           if (presentationAction) {
@@ -435,8 +440,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         const fallbackFinalMessages = get().messages
         const fallbackLastMsg = fallbackFinalMessages[fallbackFinalMessages.length - 1]
         if (fallbackLastMsg?.role === 'assistant' && fallbackLastMsg.content) {
-          const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(fallbackLastMsg.content)
-          if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== fallbackLastMsg.content) {
+          const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(fallbackLastMsg.content)
+          if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== fallbackLastMsg.content) {
             const updatedMessages = [
               ...fallbackFinalMessages.slice(0, -1),
               { ...fallbackLastMsg, content: displayText },
@@ -450,9 +455,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
               homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
               homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
             })
-            // Generate image via Stable Diffusion if drawing was requested
-            if (drawingResult) {
-              resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+            // Generate images via Stable Diffusion if drawings were requested
+            if (drawingResults.length > 0) {
+              resolveDrawingImages(drawingResults, updatedMessages.length - 1, set, get)
             }
             // Generate PPTX if presentation was requested
             if (presentationAction) {

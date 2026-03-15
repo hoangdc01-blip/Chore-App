@@ -551,12 +551,15 @@ export default function ChatPage() {
                       />
                   )}
                   {msg.role === 'assistant' &&
-                    drawings[originalIndex] && (
-                      <DrawingCard
-                        result={drawings[originalIndex]}
-                        isGenerating={generatingDrawingIndex === originalIndex}
-                        onDismiss={() => dismissDrawing(originalIndex)}
-                      />
+                    drawings[originalIndex] && drawings[originalIndex].length > 0 && (
+                      drawings[originalIndex].map((drawing, drawIdx) => (
+                        <DrawingCard
+                          key={drawIdx}
+                          result={drawing}
+                          isGenerating={generatingDrawingIndex === originalIndex && !drawing.imageDataUrl && !drawing.error}
+                          onDismiss={() => dismissDrawing(originalIndex)}
+                        />
+                      ))
                   )}
                   {msg.role === 'assistant' &&
                     presentations[originalIndex] && (

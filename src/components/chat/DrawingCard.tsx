@@ -78,7 +78,8 @@ export default function DrawingCard({ result, onDismiss }: Props) {
 
       <div
         ref={containerRef}
-        className="bg-white rounded-lg border border-border p-2 mb-3 flex items-center justify-center"
+        className="bg-white rounded-lg border border-border p-2 mb-3 flex items-center justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-h-[250px]"
+        style={{ minHeight: '200px' }}
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
 

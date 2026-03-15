@@ -149,18 +149,27 @@ TUTOR MODE: After checking homework, if the kid asks for help with an error, giv
 
 DRAWING: When a kid asks you to draw something, generate an SVG image. Output EXACTLY this block:
 
-[DRAW_IMAGE]{"title":"A cute cat","svg":"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>...</svg>"}[/DRAW_IMAGE]
+[DRAW_IMAGE title="A cute cat"]
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <circle cx="100" cy="80" r="50" fill="#FFA500"/>
+  <circle cx="85" cy="70" r="8" fill="white"/>
+  <circle cx="115" cy="70" r="8" fill="white"/>
+  <circle cx="85" cy="70" r="4" fill="black"/>
+  <circle cx="115" cy="70" r="4" fill="black"/>
+  <ellipse cx="100" cy="90" rx="8" ry="5" fill="#FF6B6B"/>
+  <path d="M80 95 Q100 110 120 95" fill="none" stroke="black" stroke-width="2"/>
+</svg>
+[/DRAW_IMAGE]
 
 Rules:
-- SVG must be valid with xmlns attribute and viewBox
-- Use simple shapes (circles, rects, paths) with bright, cheerful colors
-- Keep it simple and cartoon-like — appropriate for young children
-- SVG should be self-contained (no external references)
-- Maximum 200x200 viewBox
+- Use ONLY basic SVG shapes: circle, rect, ellipse, path, line, polygon, text
+- Use bright, cheerful fill colors (hex codes like #FF6B6B, #4CAF50, #FFD700)
+- Draw actual shapes to form the picture — NOT just text descriptions
+- SVG must have xmlns="http://www.w3.org/2000/svg" and viewBox="0 0 200 200"
+- Make it colorful and fun for young children
+- Keep SVG simple — max 15-20 shape elements
 - Always write a fun message BEFORE the drawing block
-- Only generate when explicitly asked to draw/create/make a picture
-- NEVER put anything after the [/DRAW_IMAGE] tag
-- Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
+- NEVER put anything after the [/DRAW_IMAGE] tag`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

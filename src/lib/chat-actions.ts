@@ -5,6 +5,7 @@ import { useRewardStore } from '../store/reward-store'
 const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
 const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
+const DRAWING_REGEX_NEW = /\[DRAW_IMAGE\s+title="([^"]*?)"\]([\s\S]*?)\[\/DRAW_IMAGE\]/
 const DRAWING_REGEX = /\[DRAW_IMAGE\]([\s\S]*?)\[\/DRAW_IMAGE\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
@@ -23,15 +24,16 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)
-  const drawingMatch = rawText.match(DRAWING_REGEX)
+  const drawingMatchNew = rawText.match(DRAWING_REGEX_NEW)
+  const drawingMatch = drawingMatchNew || rawText.match(DRAWING_REGEX)
 
-  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch && !drawingMatchNew) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
       .replace(/\[REDEEM_REWARD\][\s\S]*$/, '')
       .replace(/\[HOMEWORK_CHECK\][\s\S]*$/, '')
-      .replace(/\[DRAW_IMAGE\][\s\S]*$/, '')
+      .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*$/, '')
       .trim()
     return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResult: null }
   }
@@ -40,6 +42,7 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     .replace(ACTION_REGEX, '')
     .replace(REDEEM_REGEX, '')
     .replace(HOMEWORK_REGEX, '')
+    .replace(DRAWING_REGEX_NEW, '')
     .replace(DRAWING_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
@@ -76,12 +79,25 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   }
 
   let drawingResult: DrawingResult | null = null
-  if (drawingMatch) {
+  if (drawingMatchNew) {
+    // New format: [DRAW_IMAGE title="..."]<svg ...>...</svg>[/DRAW_IMAGE]
+    const title = drawingMatchNew[1].trim()
+    const svg = drawingMatchNew[2].trim()
+    if (title && svg) {
+      drawingResult = validateDrawingResult({ title, svg })
+    }
+  } else if (drawingMatch) {
+    // Fallback: old JSON format [DRAW_IMAGE]{"title":"...","svg":"..."}[/DRAW_IMAGE]
     try {
       const parsed = JSON.parse(drawingMatch[1].trim())
       drawingResult = validateDrawingResult(parsed)
     } catch {
-      // ignore parse errors
+      // If JSON parse fails, try to extract SVG directly from the body
+      const body = drawingMatch[1].trim()
+      const svgMatch = body.match(/<svg[\s\S]*<\/svg>/)
+      if (svgMatch) {
+        drawingResult = validateDrawingResult({ title: 'Drawing', svg: svgMatch[0] })
+      }
     }
   }
 

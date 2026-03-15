@@ -16,10 +16,12 @@ interface MemberEditDialogProps {
 export default function MemberEditDialog({ member, open, onClose }: MemberEditDialogProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(open)
   const updateMember = useMemberStore((s) => s.updateMember)
+  const updatePersonality = useMemberStore((s) => s.updatePersonality)
   const [name, setName] = useState('')
   const [colorIndex, setColorIndex] = useState(0)
   const [avatar, setAvatar] = useState<string | undefined>()
   const [emojiPasscode, setEmojiPasscode] = useState<string | undefined>()
+  const [personalityNote, setPersonalityNote] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
       setColorIndex(parseInt(member.color, 10) || 0)
       setAvatar(member.avatar)
       setEmojiPasscode(member.emojiPasscode)
+      setPersonalityNote(member.personalityNote ?? '')
     }
   }, [member])
 
@@ -56,6 +59,7 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
     const trimmed = name.trim()
     if (!trimmed) return
     updateMember(member.id, { name: trimmed, color: String(colorIndex), avatar, emojiPasscode })
+    updatePersonality(member.id, personalityNote.trim())
     onClose()
   }
 
@@ -126,6 +130,19 @@ export default function MemberEditDialog({ member, open, onClose }: MemberEditDi
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {emojiPasscode ? `Selected: ${emojiPasscode}` : 'Optional — kid taps this emoji to log in'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Personality note</label>
+            <Input
+              type="text"
+              value={personalityNote}
+              onChange={(e) => setPersonalityNote(e.target.value)}
+              placeholder="e.g., responds to praise, competitive, needs gentle reminders"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Helps Buddy adjust its tone when chatting with this kid
             </p>
           </div>
 

@@ -81,6 +81,8 @@ FAIRNESS: When a kid asks "why do I have to do this?" or questions fairness, use
 
 ROTATION: In parent mode, when asked about chore rotation or fairness, use ROTATION ANALYSIS to suggest re-balancing. Be specific about which chores to swap.
 
+FUN FACTS: If this is the kid's first message today (FIRST_MESSAGE_TODAY: true), start with a fun fact about animals, space, or dinosaurs appropriate for ages 4-7. Keep it to 1 sentence. Then respond to their question.
+
 You help with: 1) Daily chores 2) Fun facts 3) Homework (math/science/Chinese)
 Never discuss anything inappropriate or scary. Be kind, patient, fun.`
 
@@ -409,10 +411,41 @@ function buildGeneralContext(): string {
   return `\n\nYou are in PARENT mode (admin). Date: ${today}\nFamily overview:\n${lines}` + buildRewardBalanceAdvice() + buildFairnessContext() + buildRotationAdvice()
 }
 
-export function buildSystemPrompt(memberId: string | null): string {
+export interface BuddyContext {
+  buddyCharacter?: { name: string; type: string; emoji: string } | null
+  storyStep?: number
+  isFirstMessageToday?: boolean
+  personalityNote?: string
+}
+
+function buildStoryContext(ctx: BuddyContext): string {
+  if (!ctx.buddyCharacter) return ''
+  const step = ctx.storyStep ?? 0
+  return `\n\nSTORY: You are ${ctx.buddyCharacter.name} the ${ctx.buddyCharacter.type} ${ctx.buddyCharacter.emoji}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
+}
+
+function buildPersonalityContext(ctx: BuddyContext): string {
+  if (!ctx.personalityNote) return ''
+  return `\n\nPERSONALITY: This kid ${ctx.personalityNote}. Adjust your tone accordingly.`
+}
+
+function buildFirstMessageContext(ctx: BuddyContext): string {
+  if (!ctx.isFirstMessageToday) return ''
+  return `\n\nFIRST_MESSAGE_TODAY: true`
+}
+
+export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyContext): string {
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
-  return BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
+  let prompt = BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
+
+  if (buddyCtx) {
+    prompt += buildStoryContext(buddyCtx)
+    prompt += buildPersonalityContext(buddyCtx)
+    prompt += buildFirstMessageContext(buddyCtx)
+  }
+
+  return prompt
 }
 
 /**

@@ -1,10 +1,12 @@
 import { create } from 'zustand'
-import type { ChatMessage } from '../lib/ai-chat'
+import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
-import type { ChoreAction, RewardAction } from '../types'
+import type { ChoreAction, RewardAction, BuddyCharacter } from '../types'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
+import { useMemberStore } from './member-store'
+import { format } from 'date-fns'
 
 const MAX_CONTEXT_MESSAGES = 8
 
@@ -24,6 +26,10 @@ interface ChatState {
   pendingRewardAction: RewardAction | null
   pendingRewardMessageIndex: number | null
 
+  buddyCharacter: BuddyCharacter | null
+  storyProgress: Record<string, number>
+  lastGreetingDate: Record<string, string>
+
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
   sendMessage: (content: string, image?: string) => Promise<void>
@@ -34,6 +40,22 @@ interface ChatState {
   cancelChoreAction: () => void
   acceptRewardAction: () => void
   cancelRewardAction: () => void
+  selectBuddyCharacter: (character: BuddyCharacter) => void
+  advanceStory: (memberId: string) => void
+}
+
+function buildBuddyCtx(state: ChatState): BuddyContext {
+  const memberId = state.selectedMemberId
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const isFirstToday = memberId ? state.lastGreetingDate[memberId] !== today : false
+  const member = memberId ? useMemberStore.getState().members.find(m => m.id === memberId) : null
+
+  return {
+    buddyCharacter: state.buddyCharacter,
+    storyStep: memberId ? (state.storyProgress[memberId] ?? 0) : 0,
+    isFirstMessageToday: isFirstToday,
+    personalityNote: member?.personalityNote,
+  }
 }
 
 export const useChatStore = create<ChatState>()((set, get) => ({
@@ -49,6 +71,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   pendingChoreMessageIndex: null,
   pendingRewardAction: null,
   pendingRewardMessageIndex: null,
+
+  buddyCharacter: null,
+  storyProgress: {},
+  lastGreetingDate: {},
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -68,7 +94,23 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ messages, isLoading: true, error: null })
 
     try {
-      const systemPrompt = buildSystemPrompt(get().selectedMemberId)
+      const buddyCtx = buildBuddyCtx(get())
+      const systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+
+      // Track first message of the day and advance story
+      const memberId = get().selectedMemberId
+      if (memberId) {
+        const today = format(new Date(), 'yyyy-MM-dd')
+        const updates: Partial<ChatState> = {}
+        if (get().lastGreetingDate[memberId] !== today) {
+          updates.lastGreetingDate = { ...get().lastGreetingDate, [memberId]: today }
+        }
+        if (get().buddyCharacter) {
+          updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
+        }
+        if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
+      }
+
       const windowed = messages.slice(-MAX_CONTEXT_MESSAGES)
       const allMessages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -127,7 +169,23 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     const startTime = Date.now()
 
     try {
-      const systemPrompt = buildSystemPrompt(get().selectedMemberId)
+      const buddyCtx = buildBuddyCtx(get())
+      const systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx)
+
+      // Track first message of the day and advance story
+      const memberId = get().selectedMemberId
+      if (memberId) {
+        const today = format(new Date(), 'yyyy-MM-dd')
+        const updates: Partial<ChatState> = {}
+        if (get().lastGreetingDate[memberId] !== today) {
+          updates.lastGreetingDate = { ...get().lastGreetingDate, [memberId]: today }
+        }
+        if (get().buddyCharacter) {
+          updates.storyProgress = { ...get().storyProgress, [memberId]: (get().storyProgress[memberId] ?? 0) + 1 }
+        }
+        if (Object.keys(updates).length > 0) set(updates as Partial<ChatState>)
+      }
+
       const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
       const messagesForApi: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -198,7 +256,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           : msgs
         set({ messages: withoutPlaceholder, isStreaming: false })
 
-        const systemPrompt = buildSystemPrompt(get().selectedMemberId)
+        const fallbackBuddyCtx = buildBuddyCtx(get())
+        const systemPrompt = buildSystemPrompt(get().selectedMemberId, fallbackBuddyCtx)
         const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
         const fallbackMessages: ChatMessage[] = [
           { role: 'system', content: systemPrompt },
@@ -260,6 +319,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   cancelRewardAction: () => {
     set({ pendingRewardAction: null, pendingRewardMessageIndex: null })
+  },
+
+  selectBuddyCharacter: (character) => {
+    set({ buddyCharacter: character })
+  },
+
+  advanceStory: (memberId) => {
+    const progress = get().storyProgress
+    set({ storyProgress: { ...progress, [memberId]: (progress[memberId] ?? 0) + 1 } })
   },
 
   cancelGeneration: () => {

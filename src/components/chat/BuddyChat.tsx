@@ -5,6 +5,7 @@ import { useMemberStore } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
 import { resizeImageToDataURL } from '../../lib/ai-chat'
 import type { ChatMessage } from '../../lib/ai-chat'
+import { BUDDY_CHARACTERS } from '../../types'
 import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
 import Input from '../ui/Input'
@@ -35,12 +36,12 @@ const PARENT_QUICK_ACTIONS = [
   { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
 ]
 
-function ChatBubble({ message, isUser }: { message: ChatMessage; isUser: boolean }) {
+function ChatBubble({ message, isUser, emoji }: { message: ChatMessage; isUser: boolean; emoji: string }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-sm shrink-0 mr-2 mt-1 shadow-sm">
-          {'\u{1F43B}'}
+          {emoji}
         </div>
       )}
       <div
@@ -63,11 +64,11 @@ function ChatBubble({ message, isUser }: { message: ChatMessage; isUser: boolean
   )
 }
 
-function TypingIndicator() {
+function TypingIndicator({ emoji }: { emoji: string }) {
   return (
     <div className="flex justify-start mb-3">
       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-sm shrink-0 mr-2 mt-1">
-        {'\u{1F43B}'}
+        {emoji}
       </div>
       <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex gap-1.5">
         <div className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -124,6 +125,9 @@ export default function BuddyChat() {
     pendingRewardMessageIndex,
     acceptRewardAction,
     cancelRewardAction,
+    buddyCharacter,
+    storyProgress,
+    selectBuddyCharacter,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -133,6 +137,10 @@ export default function BuddyChat() {
 
   // In kid mode, auto-select the active kid
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
+  const buddyEmoji = buddyCharacter?.emoji ?? '\u{1F43B}'
+  const buddyName = buddyCharacter?.name ?? 'Buddy'
+  const storyStep = effectiveMemberId ? (storyProgress[effectiveMemberId] ?? 0) : 0
+  const storyChapter = Math.floor(storyStep / 5) + 1
 
   // Sync chat store member for kid mode
   useEffect(() => {
@@ -256,7 +264,7 @@ export default function BuddyChat() {
         className="fixed bottom-[calc(20px+env(safe-area-inset-bottom,0px))] right-5 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg hover:scale-110 active:scale-95 transition-transform flex items-center justify-center"
         title="Chat with Buddy"
       >
-        <span className="text-2xl">{'\u{1F43B}'}</span>
+        <span className="text-2xl">{buddyEmoji}</span>
       </button>
     )
   }
@@ -272,11 +280,13 @@ export default function BuddyChat() {
       <div className="safe-top flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-green-500/10 to-emerald-500/10 sm:rounded-t-2xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-lg shadow-sm">
-            {'\u{1F43B}'}
+            {buddyEmoji}
           </div>
           <div>
-            <h3 className="font-extrabold text-foreground text-base">Buddy</h3>
-            <p className="text-xs text-muted-foreground">Your friendly helper!</p>
+            <h3 className="font-extrabold text-foreground text-base">{buddyName}</h3>
+            <p className="text-xs text-muted-foreground">
+              {buddyCharacter ? `Chapter ${storyChapter}` : 'Your friendly helper!'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -337,15 +347,38 @@ export default function BuddyChat() {
 
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl shadow-md">
-              {'\u{1F43B}'}
-            </div>
-            <p className="font-bold text-foreground text-lg">Hi there! I'm Buddy!</p>
-            <p className="text-sm text-muted-foreground max-w-[240px]">
-              {effectiveMemberId
-                ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
-                : 'Pick a kid above, then ask me anything!'}
-            </p>
+            {!buddyCharacter ? (
+              <>
+                <p className="font-bold text-foreground text-lg">Choose your Buddy!</p>
+                <p className="text-sm text-muted-foreground max-w-[240px]">
+                  Pick a character to go on adventures with!
+                </p>
+                <div className="flex flex-wrap justify-center gap-3 mt-2">
+                  {BUDDY_CHARACTERS.map((char) => (
+                    <button
+                      key={char.type}
+                      onClick={() => selectBuddyCharacter(char)}
+                      className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted hover:bg-accent hover:scale-105 transition-all"
+                    >
+                      <span className="text-3xl">{char.emoji}</span>
+                      <span className="text-xs font-bold text-foreground">{char.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl shadow-md">
+                  {buddyEmoji}
+                </div>
+                <p className="font-bold text-foreground text-lg">Hi there! I'm {buddyName}!</p>
+                <p className="text-sm text-muted-foreground max-w-[240px]">
+                  {effectiveMemberId
+                    ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
+                    : 'Pick a kid above, then ask me anything!'}
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -363,7 +396,7 @@ export default function BuddyChat() {
               lastResponseTimeMs != null
             return (
               <div key={originalIndex}>
-                <ChatBubble message={msg} isUser={msg.role === 'user'} />
+                <ChatBubble message={msg} isUser={msg.role === 'user'} emoji={buddyEmoji} />
                 {isLastAssistant && (
                   <div className="flex justify-start mb-3 ml-10">
                     <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>
@@ -394,7 +427,7 @@ export default function BuddyChat() {
           })
         })()}
 
-        {isLoading && !isStreaming && <TypingIndicator />}
+        {isLoading && !isStreaming && <TypingIndicator emoji={buddyEmoji} />}
 
         {isLoading && (
           <div className="flex justify-center mb-3">

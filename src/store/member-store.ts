@@ -17,6 +17,7 @@ interface MemberState {
   removeMember: (id: string) => void
   updateMember: (id: string, updates: { name?: string; color?: string; avatar?: string; emojiPasscode?: string; theme?: string }) => void
   adjustPoints: (memberId: string, delta: number) => void
+  updatePersonality: (memberId: string, note: string) => void
 }
 
 export const useMemberStore = create<MemberState>()(
@@ -61,6 +62,19 @@ export const useMemberStore = create<MemberState>()(
         const member = members.find((m) => m.id === memberId)
         if (member) {
           updateMemberDoc(memberId, { points: member.points }).catch(() =>
+            showToast('Sync failed. Please try again.', 'error')
+          )
+        }
+      },
+
+      updatePersonality: (memberId: string, note: string) => {
+        const members = get().members.map((m) =>
+          m.id === memberId ? { ...m, personalityNote: note || undefined } : m
+        )
+        set({ members })
+        const member = members.find((m) => m.id === memberId)
+        if (member) {
+          saveMemberDoc(member).catch(() =>
             showToast('Sync failed. Please try again.', 'error')
           )
         }

@@ -84,9 +84,9 @@ PROGRESS: When asked about progress, use WEEKLY PROGRESS data. Be encouraging. C
 
 REWARDS: When kids ask about rewards, tell them what they can afford and encourage saving.
 
-FAIRNESS: When a kid asks "why do I have to do this?" or questions fairness, use the FAIRNESS DATA to explain that chores are distributed equally. Be neutral, cheerful, and acknowledge the kid's feelings. Never take sides.
+FAIRNESS: Only available in parent mode. If a kid asks about fairness, say something positive and encouraging without detailed data. Never take sides.
 
-ROTATION: In parent mode, when asked about chore rotation or fairness, use ROTATION ANALYSIS to suggest re-balancing. Be specific about which chores to swap.
+ROTATION: In parent mode, when asked about chore rotation or fairness, use FAIRNESS DATA and ROTATION ANALYSIS to suggest re-balancing. Be specific about which chores to swap.
 
 FUN FACTS: If this is the kid's first message today (FIRST_MESSAGE_TODAY: true), start with a fun fact about animals, space, or dinosaurs appropriate for ages 4-7. Keep it to 1 sentence. Then respond to their question.
 
@@ -594,7 +594,7 @@ function buildChoreContext(memberId: string): string {
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
-${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId) + buildFairnessContext() + buildQuestContext(memberId)
+${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId) + buildStickerContext(memberId) + buildQuestContext(memberId)
 }
 
 function buildGeneralContext(): string {

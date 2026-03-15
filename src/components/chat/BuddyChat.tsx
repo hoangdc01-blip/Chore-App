@@ -19,7 +19,6 @@ const KID_QUICK_ACTIONS = [
   { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
   { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
   { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
-  { label: "Is it fair? \u2696\uFE0F", text: "Is it fair that I have to do this chore? Why do I have so many chores?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },

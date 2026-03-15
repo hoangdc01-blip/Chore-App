@@ -161,7 +161,20 @@ Rules:
 - Just describe what they asked for in the title. The actual image will be generated separately.
 - Always write a fun, encouraging message BEFORE the [DRAW_IMAGE] block
 - NEVER put anything after the [/DRAW_IMAGE] tag
-- Output the block on a SINGLE LINE`
+- Output the block on a SINGLE LINE
+
+PRESENTATION: When a kid asks to make/create a presentation or PowerPoint about a topic, output EXACTLY this block at the END of your response:
+
+[GENERATE_PRESENTATION]{"title":"All About Dinosaurs","slides":[{"title":"What are Dinosaurs?","content":"Dinosaurs lived millions of years ago\nThey were reptiles\nSome were huge, some were small","emoji":"\u{1F995}"},{"title":"Types of Dinosaurs","content":"T-Rex was a meat eater\nBrachiosaurus was very tall\nTriceratops had three horns","emoji":"\u{1F996}"},{"title":"Where Did They Go?","content":"An asteroid hit Earth 65 million years ago\nThe climate changed\nMost dinosaurs did not survive","emoji":"\u2604\uFE0F"}]}[/GENERATE_PRESENTATION]
+
+Rules:
+- Generate 3-6 slides with simple, fun content for kids
+- Each slide: title, content (bullet points separated by \\n), optional emoji
+- Use simple words appropriate for ages 4-7
+- Make it educational and fun
+- Write a friendly message BEFORE the block
+- NEVER put anything after the [/GENERATE_PRESENTATION] tag
+- Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

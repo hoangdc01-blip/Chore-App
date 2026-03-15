@@ -168,6 +168,24 @@ export interface DrawingResult {
   imageDataUrl: string  // data:image/png;base64,...
 }
 
+export interface PresentationSlide {
+  title: string
+  content: string  // bullet points separated by \n
+  emoji?: string
+}
+
+export interface PresentationAction {
+  title: string
+  slides: PresentationSlide[]
+}
+
+export interface PresentationResult {
+  title: string
+  slideCount: number
+  slides: PresentationSlide[]
+  pptxDataUrl?: string  // generated pptx as data URL for download
+}
+
 /** Parsed chore-creation request from AI chat */
 export interface ChoreAction {
   name: string

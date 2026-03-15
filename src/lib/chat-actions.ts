@@ -1,4 +1,4 @@
-import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, RecurrenceType } from '../types'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, PresentationAction, RecurrenceType } from '../types'
 import { useMemberStore } from '../store/member-store'
 import { useRewardStore } from '../store/reward-store'
 
@@ -7,6 +7,7 @@ const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
 // Format: [DRAW_IMAGE title="description"][/DRAW_IMAGE]
 const DRAWING_REGEX = /\[DRAW_IMAGE\s+title="([^"]*?)"\]\s*\[?\/DRAW_IMAGE\]?/
+const PRESENTATION_REGEX = /\[GENERATE_PRESENTATION\]([\s\S]*?)\[\/GENERATE_PRESENTATION\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
   'none', 'daily', 'weekly', 'biweekly', 'monthly', 'custom'
@@ -18,6 +19,7 @@ export interface ParsedChatAction {
   rewardAction: RewardAction | null
   homeworkResult: HomeworkCheckResult | null
   drawingResult: DrawingResult | null
+  presentationAction: PresentationAction | null
 }
 
 export function parseChatResponse(rawText: string): ParsedChatAction {
@@ -25,16 +27,18 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)
   const drawingMatch = rawText.match(DRAWING_REGEX)
+  const presentationMatch = rawText.match(PRESENTATION_REGEX)
 
-  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch && !presentationMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
       .replace(/\[REDEEM_REWARD\][\s\S]*$/, '')
       .replace(/\[HOMEWORK_CHECK\][\s\S]*$/, '')
       .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*$/, '')
+      .replace(/\[GENERATE_PRESENTATION\][\s\S]*$/, '')
       .trim()
-    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResult: null }
+    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResult: null, presentationAction: null }
   }
 
   let displayText = rawText
@@ -42,6 +46,7 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     .replace(REDEEM_REGEX, '')
     .replace(HOMEWORK_REGEX, '')
     .replace(DRAWING_REGEX, '')
+    .replace(PRESENTATION_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
@@ -85,7 +90,17 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     }
   }
 
-  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult, drawingResult }
+  let presentationAction: PresentationAction | null = null
+  if (presentationMatch) {
+    try {
+      const parsed = JSON.parse(presentationMatch[1].trim())
+      presentationAction = validatePresentationAction(parsed)
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult, drawingResult, presentationAction }
 }
 
 function validateChoreAction(data: unknown): ChoreAction | null {
@@ -201,6 +216,31 @@ function validateHomeworkResult(data: unknown): HomeworkCheckResult | null {
   }
 
   return { subject, totalProblems, correct, errors }
+}
+
+function validatePresentationAction(data: unknown): PresentationAction | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+
+  const title = typeof obj.title === 'string' ? obj.title.trim() : ''
+  if (!title) return null
+
+  if (!Array.isArray(obj.slides) || obj.slides.length === 0) return null
+
+  const slides: PresentationAction['slides'] = []
+  for (const raw of obj.slides) {
+    if (!raw || typeof raw !== 'object') continue
+    const s = raw as Record<string, unknown>
+    const slideTitle = typeof s.title === 'string' ? s.title.trim() : ''
+    const slideContent = typeof s.content === 'string' ? s.content.trim() : ''
+    if (!slideTitle || !slideContent) continue
+    const emoji = typeof s.emoji === 'string' && s.emoji ? s.emoji : undefined
+    slides.push({ title: slideTitle, content: slideContent, emoji })
+  }
+
+  if (slides.length === 0) return null
+
+  return { title, slides }
 }
 
 export function getMemberNameById(id: string): string {

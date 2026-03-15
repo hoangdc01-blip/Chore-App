@@ -3,7 +3,8 @@ import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
 import { generateImage } from '../lib/image-gen'
-import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult } from '../types'
+import { generatePptx } from '../lib/pptx-gen'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, PresentationResult, PresentationAction } from '../types'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
 import { useMemberStore } from './member-store'
@@ -35,6 +36,9 @@ interface ChatState {
 
   drawings: Record<number, DrawingResult>
 
+  presentations: Record<number, PresentationResult>
+  generatingPresentationIndex: number | null
+
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
   reminderVariety: number
@@ -52,6 +56,7 @@ interface ChatState {
   cancelRewardAction: () => void
   dismissHomeworkResult: () => void
   dismissDrawing: (messageIndex: number) => void
+  dismissPresentation: (messageIndex: number) => void
   advanceStory: (memberId: string) => void
   toggleAutoReadAloud: () => void
 }
@@ -107,6 +112,43 @@ async function resolveDrawingImage(
   }
 }
 
+/** Post-process presentation action: generate PPTX blob and store result */
+async function resolvePresentationFile(
+  action: PresentationAction,
+  messageIndex: number,
+  set: (partial: Partial<ChatState>) => void,
+  get: () => ChatState
+): Promise<void> {
+  const pendingResult: PresentationResult = {
+    title: action.title,
+    slideCount: action.slides.length,
+    slides: action.slides,
+  }
+  set({
+    generatingPresentationIndex: messageIndex,
+    presentations: { ...get().presentations, [messageIndex]: pendingResult },
+  })
+  try {
+    const blob = await generatePptx(action)
+    const pptxDataUrl = URL.createObjectURL(blob)
+    set({
+      presentations: {
+        ...get().presentations,
+        [messageIndex]: { ...pendingResult, pptxDataUrl },
+      },
+      generatingPresentationIndex: null,
+    })
+  } catch {
+    set({
+      presentations: {
+        ...get().presentations,
+        [messageIndex]: { ...pendingResult, pptxDataUrl: undefined },
+      },
+      generatingPresentationIndex: null,
+    })
+  }
+}
+
 export const useChatStore = create<ChatState>()((set, get) => ({
   messages: [],
   isOpen: false,
@@ -127,6 +169,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   homeworkCheckMessageIndex: null,
 
   drawings: {},
+
+  presentations: {},
+  generatingPresentationIndex: null,
 
   storyProgress: {},
   lastGreetingDate: {},
@@ -183,8 +228,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const batchFinalMessages = get().messages
       const batchLastMsg = batchFinalMessages[batchFinalMessages.length - 1]
       if (batchLastMsg?.role === 'assistant' && batchLastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult } = parseChatResponse(batchLastMsg.content)
-        if (choreAction || rewardAction || homeworkResult || drawingResult || displayText !== batchLastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(batchLastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== batchLastMsg.content) {
           const updatedMessages = [
             ...batchFinalMessages.slice(0, -1),
             { ...batchLastMsg, content: displayText },
@@ -201,6 +246,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           // Generate image via Stable Diffusion if drawing was requested
           if (drawingResult) {
             resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          }
+          // Generate PPTX if presentation was requested
+          if (presentationAction) {
+            resolvePresentationFile(presentationAction, updatedMessages.length - 1, set, get)
           }
         }
         // Auto-read aloud if enabled
@@ -280,12 +329,12 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       clearTimeout(timeoutId)
       set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })
 
-      // Post-process: extract chore/reward/homework/drawing actions from the assistant response
+      // Post-process: extract chore/reward/homework/drawing/presentation actions from the assistant response
       const finalMessages = get().messages
       const lastMsg = finalMessages[finalMessages.length - 1]
       if (lastMsg?.role === 'assistant' && lastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult } = parseChatResponse(lastMsg.content)
-        if (choreAction || rewardAction || homeworkResult || drawingResult || displayText !== lastMsg.content) {
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(lastMsg.content)
+        if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== lastMsg.content) {
           const updatedMessages = [
             ...finalMessages.slice(0, -1),
             { ...lastMsg, content: displayText },
@@ -302,6 +351,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           // Generate image via Stable Diffusion if drawing was requested
           if (drawingResult) {
             resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+          }
+          // Generate PPTX if presentation was requested
+          if (presentationAction) {
+            resolvePresentationFile(presentationAction, updatedMessages.length - 1, set, get)
           }
         }
         // Auto-read aloud if enabled
@@ -357,12 +410,12 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           lastResponseTimeMs: Date.now() - startTime,
         })
 
-        // Post-process fallback: extract chore/reward/homework/drawing actions from the assistant response
+        // Post-process fallback: extract chore/reward/homework/drawing/presentation actions from the assistant response
         const fallbackFinalMessages = get().messages
         const fallbackLastMsg = fallbackFinalMessages[fallbackFinalMessages.length - 1]
         if (fallbackLastMsg?.role === 'assistant' && fallbackLastMsg.content) {
-          const { displayText, choreAction, rewardAction, homeworkResult, drawingResult } = parseChatResponse(fallbackLastMsg.content)
-          if (choreAction || rewardAction || homeworkResult || drawingResult || displayText !== fallbackLastMsg.content) {
+          const { displayText, choreAction, rewardAction, homeworkResult, drawingResult, presentationAction } = parseChatResponse(fallbackLastMsg.content)
+          if (choreAction || rewardAction || homeworkResult || drawingResult || presentationAction || displayText !== fallbackLastMsg.content) {
             const updatedMessages = [
               ...fallbackFinalMessages.slice(0, -1),
               { ...fallbackLastMsg, content: displayText },
@@ -379,6 +432,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             // Generate image via Stable Diffusion if drawing was requested
             if (drawingResult) {
               resolveDrawingImage(drawingResult, updatedMessages.length - 1, set, get)
+            }
+            // Generate PPTX if presentation was requested
+            if (presentationAction) {
+              resolvePresentationFile(presentationAction, updatedMessages.length - 1, set, get)
             }
           }
           // Auto-read aloud if enabled
@@ -426,6 +483,17 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     set({ drawings: updated })
   },
 
+  dismissPresentation: (messageIndex: number) => {
+    const current = get().presentations[messageIndex]
+    // Revoke blob URL to free memory
+    if (current?.pptxDataUrl) {
+      URL.revokeObjectURL(current.pptxDataUrl)
+    }
+    const updated = { ...get().presentations }
+    delete updated[messageIndex]
+    set({ presentations: updated })
+  },
+
   advanceStory: (memberId) => {
     const progress = get().storyProgress
     set({ storyProgress: { ...progress, [memberId]: (progress[memberId] ?? 0) + 1 } })
@@ -439,5 +507,14 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   toggleAutoReadAloud: () => set({ autoReadAloud: !get().autoReadAloud }),
 
-  clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawings: {} }),
+  clearMessages: () => {
+    // Revoke all presentation blob URLs
+    const pres = get().presentations
+    for (const key of Object.keys(pres)) {
+      if (pres[Number(key)]?.pptxDataUrl) {
+        URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+      }
+    }
+    set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawings: {}, presentations: {}, generatingPresentationIndex: null })
+  },
 }))

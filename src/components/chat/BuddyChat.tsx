@@ -12,6 +12,7 @@ import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
 import HomeworkResultCard from './HomeworkResultCard'
 import DrawingCard from './DrawingCard'
+import PresentationCard from './PresentationCard'
 import Input from '../ui/Input'
 
 const KID_QUICK_ACTIONS = [
@@ -22,6 +23,7 @@ const KID_QUICK_ACTIONS = [
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
   { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
+  { label: "Make slides \u{1F4CA}", text: "Can you make a presentation for me about something cool?" },
   { label: "Say it simpler \u{1F5E3}\uFE0F", text: "Can you say that in a simpler way? I don't understand." },
 ]
 
@@ -157,6 +159,9 @@ export default function BuddyChat() {
     drawings,
     generatingDrawingIndex,
     dismissDrawing,
+    presentations,
+    generatingPresentationIndex,
+    dismissPresentation,
     storyProgress,
     autoReadAloud,
     toggleAutoReadAloud,
@@ -507,6 +512,14 @@ export default function BuddyChat() {
                       result={drawings[originalIndex]}
                       isGenerating={generatingDrawingIndex === originalIndex}
                       onDismiss={() => dismissDrawing(originalIndex)}
+                    />
+                )}
+                {msg.role === 'assistant' &&
+                  presentations[originalIndex] && (
+                    <PresentationCard
+                      result={presentations[originalIndex]}
+                      isGenerating={generatingPresentationIndex === originalIndex}
+                      onDismiss={() => dismissPresentation(originalIndex)}
                     />
                 )}
               </div>

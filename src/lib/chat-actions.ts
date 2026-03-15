@@ -1,10 +1,14 @@
 import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, RecurrenceType } from '../types'
 import { useMemberStore } from '../store/member-store'
 import { useRewardStore } from '../store/reward-store'
+import { getDrawingById } from './drawing-library'
 
 const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
 const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
+// New format: [DRAW_IMAGE id="cat" title="A cute kitty!"]
+const DRAWING_REGEX_LIB = /\[DRAW_IMAGE\s+id="([^"]*?)"\s+title="([^"]*?)"\]\s*\[?\/DRAW_IMAGE\]?/
+// Legacy format: [DRAW_IMAGE title="..."]<svg>...</svg>[/DRAW_IMAGE]
 const DRAWING_REGEX_NEW = /\[DRAW_IMAGE\s+title="([^"]*?)"\]([\s\S]*?)\[\/DRAW_IMAGE\]/
 const DRAWING_REGEX = /\[DRAW_IMAGE\]([\s\S]*?)\[\/DRAW_IMAGE\]/
 
@@ -24,10 +28,11 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)
-  const drawingMatchNew = rawText.match(DRAWING_REGEX_NEW)
-  const drawingMatch = drawingMatchNew || rawText.match(DRAWING_REGEX)
+  const drawingMatchLib = rawText.match(DRAWING_REGEX_LIB)
+  const drawingMatchNew = !drawingMatchLib ? rawText.match(DRAWING_REGEX_NEW) : null
+  const drawingMatch = drawingMatchLib || drawingMatchNew || rawText.match(DRAWING_REGEX)
 
-  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch && !drawingMatchNew) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
@@ -42,6 +47,7 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     .replace(ACTION_REGEX, '')
     .replace(REDEEM_REGEX, '')
     .replace(HOMEWORK_REGEX, '')
+    .replace(DRAWING_REGEX_LIB, '')
     .replace(DRAWING_REGEX_NEW, '')
     .replace(DRAWING_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
@@ -79,8 +85,16 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   }
 
   let drawingResult: DrawingResult | null = null
-  if (drawingMatchNew) {
-    // New format: [DRAW_IMAGE title="..."]<svg ...>...</svg>[/DRAW_IMAGE]
+  if (drawingMatchLib) {
+    // Library format: [DRAW_IMAGE id="cat" title="A cute kitty!"]
+    const id = drawingMatchLib[1].trim()
+    const title = drawingMatchLib[2].trim()
+    const libraryDrawing = getDrawingById(id)
+    if (libraryDrawing && title) {
+      drawingResult = { title, svg: libraryDrawing.svg }
+    }
+  } else if (drawingMatchNew) {
+    // Legacy inline SVG format: [DRAW_IMAGE title="..."]<svg ...>...</svg>[/DRAW_IMAGE]
     const title = drawingMatchNew[1].trim()
     const svg = drawingMatchNew[2].trim()
     if (title && svg) {

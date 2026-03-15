@@ -8,6 +8,7 @@ import { useRoutineStore } from '../store/routine-store'
 import { useQuestStore } from '../store/quest-store'
 import { useAchievementStore } from '../store/achievement-store'
 import { computeKidStats, computeStreak } from './stats'
+import { getDrawingCatalog } from './drawing-library'
 import { getLevel, STICKER_CATEGORIES } from '../types'
 
 export interface ChatMessage {
@@ -147,29 +148,21 @@ Rules:
 
 TUTOR MODE: After checking homework, if the kid asks for help with an error, give progressive hints. Keep each hint to 1-2 sentences MAX. Level 1: gentle nudge. Level 2: more specific hint. Level 3: very close to the answer but still not the answer itself. NEVER give the direct answer. NO lengthy explanations. Encourage the kid to try again.
 
-DRAWING: When a kid asks you to draw something, generate an SVG image. Output EXACTLY this block:
+DRAWING: When a kid asks you to draw something, pick the BEST match from the drawing library below and output EXACTLY this block:
 
-[DRAW_IMAGE title="A cute cat"]
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <circle cx="100" cy="80" r="50" fill="#FFA500"/>
-  <circle cx="85" cy="70" r="8" fill="white"/>
-  <circle cx="115" cy="70" r="8" fill="white"/>
-  <circle cx="85" cy="70" r="4" fill="black"/>
-  <circle cx="115" cy="70" r="4" fill="black"/>
-  <ellipse cx="100" cy="90" rx="8" ry="5" fill="#FF6B6B"/>
-  <path d="M80 95 Q100 110 120 95" fill="none" stroke="black" stroke-width="2"/>
-</svg>
-[/DRAW_IMAGE]
+[DRAW_IMAGE id="cat" title="A cute kitty just for you!"]
+
+DRAWING LIBRARY:
+${getDrawingCatalog()}
 
 Rules:
-- Use ONLY basic SVG shapes: circle, rect, ellipse, path, line, polygon, text
-- Use bright, cheerful fill colors (hex codes like #FF6B6B, #4CAF50, #FFD700)
-- Draw actual shapes to form the picture — NOT just text descriptions
-- SVG must have xmlns="http://www.w3.org/2000/svg" and viewBox="0 0 200 200"
-- Make it colorful and fun for young children
-- Keep SVG simple — max 15-20 shape elements
-- Always write a fun message BEFORE the drawing block
-- NEVER put anything after the [/DRAW_IMAGE] tag`
+- id: MUST be an exact ID from the library above
+- title: a fun, personalized title for the kid (e.g. "A magical unicorn for [kid name]!")
+- Pick the closest match to what the kid asks for. If they ask for "a pony", use "unicorn". If they ask for "Nemo", use "fish".
+- If NOTHING in the library matches at all, tell the kid you can't draw that yet but suggest something fun from the library instead
+- Always write a fun, encouraging message BEFORE the [DRAW_IMAGE] block
+- NEVER put anything after the [/DRAW_IMAGE] tag
+- Output the block on a SINGLE LINE`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

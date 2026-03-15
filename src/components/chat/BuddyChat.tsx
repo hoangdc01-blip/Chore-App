@@ -16,8 +16,6 @@ import Input from '../ui/Input'
 const KID_QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
-  { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
@@ -28,9 +26,6 @@ const KID_QUICK_ACTIONS = [
 const PARENT_QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
-  { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
-  { label: "Check fairness \u2696\uFE0F", text: "Are the chores fairly distributed among the kids? Any rotation suggestions?" },
   { label: "Weekly report \u{1F4CB}", text: "Give me a weekly report on how the kids are doing with their chores." },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },

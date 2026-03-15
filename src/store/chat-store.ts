@@ -7,6 +7,7 @@ import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
 import { useMemberStore } from './member-store'
 import { format } from 'date-fns'
+import { speak } from '../lib/tts'
 
 const MAX_CONTEXT_MESSAGES = 8
 
@@ -35,6 +36,7 @@ interface ChatState {
   storyProgress: Record<string, number>
   lastGreetingDate: Record<string, string>
   reminderVariety: number
+  autoReadAloud: boolean
 
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
@@ -49,6 +51,7 @@ interface ChatState {
   dismissHomeworkResult: () => void
   dismissDrawing: () => void
   advanceStory: (memberId: string) => void
+  toggleAutoReadAloud: () => void
 }
 
 function buildBuddyCtx(state: ChatState): BuddyContext {
@@ -88,6 +91,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   storyProgress: {},
   lastGreetingDate: {},
   reminderVariety: 0,
+  autoReadAloud: false,
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -156,6 +160,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             drawingResult: drawingResult ?? get().drawingResult,
             drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
           })
+        }
+        // Auto-read aloud if enabled
+        const batchTextToRead = displayText || batchLastMsg.content
+        if (get().autoReadAloud && batchTextToRead) {
+          speak(batchTextToRead)
         }
       }
     } catch (err) {
@@ -251,6 +260,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
           })
         }
+        // Auto-read aloud if enabled
+        const textToRead = displayText || lastMsg.content
+        if (get().autoReadAloud && textToRead) {
+          speak(textToRead)
+        }
       }
     } catch (err) {
       clearTimeout(timeoutId)
@@ -321,6 +335,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
               drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
             })
           }
+          // Auto-read aloud if enabled
+          const fallbackTextToRead = displayText || fallbackLastMsg.content
+          if (get().autoReadAloud && fallbackTextToRead) {
+            speak(fallbackTextToRead)
+          }
         }
       } catch (fallbackErr) {
         const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong'
@@ -369,6 +388,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     if (controller) controller.abort()
     set({ isLoading: false, isStreaming: false, abortController: null })
   },
+
+  toggleAutoReadAloud: () => set({ autoReadAloud: !get().autoReadAloud }),
 
   clearMessages: () => set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawingResult: null, drawingMessageIndex: null }),
 }))

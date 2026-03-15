@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Trash2, ImagePlus } from 'lucide-react'
+import { X, Send, Trash2, ImagePlus, Volume2, VolumeX } from 'lucide-react'
+import { speak, stopSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
 import { useAppStore } from '../../store/app-store'
@@ -21,6 +22,7 @@ const KID_QUICK_ACTIONS = [
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
   { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
+  { label: "Say it simpler \u{1F5E3}\uFE0F", text: "Can you say that in a simpler way? I don't understand." },
 ]
 
 const PARENT_QUICK_ACTIONS = [
@@ -32,7 +34,22 @@ const PARENT_QUICK_ACTIONS = [
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
 ]
 
-function ChatBubble({ message, isUser, emoji }: { message: ChatMessage; isUser: boolean; emoji: string }) {
+function ChatBubble({
+  message,
+  isUser,
+  emoji,
+  isSpeakingThis,
+  onSpeak,
+  onStop,
+}: {
+  message: ChatMessage
+  isUser: boolean
+  emoji: string
+  isSpeakingThis?: boolean
+  onSpeak?: () => void
+  onStop?: () => void
+}) {
+  const showTTS = !isUser && isTTSAvailable() && message.content.trim().length > 0
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
@@ -40,21 +57,33 @@ function ChatBubble({ message, isUser, emoji }: { message: ChatMessage; isUser: 
           {emoji}
         </div>
       )}
-      <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-          isUser
-            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-br-md'
-            : 'bg-muted text-foreground rounded-bl-md'
-        }`}
-      >
-        {message.image && (
-          <img
-            src={message.image}
-            alt="Attached"
-            className="rounded-xl max-w-full mb-2"
-          />
+      <div className="flex flex-col max-w-[80%]">
+        <div
+          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+            isUser
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-br-md'
+              : 'bg-muted text-foreground rounded-bl-md'
+          }`}
+        >
+          {message.image && (
+            <img
+              src={message.image}
+              alt="Attached"
+              className="rounded-xl max-w-full mb-2"
+            />
+          )}
+          {message.content}
+        </div>
+        {showTTS && (
+          <button
+            onClick={isSpeakingThis ? onStop : onSpeak}
+            className="self-start ml-1 mt-1 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            title={isSpeakingThis ? 'Stop reading' : 'Read aloud'}
+            aria-label={isSpeakingThis ? 'Stop reading aloud' : 'Read this message aloud'}
+          >
+            {isSpeakingThis ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          </button>
         )}
-        {message.content}
       </div>
     </div>
   )
@@ -95,6 +124,7 @@ export default function BuddyChat() {
   const [input, setInput] = useState('')
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null)
   const dragCounterRef = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -128,6 +158,8 @@ export default function BuddyChat() {
     drawingMessageIndex,
     dismissDrawing,
     storyProgress,
+    autoReadAloud,
+    toggleAutoReadAloud,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -174,6 +206,35 @@ export default function BuddyChat() {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [isOpen])
+
+  // ── TTS: track when speech ends ──
+  useEffect(() => {
+    if (speakingMsgIndex === null) return
+    const interval = setInterval(() => {
+      if (!window.speechSynthesis.speaking) {
+        setSpeakingMsgIndex(null)
+      }
+    }, 300)
+    return () => clearInterval(interval)
+  }, [speakingMsgIndex])
+
+  // Stop TTS when chat closes
+  useEffect(() => {
+    if (!isOpen) {
+      stopSpeaking()
+      setSpeakingMsgIndex(null)
+    }
+  }, [isOpen])
+
+  const handleSpeak = useCallback((msgIndex: number, text: string) => {
+    speak(text)
+    setSpeakingMsgIndex(msgIndex)
+  }, [])
+
+  const handleStopSpeaking = useCallback(() => {
+    stopSpeaking()
+    setSpeakingMsgIndex(null)
+  }, [])
 
   // ── Image handling ──
 
@@ -302,6 +363,20 @@ export default function BuddyChat() {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {isTTSAvailable() && (
+            <button
+              onClick={toggleAutoReadAloud}
+              className={`rounded-lg p-2 transition-colors ${
+                autoReadAloud
+                  ? 'text-green-600 bg-green-500/10 hover:bg-green-500/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+              title={autoReadAloud ? 'Auto-read: ON' : 'Auto-read: OFF'}
+              aria-label={autoReadAloud ? 'Turn off auto-read aloud' : 'Turn on auto-read aloud'}
+            >
+              {autoReadAloud ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+          )}
           <button
             onClick={clearMessages}
             className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -385,7 +460,14 @@ export default function BuddyChat() {
               lastResponseTimeMs != null
             return (
               <div key={originalIndex}>
-                <ChatBubble message={msg} isUser={msg.role === 'user'} emoji={buddyEmoji} />
+                <ChatBubble
+                  message={msg}
+                  isUser={msg.role === 'user'}
+                  emoji={buddyEmoji}
+                  isSpeakingThis={speakingMsgIndex === originalIndex}
+                  onSpeak={() => handleSpeak(originalIndex, msg.content)}
+                  onStop={handleStopSpeaking}
+                />
                 {isLastAssistant && (
                   <div className="flex justify-start mb-3 ml-10">
                     <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>

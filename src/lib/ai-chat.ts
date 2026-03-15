@@ -1,7 +1,10 @@
-import { format } from 'date-fns'
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
 import { getEnv } from './env'
 import { useMemberStore } from '../store/member-store'
 import { useChoreStore } from '../store/chore-store'
+import { useRewardStore } from '../store/reward-store'
+import { computeKidStats, computeStreak } from './stats'
+import { getLevel } from '../types'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -61,6 +64,12 @@ HOMEWORK HELP (math, science, Chinese only):
 - Science: simple kid-friendly facts with fun comparisons
 - Chinese: character + pinyin + meaning, 1-2 chars max
 
+MOTIVATION: Proactively encourage kids about pending chores. Mention streaks. If most chores are done, celebrate! If it's late and chores remain, gently remind.
+
+PROGRESS: When asked about progress, use WEEKLY PROGRESS data. Be encouraging. Celebrate streaks.
+
+REWARDS: When kids ask about rewards, tell them what they can afford and encourage saving.
+
 You help with: 1) Daily chores 2) Fun facts 3) Homework (math/science/Chinese)
 Never discuss anything inappropriate or scary. Be kind, patient, fun.`
 
@@ -81,6 +90,79 @@ Rules for chore creation:
 - Always write a short fun message BEFORE the [CREATE_CHORE] block
 - NEVER put anything after the [/CREATE_CHORE] tag
 - Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
+
+function buildProgressContext(memberId: string): string {
+  const { chores, completions, skipped } = useChoreStore.getState()
+  const member = useMemberStore.getState().members.find(m => m.id === memberId)
+  if (!member) return ''
+
+  const now = new Date()
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 })
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+
+  const thisWeek = computeKidStats(memberId, chores, completions, skipped, thisWeekStart, thisWeekEnd)
+  const lastWeek = computeKidStats(memberId, chores, completions, skipped, lastWeekStart, lastWeekEnd)
+  const level = getLevel(member.points)
+
+  return `\n\nWEEKLY PROGRESS:
+  This week: ${thisWeek.completedCount}/${thisWeek.totalCount} done (${thisWeek.completionRate}%), ${thisWeek.totalPoints} pts
+  Last week: ${lastWeek.completedCount}/${lastWeek.totalCount} done (${lastWeek.completionRate}%), ${lastWeek.totalPoints} pts
+  Streak: ${thisWeek.currentStreak} days ${thisWeek.currentStreak >= 3 ? '\uD83D\uDD25' : ''}
+  Level: ${level.level} - ${level.title} (${member.points} XP${level.nextXp ? `, next at ${level.nextXp}` : ''})`
+}
+
+function buildRewardContext(memberId: string): string {
+  const member = useMemberStore.getState().members.find(m => m.id === memberId)
+  if (!member) return ''
+
+  const { rewards, redemptions } = useRewardStore.getState()
+  if (rewards.length === 0) return ''
+
+  const points = member.points ?? 0
+  const rewardLines = rewards.slice(0, 10).map(r => {
+    const affordable = points >= r.cost
+    const tag = affordable ? 'you can afford this!' : `need ${r.cost - points} more points`
+    return `  - ${r.emoji} ${r.name}: ${r.cost} pts (${tag})`
+  }).join('\n')
+
+  const memberRedemptions = redemptions
+    .filter(rd => rd.memberId === memberId)
+    .sort((a, b) => b.redeemedAt.localeCompare(a.redeemedAt))
+    .slice(0, 5)
+
+  let recentText = ''
+  if (memberRedemptions.length > 0) {
+    const lines = memberRedemptions.map(rd => {
+      const reward = rewards.find(r => r.id === rd.rewardId)
+      return `  - ${reward?.emoji ?? ''} ${reward?.name ?? 'Unknown'} (${format(new Date(rd.redeemedAt), 'MMM d')})`
+    }).join('\n')
+    recentText = `\nRecent redemptions:\n${lines}`
+  }
+
+  return `\n\nREWARD SHOP (${points} pts available):\n${rewardLines}${recentText}`
+}
+
+function buildChoresSummary(): string {
+  const chores = useChoreStore.getState().chores
+  const members = useMemberStore.getState().members
+
+  const choreLines = chores.slice(0, 15).map(c => {
+    const assignee = members.find(m => m.id === c.assigneeId)?.name ?? 'unassigned'
+    return `  - ${c.emoji ?? ''} ${c.name} (${c.recurrence}, ${assignee})`
+  }).join('\n')
+
+  const ideas = [
+    'Make bed', 'Water plants', 'Set the table', 'Feed pets', 'Tidy toys',
+    'Put away laundry', 'Wipe table after meals', 'Brush teeth', 'Read for 15 minutes',
+    'Practice instrument', 'Help cook', 'Sweep floor', 'Empty trash',
+    'Organize backpack', 'Do homework',
+  ].join(', ')
+
+  return `\n\nEXISTING CHORES:\n${choreLines || '  (none yet)'}
+CHORE IDEAS: ${ideas}`
+}
 
 function buildMemberDirectory(): string {
   const members = useMemberStore.getState().members
@@ -114,11 +196,31 @@ function buildChoreContext(memberId: string): string {
 
   const allLists = [doneList, pendingList, todoList].filter(Boolean).join('\n')
 
+  // Motivation hint
+  const totalCount = occurrences.length
+  const doneCount = done.length
+  let motivation = ''
+  if (totalCount > 0) {
+    if (doneCount === totalCount) {
+      motivation = `\nMOTIVATION HINT: All ${totalCount} chores done! Celebrate!`
+    } else {
+      motivation = `\nMOTIVATION HINT: ${doneCount} of ${totalCount} chores done${doneCount >= totalCount / 2 ? ' — almost there!' : ' — keep going!'}`
+    }
+  }
+
+  // Streak info
+  const { chores: allChores, completions: comps, skipped: skip } = store
+  const kidChores = allChores.filter(c => c.assigneeId === memberId)
+  const streak = computeStreak(memberId, kidChores, comps, skip)
+  if (streak > 0) {
+    motivation += ` Streak: ${streak} day${streak > 1 ? 's' : ''} ${streak >= 3 ? '\uD83D\uDD25' : ''}`
+  }
+
   return `\n\nCurrent kid: ${member.name} (ID: ${member.id}).
 Total points earned so far: ${member.points}
 Date: ${today}
 Today's chores:
-${allLists || '  (all done! 🎉)'}`
+${allLists || '  (all done! \uD83C\uDF89)'}${motivation}` + buildProgressContext(memberId) + buildRewardContext(memberId)
 }
 
 function buildGeneralContext(): string {
@@ -147,7 +249,7 @@ function buildGeneralContext(): string {
 export function buildSystemPrompt(memberId: string | null): string {
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
-  return BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory()
+  return BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
 }
 
 /**

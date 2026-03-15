@@ -11,6 +11,9 @@ import Input from '../ui/Input'
 const QUICK_ACTIONS = [
   { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
   { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
+  { label: "My progress \u{1F4CA}", text: "How am I doing this week?" },
+  { label: "Suggest a chore \u{1F4A1}", text: "Can you suggest a new chore for me?" },
+  { label: "What can I get? \u{1F381}", text: "What rewards can I get with my points?" },
   { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
   { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },

@@ -3,7 +3,6 @@ import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
 import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult } from '../types'
-import { useAppStore } from './app-store'
 import { useChoreStore } from './chore-store'
 import { useRewardStore } from './reward-store'
 import { useMemberStore } from './member-store'
@@ -29,7 +28,6 @@ interface ChatState {
 
   homeworkCheckResult: HomeworkCheckResult | null
   homeworkCheckMessageIndex: number | null
-  checkedHomeworks: Record<string, string>
 
   drawingResult: DrawingResult | null
   drawingMessageIndex: number | null
@@ -83,7 +81,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   homeworkCheckResult: null,
   homeworkCheckMessageIndex: null,
-  checkedHomeworks: {},
 
   drawingResult: null,
   drawingMessageIndex: null,
@@ -113,16 +110,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const buddyCtx = buildBuddyCtx(get())
       const hasImagesInConvo = messages.some((m) => !!m.image)
       let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx, hasImagesInConvo)
-
-      // Check homework limit if image is attached (skip for parent mode)
-      const isParentMode = useAppStore.getState().mode !== 'kid'
-      if (image && get().selectedMemberId && !isParentMode) {
-        const today = format(new Date(), 'yyyy-MM-dd')
-        const key = `${get().selectedMemberId}:${today}`
-        if (get().checkedHomeworks[key]) {
-          systemPrompt += '\n\nHOMEWORK_LIMIT: This kid already checked homework today. Tell them they can check again tomorrow.'
-        }
-      }
 
       // Track first message of the day and advance story
       const memberId = get().selectedMemberId
@@ -158,25 +145,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             ...batchFinalMessages.slice(0, -1),
             { ...batchLastMsg, content: displayText },
           ]
-          const homeworkUpdates: Partial<ChatState> = {}
-          if (homeworkResult) {
-            homeworkUpdates.homeworkCheckResult = homeworkResult
-            homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
-            const mid = get().selectedMemberId
-            if (mid) {
-              const today = format(new Date(), 'yyyy-MM-dd')
-              homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
-            }
-          }
           set({
             messages: updatedMessages,
             pendingChoreAction: choreAction,
             pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
             pendingRewardAction: rewardAction,
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+            homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
+            homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
             drawingResult: drawingResult ?? get().drawingResult,
             drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
-            ...homeworkUpdates,
           })
         }
       }
@@ -213,16 +191,6 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       const buddyCtx = buildBuddyCtx(get())
       const hasImagesStream = allMessages.some((m) => !!m.image)
       let systemPrompt = buildSystemPrompt(get().selectedMemberId, buddyCtx, hasImagesStream)
-
-      // Check homework limit if image is attached (skip for parent mode)
-      const isParentModeStream = useAppStore.getState().mode !== 'kid'
-      if (allMessages.some(m => !!m.image) && get().selectedMemberId && !isParentModeStream) {
-        const today = format(new Date(), 'yyyy-MM-dd')
-        const key = `${get().selectedMemberId}:${today}`
-        if (get().checkedHomeworks[key]) {
-          systemPrompt += '\n\nHOMEWORK_LIMIT: This kid already checked homework today. Tell them they can check again tomorrow.'
-        }
-      }
 
       // Track first message of the day and advance story
       const memberId = get().selectedMemberId
@@ -271,25 +239,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
             ...finalMessages.slice(0, -1),
             { ...lastMsg, content: displayText },
           ]
-          const homeworkUpdates: Partial<ChatState> = {}
-          if (homeworkResult) {
-            homeworkUpdates.homeworkCheckResult = homeworkResult
-            homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
-            const mid = get().selectedMemberId
-            if (mid) {
-              const today = format(new Date(), 'yyyy-MM-dd')
-              homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
-            }
-          }
           set({
             messages: updatedMessages,
             pendingChoreAction: choreAction,
             pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
             pendingRewardAction: rewardAction,
             pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+            homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
+            homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
             drawingResult: drawingResult ?? get().drawingResult,
             drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
-            ...homeworkUpdates,
           })
         }
       }
@@ -350,25 +309,16 @@ export const useChatStore = create<ChatState>()((set, get) => ({
               ...fallbackFinalMessages.slice(0, -1),
               { ...fallbackLastMsg, content: displayText },
             ]
-            const homeworkUpdates: Partial<ChatState> = {}
-            if (homeworkResult) {
-              homeworkUpdates.homeworkCheckResult = homeworkResult
-              homeworkUpdates.homeworkCheckMessageIndex = updatedMessages.length - 1
-              const mid = get().selectedMemberId
-              if (mid) {
-                const today = format(new Date(), 'yyyy-MM-dd')
-                homeworkUpdates.checkedHomeworks = { ...get().checkedHomeworks, [`${mid}:${today}`]: new Date().toISOString() }
-              }
-            }
             set({
               messages: updatedMessages,
               pendingChoreAction: choreAction,
               pendingChoreMessageIndex: choreAction ? updatedMessages.length - 1 : null,
               pendingRewardAction: rewardAction,
               pendingRewardMessageIndex: rewardAction ? updatedMessages.length - 1 : null,
+              homeworkCheckResult: homeworkResult ?? get().homeworkCheckResult,
+              homeworkCheckMessageIndex: homeworkResult ? updatedMessages.length - 1 : get().homeworkCheckMessageIndex,
               drawingResult: drawingResult ?? get().drawingResult,
               drawingMessageIndex: drawingResult ? updatedMessages.length - 1 : get().drawingMessageIndex,
-              ...homeworkUpdates,
             })
           }
         }

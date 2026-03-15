@@ -13,8 +13,8 @@ const getBaseUrl = () => {
 const IMAGE_GEN_TIMEOUT = 60_000
 
 export async function generateImage(prompt: string): Promise<{ imageBase64: string; mimeType: string } | null> {
-  const kidSafePrompt = `${prompt}, cartoon style, colorful, cute, kid-friendly, cheerful, bright colors, simple, no text`
-  const negativePrompt = 'scary, violent, dark, realistic, nsfw, ugly, deformed, blurry, text, watermark, signature'
+  const kidSafePrompt = `${prompt}, simple coloring book style, thick black outlines, clean lines, white background, simple shapes, minimal detail, cute cartoon, for young children to color, no shading, no gradients, flat colors`
+  const negativePrompt = 'scary, violent, dark, realistic, nsfw, ugly, deformed, blurry, text, watermark, signature, detailed, complex, shading, gradients, artistic, abstract, photorealistic'
 
   try {
     const baseUrl = getBaseUrl()
@@ -25,8 +25,8 @@ export async function generateImage(prompt: string): Promise<{ imageBase64: stri
       body: JSON.stringify({
         prompt: kidSafePrompt,
         negative_prompt: negativePrompt,
-        steps: 20,
-        cfg_scale: 7,
+        steps: 6,
+        cfg_scale: 2,
         width: 512,
         height: 512,
         sampler_name: 'Euler a',

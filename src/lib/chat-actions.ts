@@ -227,8 +227,8 @@ function validatePresentationAction(data: unknown): PresentationAction | null {
 
   if (!Array.isArray(obj.slides) || obj.slides.length === 0) return null
 
-  // Cap at 15 slides maximum
-  const rawSlides = obj.slides.slice(0, 15)
+  // Cap at 50 slides maximum
+  const rawSlides = obj.slides.slice(0, 50)
 
   const slides: PresentationAction['slides'] = []
   for (const raw of rawSlides) {

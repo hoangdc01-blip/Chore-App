@@ -173,7 +173,7 @@ PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXAC
 [GENERATE_PRESENTATION]{"title":"Main Title","slides":[{"title":"Slide Title","content":"Point 1\nPoint 2\nPoint 3","emoji":"🦕"}]}[/GENERATE_PRESENTATION]
 
 Rules:
-- Generate the exact number of slides requested (up to 15)
+- Generate the exact number of slides requested (no limit)
 - If no number specified, make 5-8 slides
 - Each slide: title (short), content (bullet points separated by \n, 3-5 points each), emoji
 - Make content educational, fun, and detailed
@@ -777,7 +777,7 @@ export async function sendToOllama(messages: ChatMessage[]): Promise<string> {
         model,
         messages: processed,
         temperature: 0.7,
-        max_tokens: hasImages ? 1500 : 1500,
+        max_tokens: 8000,
       }),
     })
   } catch {
@@ -828,7 +828,7 @@ export async function streamFromOllama(
         model,
         messages: processed,
         stream: true,
-        options: { temperature: 0.7, num_predict: hasImages ? 1500 : 1500 },
+        options: { temperature: 0.7, num_predict: 8000, num_ctx: 32768 },
       }),
     })
   } catch (err) {

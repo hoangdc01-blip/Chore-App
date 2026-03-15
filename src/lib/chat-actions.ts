@@ -1,10 +1,11 @@
-import type { ChoreAction, RewardAction, HomeworkCheckResult, RecurrenceType } from '../types'
+import type { ChoreAction, RewardAction, HomeworkCheckResult, DrawingResult, RecurrenceType } from '../types'
 import { useMemberStore } from '../store/member-store'
 import { useRewardStore } from '../store/reward-store'
 
 const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
 const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
+const DRAWING_REGEX = /\[DRAW_IMAGE\]([\s\S]*?)\[\/DRAW_IMAGE\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
   'none', 'daily', 'weekly', 'biweekly', 'monthly', 'custom'
@@ -15,27 +16,31 @@ export interface ParsedChatAction {
   choreAction: ChoreAction | null
   rewardAction: RewardAction | null
   homeworkResult: HomeworkCheckResult | null
+  drawingResult: DrawingResult | null
 }
 
 export function parseChatResponse(rawText: string): ParsedChatAction {
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)
+  const drawingMatch = rawText.match(DRAWING_REGEX)
 
-  if (!choreMatch && !rewardMatch && !homeworkMatch) {
+  if (!choreMatch && !rewardMatch && !homeworkMatch && !drawingMatch) {
     // Strip any partial/unclosed action tags (e.g. from interrupted streams)
     const cleaned = rawText
       .replace(/\[CREATE_CHORE\][\s\S]*$/, '')
       .replace(/\[REDEEM_REWARD\][\s\S]*$/, '')
       .replace(/\[HOMEWORK_CHECK\][\s\S]*$/, '')
+      .replace(/\[DRAW_IMAGE\][\s\S]*$/, '')
       .trim()
-    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null }
+    return { displayText: cleaned || rawText, choreAction: null, rewardAction: null, homeworkResult: null, drawingResult: null }
   }
 
   let displayText = rawText
     .replace(ACTION_REGEX, '')
     .replace(REDEEM_REGEX, '')
     .replace(HOMEWORK_REGEX, '')
+    .replace(DRAWING_REGEX, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
@@ -70,7 +75,17 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
     }
   }
 
-  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult }
+  let drawingResult: DrawingResult | null = null
+  if (drawingMatch) {
+    try {
+      const parsed = JSON.parse(drawingMatch[1].trim())
+      drawingResult = validateDrawingResult(parsed)
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return { displayText: displayText || 'Here you go!', choreAction, rewardAction, homeworkResult, drawingResult }
 }
 
 function validateChoreAction(data: unknown): ChoreAction | null {
@@ -186,6 +201,18 @@ function validateHomeworkResult(data: unknown): HomeworkCheckResult | null {
   }
 
   return { subject, totalProblems, correct, errors }
+}
+
+function validateDrawingResult(data: unknown): DrawingResult | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+
+  const title = typeof obj.title === 'string' ? obj.title.trim() : ''
+  const svg = typeof obj.svg === 'string' ? obj.svg.trim() : ''
+
+  if (!title || !svg) return null
+
+  return { title, svg }
 }
 
 export function getMemberNameById(id: string): string {

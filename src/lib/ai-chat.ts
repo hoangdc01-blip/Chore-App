@@ -140,7 +140,22 @@ Rules:
 - NEVER put anything after the [/HOMEWORK_CHECK] tag
 - Output the JSON on a SINGLE LINE, no line breaks inside the JSON
 
-TUTOR MODE: After checking homework, if the kid asks for help with an error, give progressive hints. Level 1: gentle nudge. Level 2: more specific hint. Level 3: very close to the answer but still not the answer itself. NEVER give the direct answer. Encourage the kid to try again.`
+TUTOR MODE: After checking homework, if the kid asks for help with an error, give progressive hints. Level 1: gentle nudge. Level 2: more specific hint. Level 3: very close to the answer but still not the answer itself. NEVER give the direct answer. Encourage the kid to try again.
+
+DRAWING: When a kid asks you to draw something, generate an SVG image. Output EXACTLY this block:
+
+[DRAW_IMAGE]{"title":"A cute cat","svg":"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>...</svg>"}[/DRAW_IMAGE]
+
+Rules:
+- SVG must be valid with xmlns attribute and viewBox
+- Use simple shapes (circles, rects, paths) with bright, cheerful colors
+- Keep it simple and cartoon-like — appropriate for young children
+- SVG should be self-contained (no external references)
+- Maximum 200x200 viewBox
+- Always write a fun message BEFORE the drawing block
+- Only generate when explicitly asked to draw/create/make a picture
+- NEVER put anything after the [/DRAW_IMAGE] tag
+- Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

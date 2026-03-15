@@ -175,6 +175,11 @@ export type StickerCategory = 'animals' | 'space' | 'food' | 'sports' | 'nature'
 
 export const STICKER_CATEGORIES: StickerCategory[] = ['animals', 'space', 'food', 'sports', 'nature']
 
+export interface DrawingResult {
+  title: string
+  svg: string
+}
+
 /** Parsed chore-creation request from AI chat */
 export interface ChoreAction {
   name: string

@@ -10,6 +10,7 @@ import { useQuestStore } from '../../store/quest-store'
 import ChoreConfirmCard from './ChoreConfirmCard'
 import RewardConfirmCard from './RewardConfirmCard'
 import HomeworkResultCard from './HomeworkResultCard'
+import DrawingCard from './DrawingCard'
 import Input from '../ui/Input'
 
 const KID_QUICK_ACTIONS = [
@@ -24,6 +25,7 @@ const KID_QUICK_ACTIONS = [
   { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
   { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
   { label: "Redeem reward \u{1F381}", text: "I want to redeem a reward!" },
+  { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
 ]
 
 const PARENT_QUICK_ACTIONS = [
@@ -132,6 +134,9 @@ export default function BuddyChat() {
     homeworkCheckResult,
     homeworkCheckMessageIndex,
     dismissHomeworkResult,
+    drawingResult,
+    drawingMessageIndex,
+    dismissDrawing,
     buddyCharacter,
     storyProgress,
     selectBuddyCharacter,
@@ -447,6 +452,14 @@ export default function BuddyChat() {
                     <HomeworkResultCard
                       result={homeworkCheckResult}
                       onDismiss={dismissHomeworkResult}
+                    />
+                )}
+                {msg.role === 'assistant' &&
+                  drawingResult &&
+                  drawingMessageIndex === originalIndex && (
+                    <DrawingCard
+                      result={drawingResult}
+                      onDismiss={dismissDrawing}
                     />
                 )}
               </div>

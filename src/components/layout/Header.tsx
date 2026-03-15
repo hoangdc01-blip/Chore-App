@@ -1,4 +1,4 @@
-import { Search, Calendar, BarChart3, Menu, Gift, Gamepad2, Ticket, Star, Languages } from 'lucide-react'
+import { Search, Menu, Star } from 'lucide-react'
 import type { CalendarViewMode, AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore } from '../../store/member-store'
@@ -14,7 +14,17 @@ interface HeaderProps {
   onMenuToggle: () => void
 }
 
-export default function Header({ activeView, onActiveViewChange, viewMode, onViewModeChange, searchQuery, onSearchChange, onMenuToggle }: HeaderProps) {
+const VIEW_TITLES: Partial<Record<AppView, string>> = {
+  chat: '',
+  calendar: 'Calendar',
+  dashboard: 'Dashboard',
+  rewards: 'Rewards',
+  games: 'Games',
+  coupons: 'Coupons',
+  language: 'Learn',
+}
+
+export default function Header({ activeView, onActiveViewChange: _onActiveViewChange, viewMode, onViewModeChange, searchQuery, onSearchChange, onMenuToggle }: HeaderProps) {
   const mode = useAppStore((s) => s.mode)
   const activeKidId = useAppStore((s) => s.activeKidId)
   const members = useMemberStore((s) => s.members)
@@ -22,27 +32,12 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
   const kidName = isKidMode ? members.find((m) => m.id === activeKidId)?.name : null
   const kidPoints = isKidMode ? members.find((m) => m.id === activeKidId)?.points ?? 0 : 0
 
-  // Define nav tabs based on mode
-  const navTabs: { view: AppView; icon: typeof Calendar; label: string }[] = isKidMode
-    ? [
-        { view: 'calendar', icon: Calendar, label: 'My Chores' },
-        { view: 'language', icon: Languages, label: 'Learn' },
-        { view: 'rewards', icon: Gift, label: 'Rewards' },
-        { view: 'coupons', icon: Ticket, label: 'Coupons' },
-        { view: 'games', icon: Gamepad2, label: 'Games' },
-      ]
-    : [
-        { view: 'calendar', icon: Calendar, label: 'Calendar' },
-        { view: 'dashboard', icon: BarChart3, label: 'Dashboard' },
-        { view: 'language', icon: Languages, label: 'Learn' },
-        { view: 'rewards', icon: Gift, label: 'Rewards' },
-        { view: 'games', icon: Gamepad2, label: 'Games' },
-      ]
+  const viewTitle = VIEW_TITLES[activeView] || ''
 
   return (
-    <header className="safe-top border-b border-border px-3 xl:px-6 py-2 xl:py-3 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
+    <header className="safe-top border-b border-border px-3 xl:px-6 py-2 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
       <div className="flex items-center gap-2" role="navigation" aria-label="Main navigation">
-        {/* Left: menu + title */}
+        {/* Left: hamburger + branding */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onMenuToggle}
@@ -53,8 +48,8 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
           </button>
           {isKidMode ? (
             <div className="flex items-center gap-2">
-              <h1 className="text-lg xl:text-xl font-extrabold whitespace-nowrap bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {kidName}'s Chores
+              <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Váu Váu AI
               </h1>
               <span className="flex items-center gap-0.5 text-sm font-bold text-amber-600">
                 <Star size={14} fill="currentColor" />
@@ -62,15 +57,24 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
               </span>
             </div>
           ) : (
-            <h1 className="text-lg xl:text-xl font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Family Chores</h1>
+            <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Váu Váu AI
+            </h1>
           )}
         </div>
 
-        {/* Center: calendar-specific controls (search + view mode) */}
+        {/* Center: view title */}
+        {viewTitle && (
+          <span className="hidden sm:block text-sm font-medium text-muted-foreground ml-4">
+            {viewTitle}
+          </span>
+        )}
+
+        {/* Right: calendar-specific controls */}
         {activeView === 'calendar' && (
-          <div className="hidden xl:flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto">
             {!isKidMode && (
-              <div className="relative">
+              <div className="relative hidden xl:block">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
@@ -99,47 +103,11 @@ export default function Header({ activeView, onActiveViewChange, viewMode, onVie
           </div>
         )}
 
-        {/* Right: nav tabs — always pinned to the right */}
-        <div className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar ${activeView !== 'calendar' ? 'ml-auto' : ''}`}>
-          <div className="flex gap-1 rounded-lg bg-muted p-1 shrink-0">
-            {navTabs.map(({ view, icon: Icon, label }) => (
-              <button
-                key={view}
-                onClick={() => onActiveViewChange(view)}
-                className={`rounded-md px-2 xl:px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5 min-h-[36px] ${
-                  activeView === view
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon size={16} />
-                <span className="hidden xl:inline">{label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Mobile: day/week/month toggle */}
-          {activeView === 'calendar' && (
-            <div className="flex xl:hidden gap-1 rounded-lg bg-muted p-1 shrink-0">
-              {(['day', 'week', 'month'] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => onViewModeChange(m)}
-                  className={`rounded-md px-2 py-1.5 text-sm font-medium transition-colors min-h-[36px] ${
-                    viewMode === m
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Spacer when not calendar view */}
+        {activeView !== 'calendar' && <div className="ml-auto" />}
       </div>
 
-      {/* Mobile search row — parent mode only */}
+      {/* Mobile search row — calendar + parent mode only */}
       {activeView === 'calendar' && !isKidMode && (
         <div className="xl:hidden mt-2">
           <div className="relative">

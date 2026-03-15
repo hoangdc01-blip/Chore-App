@@ -128,7 +128,7 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 xl:hidden"
+          className="fixed inset-0 z-40 bg-black/50"
           onClick={onClose}
         />
       )}
@@ -136,7 +136,6 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-[260px] bg-card border-r border-border flex flex-col transition-transform duration-200
-          xl:relative xl:translate-x-0 xl:z-auto
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
         role="navigation"
@@ -150,7 +149,7 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
           </span>
           <button
             onClick={onClose}
-            className="xl:hidden rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Close sidebar"
           >
             <X size={18} />

@@ -665,34 +665,71 @@ export interface BuddyContext {
 function buildStoryContext(ctx: BuddyContext): string {
   const step = ctx.storyStep ?? 0
 
-  const storyThemes = [
-    'a magical underwater kingdom with talking fish',
-    'a journey through a candy forest where trees are made of chocolate',
-    'a trip to the moon in a rocket made of cardboard boxes',
-    'a treasure hunt in a haunted friendly castle',
-    'a day at a school for baby dragons',
-    'a race through the clouds with friendly birds',
-    'an adventure in a tiny world inside a garden',
-    'a visit to a village of friendly robots',
-    'a magical train ride through different seasons',
-    'a rescue mission to save a baby unicorn',
-    'a cooking competition with forest animals',
-    'a journey inside a giant magical book',
-    'building a treehouse in the tallest tree in the world',
-    'a snowman who comes to life and wants to see the ocean',
-    'a music festival in the jungle with animal bands',
-    'discovering a secret door in the attic that leads to another world',
-    'a superhero day where everyone gets one superpower',
-    'a boat adventure on a river of rainbow colors',
-    'a camping trip where the stars tell stories',
-    'a birthday party for the oldest turtle in the world',
+  const settings = [
+    'a magical underwater kingdom', 'a candy forest with chocolate trees', 'the moon in a cardboard rocket',
+    'a friendly haunted castle', 'a school for baby dragons', 'a race through the clouds',
+    'a tiny world inside a garden', 'a village of friendly robots', 'a magical train through seasons',
+    'a rescue mission for a baby unicorn', 'a cooking competition with forest animals',
+    'inside a giant magical book', 'the tallest treehouse in the world', 'a snowman visiting the ocean',
+    'a jungle music festival', 'a secret door to another world', 'a superhero training academy',
+    'a rainbow-colored river boat ride', 'a camping trip where stars tell stories',
+    'a birthday party for the oldest turtle', 'a flying library in the sky',
+    'a kingdom made entirely of bubbles', 'a circus run by friendly monsters',
+    'a toy factory that comes alive at night', 'a garden where flowers can talk',
+    'a pirate ship sailing on clouds', 'a bakery that bakes magic cookies',
+    'a snow globe world with tiny people', 'an enchanted zoo where animals are teachers',
+    'a rainbow slide between mountaintops', 'a secret underground city of gnomes',
+    'a hot air balloon adventure over volcanos', 'a magical paintbrush that brings drawings to life',
+    'a space station where aliens play games', 'a forest where trees walk and dance',
+    'a beach where sandcastles become real', 'an ice cream planet in outer space',
+    'a clock tower that can travel through time', 'a village built on the back of a giant turtle',
+    'a cave full of singing crystals', 'a farm where vegetables are superheroes',
+    'a train made of rainbows', 'an island where dinosaurs still live',
+    'a blanket fort that becomes a real castle', 'a pond where frogs are wizards',
+    'a windmill that grinds starlight into dreams', 'a city where everyone rides butterflies',
+    'a lighthouse that guides lost stars home', 'a mountain made of pillows and blankets',
+    'a river that flows with liquid gold', 'a forest of giant mushrooms with tiny doors',
+    'a floating island held up by balloons', 'a school bus that travels to fairy tales',
+    'an aquarium where fish tell jokes', 'a volcano that erupts with candy',
+    'a maze made of mirrors and rainbows', 'a playground built by friendly giants',
+    'a cloud kitchen where rain is made', 'a penguin postal service delivering wishes',
   ]
 
-  // Pick a theme based on story step and day to ensure variety
-  const themeIndex = (step + Math.floor(Date.now() / 86400000)) % storyThemes.length
-  const theme = storyThemes[themeIndex]
+  const characters = [
+    'a tiny brave mouse', 'a clumsy baby dragon', 'a singing mermaid', 'a shy cloud',
+    'a dancing robot', 'a talking starfish', 'a magical kitten', 'a friendly ghost',
+    'a tiny astronaut', 'a laughing sunflower', 'a sleepy owl wizard', 'a bouncy bunny knight',
+    'a penguin explorer', 'a musical firefly', 'a curious fox cub', 'a gentle giant',
+    'a sparkly fairy', 'a clever crow detective', 'a baby whale', 'a time-traveling snail',
+  ]
 
-  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. Today's adventure theme: ${theme}. Current story step: ${step}. Tell a NEW and UNIQUE story every time — never repeat a previous story. Make it exciting, fun, and age-appropriate for 4-7 year olds. Use vivid descriptions. Include [DRAW_IMAGE] blocks to illustrate key scenes — kids love pictures! Each story should have a beginning, middle, and end within 3-5 messages.`
+  const quests = [
+    'find a lost star', 'deliver a special gift', 'solve a mystery', 'make a new friend',
+    'learn a magic spell', 'win a race', 'build something amazing', 'save a celebration',
+    'discover a hidden treasure', 'help someone who is lost', 'fix something broken',
+    'throw the best party ever', 'learn to fly', 'find the way home', 'protect a secret',
+    'wake up a sleeping kingdom', 'paint the sky', 'catch a runaway dream', 'bake a magical cake',
+    'plant a seed that grows overnight',
+  ]
+
+  // Use a simple hash to pick unique combinations — 60 * 20 * 20 = 24,000 unique stories
+  const seed = step * 7 + Math.floor(Date.now() / 3600000) // changes every hour
+  const settingIdx = seed % settings.length
+  const charIdx = (seed * 13 + step * 3) % characters.length
+  const questIdx = (seed * 7 + step * 11) % quests.length
+
+  const setting = settings[settingIdx]
+  const character = characters[charIdx]
+  const quest = quests[questIdx]
+
+  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427} telling a bedtime story. This story is about ${character} in ${setting}, on a quest to ${quest}. Story step: ${step}.
+IMPORTANT RULES:
+- This must be a COMPLETELY NEW and UNIQUE story. NEVER repeat any story you've told before.
+- Make it exciting, magical, and age-appropriate for 4-7 year olds.
+- Use vivid descriptions so kids can imagine the scenes.
+- Include [DRAW_IMAGE title="..." style="illustration"][/DRAW_IMAGE] blocks to illustrate key scenes.
+- Each story should have a clear beginning, middle, and happy ending within 3-5 messages.
+- Be creative! Surprise the kids with unexpected twists and funny moments.`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {

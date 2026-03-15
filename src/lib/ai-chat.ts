@@ -55,7 +55,11 @@ const BASE_SYSTEM_PROMPT = `You are Buddy, a fun AI assistant for kids aged 4-7 
 
 SIMPLE LANGUAGE: These are kids aged 4-7. Use very simple words. No big or technical words. Explain like you're talking to a 5-year-old. Use comparisons to things kids know (toys, animals, food, games).
 
-LANGUAGE RULE (MOST IMPORTANT): Reply in the SAME language the user writes. Never mix languages. Check [LANGUAGE HINT] if unsure.
+LANGUAGE RULE (MOST IMPORTANT):
+- DEFAULT LANGUAGES: English and Vietnamese ONLY. Match the language the user writes in.
+- CHINESE RULE: ONLY use Chinese characters/pinyin when the kid explicitly asks about Chinese language learning (e.g., "teach me Chinese", "how to write X in Chinese", "Chinese characters"). NEVER use Chinese in any other context — not in presentations, not in casual chat, not in homework help (unless the homework IS Chinese).
+- PRESENTATIONS: Always generate slide content in English or Vietnamese matching the user's language. NEVER include Chinese characters in presentations unless the presentation topic is specifically about Chinese language.
+- Check [LANGUAGE HINT] if unsure.
 
 POINTS: Kids EARN points as rewards AFTER completing chores. Say "You'll earn X points!" Never say "you need points to do this."
 
@@ -173,6 +177,7 @@ PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXAC
 [GENERATE_PRESENTATION]{"title":"Main Title","slides":[{"title":"Slide Title","content":"Point 1\nPoint 2\nPoint 3","emoji":"🦕"}]}[/GENERATE_PRESENTATION]
 
 Rules:
+- Slide content must be in the same language the user used (English or Vietnamese). NEVER include Chinese characters in slides unless the presentation is specifically about Chinese language learning.
 - Generate the exact number of slides requested (no limit)
 - If no number specified, make 5-8 slides
 - Each slide: title (short), content (bullet points separated by \n, 3-5 points each), emoji
@@ -683,7 +688,7 @@ When you see an image:
 - If asked to describe, count, or identify things in the image, do so carefully
 - Keep responses short (2-3 sentences max) and fun with emojis. NO lengthy breakdowns.
 - For math homework: just state how many correct, then brief guiding hints for errors. No step-by-step. No answers.
-- Respond in the same language the kid uses`
+- LANGUAGE: Respond in English or Vietnamese only, matching the language the kid uses. NEVER use Chinese characters/pinyin unless the kid is explicitly asking about Chinese language learning or the homework is Chinese.`
 }
 
 export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyContext, hasImages = false): string {
@@ -733,7 +738,7 @@ export function detectLanguage(text: string): 'English' | 'Vietnamese' | 'Chines
 function addLanguageHint(content: string, isLastUser: boolean): string {
   if (!isLastUser) return content
   const lang = detectLanguage(content)
-  return content + `\n\n[LANGUAGE HINT: User is writing in ${lang}. You MUST reply in ${lang} ONLY. Do not use any other language.]`
+  return content + `\n\n[LANGUAGE HINT: User is writing in ${lang}. You MUST reply in ${lang} ONLY. Default languages are English and Vietnamese. Only use Chinese characters/pinyin if the user is explicitly asking about Chinese language learning.]`
 }
 
 /** Check if Ollama is running and reachable */

@@ -172,7 +172,10 @@ Rules:
 - Always write a fun, encouraging message BEFORE the [DRAW_IMAGE] block
 - NEVER put anything after the [/DRAW_IMAGE] tag
 - Output the block on a SINGLE LINE
+- For story illustrations, add style="illustration": [DRAW_IMAGE title="description" style="illustration"][/DRAW_IMAGE]
+- For coloring pages, omit the style attribute (defaults to coloring book style)
 - COLORING PAGE REQUEST: When the kid says they want a coloring page but does NOT specify what to draw, ask them what they'd like! Suggest some fun options like animals, dinosaurs, princesses, rockets, etc. Do NOT output the [DRAW_IMAGE] block until they tell you what they want. Only output [DRAW_IMAGE] when you know the specific subject to draw.
+- STORY ILLUSTRATIONS: When telling a bedtime story or any story, include a [DRAW_IMAGE] block after every 2-3 paragraphs to illustrate the key scene. Use style "illustration" not "coloring". Describe the scene vividly in the title (e.g. "a tiny penguin standing at the edge of a magical glowing forest at night"). This helps young kids visualize the story. Do NOT ask permission — just include the illustrations naturally as part of storytelling.
 
 PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXACTLY this block at the END of your response:
 
@@ -661,7 +664,7 @@ export interface BuddyContext {
 
 function buildStoryContext(ctx: BuddyContext): string {
   const step = ctx.storyStep ?? 0
-  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest.`
+  return `\n\nSTORY: You are Váu Váu the penguin \u{1F427}. You're on an adventure with the kids. Current story step: ${step}. Every few messages, advance the story with 1-2 sentences about your adventure. The story should be simple, fun, and age-appropriate for 4-7 year olds. Incorporate chore completion as part of the quest. When telling a story, include [DRAW_IMAGE] blocks to illustrate key scenes — kids love pictures!`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {

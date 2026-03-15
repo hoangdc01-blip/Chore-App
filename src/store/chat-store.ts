@@ -89,7 +89,7 @@ async function resolveDrawingImage(
     drawings: { ...get().drawings, [messageIndex]: drawingResult },
   })
   try {
-    const result = await generateImage(drawingResult.title)
+    const result = await generateImage(drawingResult.title, drawingResult.style || 'coloring')
     if (result) {
       const imageDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`
       set({

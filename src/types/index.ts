@@ -167,6 +167,7 @@ export interface DrawingResult {
   title: string
   imageDataUrl: string  // data:image/png;base64,...
   error?: string
+  style?: 'coloring' | 'illustration'
 }
 
 export interface PresentationSlide {

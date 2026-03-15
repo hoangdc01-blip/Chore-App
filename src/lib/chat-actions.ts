@@ -6,7 +6,7 @@ const ACTION_REGEX = /\[CREATE_CHORE\]([\s\S]*?)\[\/CREATE_CHORE\]/
 const REDEEM_REGEX = /\[REDEEM_REWARD\]([\s\S]*?)\[\/REDEEM_REWARD\]/
 const HOMEWORK_REGEX = /\[HOMEWORK_CHECK\]([\s\S]*?)\[\/HOMEWORK_CHECK\]/
 // Format: [DRAW_IMAGE title="description"][/DRAW_IMAGE]
-const DRAWING_REGEX = /\[DRAW_IMAGE\s+title="([^"]*?)"\]\s*\[?\/DRAW_IMAGE\]?/
+const DRAWING_REGEX = /\[DRAW_IMAGE\s+title="([^"]*?)"(?:\s+style="([^"]*?)")?\]\s*\[?\/DRAW_IMAGE\]?/
 const PRESENTATION_REGEX = /\[GENERATE_PRESENTATION\]([\s\S]*?)\[\/GENERATE_PRESENTATION\]/
 
 const VALID_RECURRENCES: RecurrenceType[] = [
@@ -85,8 +85,8 @@ export function parseChatResponse(rawText: string): ParsedChatAction {
   if (drawingMatch) {
     const title = drawingMatch[1].trim()
     if (title) {
-      // Return a DrawingResult with empty imageDataUrl — the store will fill it via Gemini
-      drawingResult = { title, imageDataUrl: '' }
+      const style = (drawingMatch[2]?.trim() === 'illustration') ? 'illustration' : 'coloring'
+      drawingResult = { title, imageDataUrl: '', style }
     }
   }
 

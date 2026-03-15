@@ -5,7 +5,6 @@ import {
   BarChart3,
   Gamepad2,
   Gift,
-  GraduationCap,
   Languages,
   Ticket,
   Palette,
@@ -63,7 +62,6 @@ const FAMILY_ITEMS: NavItem[] = [
   { view: 'dashboard', icon: BarChart3, label: 'Dashboard', parentOnly: true },
   { view: 'rewards', icon: Gift, label: 'Rewards' },
   { view: 'coupons', icon: Ticket, label: 'Coupons', kidOnly: true },
-  { view: 'classes', icon: GraduationCap, label: 'Extra Classes' },
 ]
 
 const FUN_ITEMS: NavItem[] = [

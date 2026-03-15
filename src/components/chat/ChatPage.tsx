@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Trash2, ImagePlus, Volume2, VolumeX } from 'lucide-react'
+import { Send, Trash2, ImagePlus, Volume2, VolumeX, X, Palette, Presentation, PencilLine, BookOpen, GraduationCap } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -16,24 +16,19 @@ import PresentationCard from './PresentationCard'
 import Input from '../ui/Input'
 import AiAvatar from './AiAvatar'
 
-/** Strip action block tags from message content so users never see raw [TAG]...[/TAG] text.
- *  This handles complete blocks, incomplete/partial blocks during streaming,
- *  and opening tags that haven't closed yet. */
+/** Strip action block tags from message content */
 function cleanMessageContent(content: string): string {
   return content
-    // Strip complete blocks
     .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*?\[\/DRAW_IMAGE\]/g, '')
     .replace(/\[GENERATE_PRESENTATION\][\s\S]*?\[\/GENERATE_PRESENTATION\]/g, '')
     .replace(/\[HOMEWORK_CHECK\][\s\S]*?\[\/HOMEWORK_CHECK\]/g, '')
     .replace(/\[CREATE_CHORE\][\s\S]*?\[\/CREATE_CHORE\]/g, '')
     .replace(/\[REDEEM_REWARD\][\s\S]*?\[\/REDEEM_REWARD\]/g, '')
-    // Strip incomplete/partial blocks (during streaming — open tag present but no close tag yet)
     .replace(/\[DRAW_IMAGE[^\]]*\][\s\S]*$/g, '')
     .replace(/\[GENERATE_PRESENTATION\][\s\S]*$/g, '')
     .replace(/\[HOMEWORK_CHECK\][\s\S]*$/g, '')
     .replace(/\[CREATE_CHORE\][\s\S]*$/g, '')
     .replace(/\[REDEEM_REWARD\][\s\S]*$/g, '')
-    // Strip opening tags still being typed (partial tag name)
     .replace(/\[DRAW_IMAGE.*$/g, '')
     .replace(/\[GENERATE_P.*$/g, '')
     .replace(/\[HOMEWORK_C.*$/g, '')
@@ -43,24 +38,32 @@ function cleanMessageContent(content: string): string {
 }
 
 const KID_QUICK_ACTIONS = [
-  { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
-  { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
-  { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
-  { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
-  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
-  { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
-  { label: "Make slides \u{1F4CA}", text: "Can you make a presentation for me about something cool?" },
-  { label: "Say it simpler \u{1F5E3}\uFE0F", text: "Can you say that in a simpler way? I don't understand." },
+  { label: "What should I do now?", text: "What should I do now?" },
+  { label: "What's next?", text: "What's next?" },
+  { label: "Fun fact!", text: "Tell me a fun fact!" },
+  { label: "Help with homework", text: "Help me with homework" },
+  { label: "Check homework", text: "Can you check my homework? I'm uploading a photo!" },
+  { label: "Add a chore", text: "Add a new chore for me" },
+  { label: "Draw something", text: "Can you draw me something fun?" },
+  { label: "Make slides", text: "Can you make a presentation for me about something cool?" },
+  { label: "Say it simpler", text: "Can you say that in a simpler way? I don't understand." },
 ]
 
 const PARENT_QUICK_ACTIONS = [
-  { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
-  { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "Weekly report \u{1F4CB}", text: "Give me a weekly report on how the kids are doing with their chores." },
-  { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
-  { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
-  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
+  { label: "What should I do now?", text: "What should I do now?" },
+  { label: "What's next?", text: "What's next?" },
+  { label: "Weekly report", text: "Give me a weekly report on how the kids are doing with their chores." },
+  { label: "Fun fact!", text: "Tell me a fun fact!" },
+  { label: "Help with homework", text: "Help me with homework" },
+  { label: "Add a chore", text: "Add a new chore for me" },
+]
+
+const TOOL_CARDS = [
+  { label: 'Draw a picture', icon: Palette, text: 'Can you draw me something fun?', gradient: 'from-pink-500/10 to-rose-500/10 hover:from-pink-500/15 hover:to-rose-500/15' },
+  { label: 'Make a presentation', icon: Presentation, text: 'Can you make a presentation for me about something cool?', gradient: 'from-blue-500/10 to-indigo-500/10 hover:from-blue-500/15 hover:to-indigo-500/15' },
+  { label: 'Check my homework', icon: PencilLine, text: "Can you check my homework? I'm uploading a photo!", gradient: 'from-amber-500/10 to-orange-500/10 hover:from-amber-500/15 hover:to-orange-500/15' },
+  { label: 'Help me study', icon: GraduationCap, text: 'Help me study for my upcoming test', gradient: 'from-green-500/10 to-emerald-500/10 hover:from-green-500/15 hover:to-emerald-500/15' },
+  { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story', gradient: 'from-purple-500/10 to-violet-500/10 hover:from-purple-500/15 hover:to-violet-500/15' },
 ]
 
 function ChatBubble({
@@ -132,12 +135,10 @@ function TypingIndicator() {
   )
 }
 
-/** Extract the first image File from a DataTransfer (drag/paste), or null */
 function getImageFile(dt: DataTransfer): File | null {
   for (let i = 0; i < dt.files.length; i++) {
     if (dt.files[i].type.startsWith('image/')) return dt.files[i]
   }
-  // Check items for pasted images (clipboard)
   for (let i = 0; i < dt.items.length; i++) {
     const item = dt.items[i]
     if (item.type.startsWith('image/')) {
@@ -148,7 +149,7 @@ function getImageFile(dt: DataTransfer): File | null {
   return null
 }
 
-export default function BuddyChat() {
+export default function ChatPage() {
   const [input, setInput] = useState('')
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -160,13 +161,11 @@ export default function BuddyChat() {
 
   const {
     messages,
-    isOpen,
     isLoading,
     isStreaming,
     error,
     selectedMemberId,
     lastResponseTimeMs,
-    setOpen,
     setSelectedMemberId,
     sendMessageStreaming,
     cancelGeneration,
@@ -199,46 +198,42 @@ export default function BuddyChat() {
   const activeKidId = useAppStore((s) => s.activeKidId)
   const isKidMode = appMode === 'kid'
 
-  // In kid mode, auto-select the active kid
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
   const buddyName = BUDDY_CHARACTER.name
   const storyStep = effectiveMemberId ? (storyProgress[effectiveMemberId] ?? 0) : 0
   const storyChapter = Math.floor(storyStep / 5) + 1
 
-  // Sync chat store member for kid mode
+  // Sync chat store member
   useEffect(() => {
     if (isKidMode && activeKidId && selectedMemberId !== activeKidId) {
       setSelectedMemberId(activeKidId)
     }
-    // Parent mode: auto-select first kid if none selected
     if (!isKidMode && !selectedMemberId && members.length > 0) {
       setSelectedMemberId(members[0].id)
     }
   }, [isKidMode, activeKidId, selectedMemberId, setSelectedMemberId, members])
 
-  // Generate today's quest and check completion on chat open
+  // Generate daily quest
   useEffect(() => {
-    if (isOpen) {
-      const questStore = useQuestStore.getState()
-      questStore.generateDailyQuest()
-      const todayQuest = questStore.getTodayQuest()
-      if (todayQuest && !todayQuest.completed) {
-        questStore.checkQuestCompletion(todayQuest.id)
-      }
+    const questStore = useQuestStore.getState()
+    questStore.generateDailyQuest()
+    const todayQuest = questStore.getTodayQuest()
+    if (todayQuest && !todayQuest.completed) {
+      questStore.checkQuestCompletion(todayQuest.id)
     }
-  }, [isOpen])
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
-  }, [isOpen])
+  }, [])
 
-  // ── TTS: track when speech ends ──
+  // TTS tracking
   useEffect(() => {
     if (speakingMsgIndex === null) return
     const interval = setInterval(() => {
@@ -248,14 +243,6 @@ export default function BuddyChat() {
     }, 300)
     return () => clearInterval(interval)
   }, [speakingMsgIndex])
-
-  // Stop TTS when chat closes
-  useEffect(() => {
-    if (!isOpen) {
-      stopSpeaking()
-      setSpeakingMsgIndex(null)
-    }
-  }, [isOpen])
 
   const handleSpeak = useCallback((msgIndex: number, text: string) => {
     speak(text)
@@ -267,14 +254,13 @@ export default function BuddyChat() {
     setSpeakingMsgIndex(null)
   }, [])
 
-  // ── Image handling ──
-
+  // Image handling
   const processImageFile = useCallback(async (file: File) => {
     try {
       const dataUrl = await resizeImageToDataURL(file)
       setPendingImage(dataUrl)
     } catch {
-      // Silently ignore invalid images
+      // Silently ignore
     }
   }, [])
 
@@ -282,9 +268,7 @@ export default function BuddyChat() {
     e.preventDefault()
     e.stopPropagation()
     dragCounterRef.current++
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDragging(true)
-    }
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true)
   }, [])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -311,9 +295,7 @@ export default function BuddyChat() {
     if (file) processImageFile(file)
   }, [processImageFile])
 
-  // Paste handler (Ctrl+V / Cmd+V)
   useEffect(() => {
-    if (!isOpen) return
     const handlePaste = (e: ClipboardEvent) => {
       if (!e.clipboardData) return
       const file = getImageFile(e.clipboardData)
@@ -324,23 +306,18 @@ export default function BuddyChat() {
     }
     window.addEventListener('paste', handlePaste)
     return () => window.removeEventListener('paste', handlePaste)
-  }, [isOpen, processImageFile])
+  }, [processImageFile])
 
   const handleFilePickerChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      processImageFile(file)
-    }
-    // Reset input so the same file can be re-selected
+    if (file && file.type.startsWith('image/')) processImageFile(file)
     e.target.value = ''
   }, [processImageFile])
 
-  // ── Send ──
-
+  // Send
   const handleSend = useCallback(async () => {
     const text = input.trim()
     const image = pendingImage
-    // Need either text or image to send
     if ((!text && !image) || isLoading) return
     const finalText = text || "What's in this picture?"
     setInput('')
@@ -360,35 +337,43 @@ export default function BuddyChat() {
     }
   }
 
-  // ── Floating Button ──
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(20px+env(safe-area-inset-bottom,0px))] right-5 z-40 w-14 h-14 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform flex items-center justify-center overflow-hidden"
-        title="Chat with Váu Váu"
-      >
-        <AiAvatar size="lg" className="w-full h-full" />
-      </button>
-    )
-  }
+  const hasMessages = messages.filter((m) => m.role !== 'system').length > 0
 
-  // ── Chat Panel ──
   return (
     <div
-      className={`fixed z-40 flex flex-col bg-background border border-border shadow-2xl
-        inset-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:w-[380px] sm:h-[560px] sm:max-h-[80vh] sm:rounded-2xl
-      `}
+      className="flex-1 flex flex-col min-h-0 bg-background"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
-      {/* Header */}
-      <div className="safe-top flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-green-500/10 to-emerald-500/10 sm:rounded-t-2xl">
+      {/* Top bar: kid selector (parent mode) + actions */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <AiAvatar size="md" className="shadow-sm" />
+          <AiAvatar size="sm" className="shadow-sm" />
           <div>
-            <h3 className="font-extrabold text-foreground text-base">{buddyName}</h3>
+            <h3 className="font-extrabold text-foreground text-sm">{buddyName}</h3>
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Kid selector for parent mode */}
+          {!isKidMode && (
+            <div className="flex gap-1 mr-2 overflow-x-auto no-scrollbar">
+              {members.map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => setSelectedMemberId(member.id)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                    selectedMemberId === member.id
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {member.name}
+                </button>
+              ))}
+            </div>
+          )}
           {isTTSAvailable() && (
             <button
               onClick={toggleAutoReadAloud}
@@ -411,176 +396,181 @@ export default function BuddyChat() {
           >
             <Trash2 size={16} />
           </button>
-          <button
-            onClick={() => setOpen(false)}
-            className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Close"
-            aria-label="Close chat"
-          >
-            <X size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Kid selector — parent mode only */}
-      {!isKidMode && (
-        <div className="px-4 py-2 border-b border-border flex gap-2 overflow-x-auto no-scrollbar">
-          {members.map((member) => (
-            <button
-              key={member.id}
-              onClick={() => setSelectedMemberId(member.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                selectedMemberId === member.id
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {member.name}
-            </button>
-          ))}
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-10 bg-green-500/20 border-2 border-dashed border-green-500 rounded-xl flex items-center justify-center">
+          <p className="text-green-700 dark:text-green-300 font-bold text-lg">Drop image here</p>
         </div>
       )}
 
-      {/* Messages area with drag-and-drop */}
+      {/* Messages area */}
       <div
-        className="flex-1 overflow-auto px-4 py-3 min-h-0 relative"
+        className="flex-1 overflow-auto min-h-0 relative"
         aria-live="polite"
         aria-label="Chat messages"
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
       >
-        {/* Drag overlay */}
-        {isDragging && (
-          <div className="absolute inset-0 z-10 bg-green-500/20 border-2 border-dashed border-green-500 rounded-xl flex items-center justify-center">
-            <p className="text-green-700 dark:text-green-300 font-bold text-lg">Drop image here</p>
-          </div>
-        )}
+        <div className="max-w-[800px] mx-auto px-4 py-4">
+          {/* Welcome screen */}
+          {!hasMessages && !isLoading && (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
+              <AiAvatar size="xl" className="shadow-lg" />
+              <h2 className="text-2xl font-extrabold text-foreground">
+                Hi! I'm Váu Váu &#x1F427; &mdash; your AI assistant!
+              </h2>
+              <p className="text-muted-foreground max-w-[400px]">
+                {isKidMode
+                  ? 'What would you like to do today?'
+                  : 'I can help with chores, homework, presentations, drawings, and more!'}
+              </p>
 
-        {messages.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3 py-6">
-            <AiAvatar size="lg" className="shadow-md" />
-            <p className="font-bold text-foreground text-lg">Hi there! I'm {buddyName}!</p>
-            <p className="text-sm text-muted-foreground max-w-[240px]">
-              {effectiveMemberId
-                ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
-                : 'Pick a kid above, then ask me anything!'}
-            </p>
-          </div>
-        )}
+              {/* Tool cards */}
+              {(
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 w-full max-w-[600px]">
+                  {TOOL_CARDS.map(({ label, icon: Icon, text, gradient }) => (
+                    <button
+                      key={label}
+                      onClick={() => handleQuickAction(text)}
+                      disabled={isLoading}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br ${gradient} border border-border/50 transition-all hover:shadow-md disabled:opacity-50 text-center`}
+                    >
+                      <Icon size={24} className="text-foreground/70" />
+                      <span className="text-sm font-medium text-foreground/80">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-        {(() => {
-          const visible = messages.filter((m) => m.role !== 'system')
-          return visible.map((msg, i, arr) => {
-            // Find original index in unfiltered messages array
-            // so pendingChoreMessageIndex (which references the full array) matches correctly
-            const originalIndex = messages.indexOf(msg)
-            const isLastAssistant =
-              msg.role === 'assistant' &&
-              i === arr.length - 1 &&
-              !isLoading &&
-              !isStreaming &&
-              lastResponseTimeMs != null
-            return (
-              <div key={originalIndex}>
-                <ChatBubble
-                  message={msg}
-                  isUser={msg.role === 'user'}
+          {/* Messages */}
+          {(() => {
+            const visible = messages.filter((m) => m.role !== 'system')
+            return visible.map((msg, i, arr) => {
+              const originalIndex = messages.indexOf(msg)
+              const isLastAssistant =
+                msg.role === 'assistant' &&
+                i === arr.length - 1 &&
+                !isLoading &&
+                !isStreaming &&
+                lastResponseTimeMs != null
+              return (
+                <div key={originalIndex}>
+                  <ChatBubble
+                    message={msg}
+                    isUser={msg.role === 'user'}
 
-                  isActionGenerating={
-                    msg.role === 'assistant' && (
-                      isGeneratingImage ||
-                      generatingDrawingIndex === originalIndex ||
-                      generatingPresentationIndex === originalIndex ||
-                      isStreaming
-                    )
-                  }
-                  isSpeakingThis={speakingMsgIndex === originalIndex}
-                  onSpeak={() => handleSpeak(originalIndex, msg.content)}
-                  onStop={handleStopSpeaking}
-                />
-                {isLastAssistant && (
-                  <div className="flex justify-start mb-3 ml-10">
-                    <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                      {'\u26A1'} {(lastResponseTimeMs / 1000).toFixed(1)}s
-                    </span>
-                  </div>
-                )}
-                {msg.role === 'assistant' &&
-                  pendingChoreAction &&
-                  pendingChoreMessageIndex === originalIndex && (
-                    <ChoreConfirmCard
-                      action={pendingChoreAction}
-                      onAccept={acceptChoreAction}
-                      onCancel={cancelChoreAction}
-                    />
-                )}
-                {msg.role === 'assistant' &&
-                  pendingRewardAction &&
-                  pendingRewardMessageIndex === originalIndex && (
-                    <RewardConfirmCard
-                      action={pendingRewardAction}
-                      onAccept={acceptRewardAction}
-                      onCancel={cancelRewardAction}
-                    />
-                )}
-                {msg.role === 'assistant' &&
-                  homeworkCheckResult &&
-                  homeworkCheckMessageIndex === originalIndex && (
-                    <HomeworkResultCard
-                      result={homeworkCheckResult}
-                      onDismiss={dismissHomeworkResult}
-                    />
-                )}
-                {msg.role === 'assistant' &&
-                  drawings[originalIndex] && (
-                    <DrawingCard
-                      result={drawings[originalIndex]}
-                      isGenerating={generatingDrawingIndex === originalIndex}
-                      onDismiss={() => dismissDrawing(originalIndex)}
-                    />
-                )}
-                {msg.role === 'assistant' &&
-                  presentations[originalIndex] && (
-                    <PresentationCard
-                      result={presentations[originalIndex]}
-                      isGenerating={generatingPresentationIndex === originalIndex}
-                      onDismiss={() => dismissPresentation(originalIndex)}
-                    />
-                )}
-              </div>
-            )
-          })
-        })()}
+                    isActionGenerating={
+                      msg.role === 'assistant' && (
+                        isGeneratingImage ||
+                        generatingDrawingIndex === originalIndex ||
+                        generatingPresentationIndex === originalIndex ||
+                        isStreaming
+                      )
+                    }
+                    isSpeakingThis={speakingMsgIndex === originalIndex}
+                    onSpeak={() => handleSpeak(originalIndex, msg.content)}
+                    onStop={handleStopSpeaking}
+                  />
+                  {isLastAssistant && (
+                    <div className="flex justify-start mb-3 ml-10">
+                      <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                        {'\u26A1'} {(lastResponseTimeMs / 1000).toFixed(1)}s
+                      </span>
+                    </div>
+                  )}
+                  {msg.role === 'assistant' &&
+                    pendingChoreAction &&
+                    pendingChoreMessageIndex === originalIndex && (
+                      <ChoreConfirmCard
+                        action={pendingChoreAction}
+                        onAccept={acceptChoreAction}
+                        onCancel={cancelChoreAction}
+                      />
+                  )}
+                  {msg.role === 'assistant' &&
+                    pendingRewardAction &&
+                    pendingRewardMessageIndex === originalIndex && (
+                      <RewardConfirmCard
+                        action={pendingRewardAction}
+                        onAccept={acceptRewardAction}
+                        onCancel={cancelRewardAction}
+                      />
+                  )}
+                  {msg.role === 'assistant' &&
+                    homeworkCheckResult &&
+                    homeworkCheckMessageIndex === originalIndex && (
+                      <HomeworkResultCard
+                        result={homeworkCheckResult}
+                        onDismiss={dismissHomeworkResult}
+                      />
+                  )}
+                  {msg.role === 'assistant' &&
+                    drawings[originalIndex] && (
+                      <DrawingCard
+                        result={drawings[originalIndex]}
+                        isGenerating={generatingDrawingIndex === originalIndex}
+                        onDismiss={() => dismissDrawing(originalIndex)}
+                      />
+                  )}
+                  {msg.role === 'assistant' &&
+                    presentations[originalIndex] && (
+                      <PresentationCard
+                        result={presentations[originalIndex]}
+                        isGenerating={generatingPresentationIndex === originalIndex}
+                        onDismiss={() => dismissPresentation(originalIndex)}
+                      />
+                  )}
+                </div>
+              )
+            })
+          })()}
 
-        {isLoading && !isStreaming && <TypingIndicator />}
+          {isLoading && !isStreaming && <TypingIndicator />}
 
-        {isLoading && (
-          <div className="flex justify-center mb-3">
-            <button
-              onClick={cancelGeneration}
-              className="px-4 py-1.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-            >
-              Stop generating
-            </button>
-          </div>
-        )}
+          {isLoading && (
+            <div className="flex justify-center mb-3">
+              <button
+                onClick={cancelGeneration}
+                className="px-4 py-1.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+              >
+                Stop generating
+              </button>
+            </div>
+          )}
 
-        {error && (
-          <div className="text-center text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2 mb-3">
-            {error.includes('fetch')
-              ? "Can't reach Váu Váu's brain (Ollama). Is it running? \u{1F914}"
-              : error}
-          </div>
-        )}
+          {error && (
+            <div className="text-center text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2 mb-3">
+              {error.includes('fetch')
+                ? "Can't reach Váu Váu's brain (Ollama). Is it running?"
+                : error}
+            </div>
+          )}
 
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Quick actions */}
-      {messages.length === 0 && effectiveMemberId && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
+      {/* Quick actions (shown when conversation has started) */}
+      {hasMessages && effectiveMemberId && !isLoading && !isStreaming && (
+        <div className="max-w-[800px] mx-auto px-4 pb-2 flex flex-wrap gap-2">
+          {/* Contextual homework explain */}
+          {homeworkCheckResult && (
+            <button
+              onClick={() => handleQuickAction("Explain more please, I don't understand")}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+            >
+              Explain more
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Quick actions (shown when no messages yet, below tool cards) */}
+      {!hasMessages && effectiveMemberId && (
+        <div className="max-w-[800px] mx-auto px-4 pb-2 flex flex-wrap gap-2 justify-center">
           {(isKidMode ? KID_QUICK_ACTIONS : PARENT_QUICK_ACTIONS).map((action) => (
             <button
               key={action.text}
@@ -594,22 +584,9 @@ export default function BuddyChat() {
         </div>
       )}
 
-      {/* Contextual "Explain more" suggestion after homework check */}
-      {messages.length > 0 && homeworkCheckResult && !isLoading && !isStreaming && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          <button
-            onClick={() => handleQuickAction("Explain more please, I don't understand")}
-            disabled={isLoading}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
-          >
-            Explain more {'\uD83E\uDD14'}
-          </button>
-        </div>
-      )}
-
       {/* Pending image preview */}
       {pendingImage && (
-        <div className="px-4 pt-2">
+        <div className="max-w-[800px] mx-auto px-4 pt-2">
           <div className="relative inline-block">
             <img
               src={pendingImage}
@@ -636,20 +613,20 @@ export default function BuddyChat() {
         onChange={handleFilePickerChange}
       />
 
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-border flex gap-2 sm:rounded-b-2xl">
-        <Input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={effectiveMemberId ? "Ask Váu Váu anything..." : "Pick a kid first..."}
-          disabled={!effectiveMemberId || isLoading}
-          className="flex-1 rounded-xl bg-muted px-4 py-2.5 disabled:opacity-50"
-        />
-        {effectiveMemberId && (
-          <>
+      {/* Input bar */}
+      <div className="shrink-0 border-t border-border bg-background">
+        <div className="max-w-[800px] mx-auto px-4 py-3 flex gap-2">
+          <Input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={effectiveMemberId ? "Ask Váu Váu anything..." : "Pick a kid first..."}
+            disabled={!effectiveMemberId || isLoading}
+            className="flex-1 rounded-xl bg-muted px-4 py-2.5 disabled:opacity-50"
+          />
+          {effectiveMemberId && (
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
@@ -659,16 +636,16 @@ export default function BuddyChat() {
             >
               <ImagePlus size={16} />
             </button>
-          </>
-        )}
-        <button
-          onClick={handleSend}
-          disabled={(!input.trim() && !pendingImage) || !effectiveMemberId || isLoading}
-          className="rounded-xl px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
-          aria-label="Send message"
-        >
-          <Send size={16} />
-        </button>
+          )}
+          <button
+            onClick={handleSend}
+            disabled={(!input.trim() && !pendingImage) || !effectiveMemberId || isLoading}
+            className="rounded-xl px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
+            aria-label="Send message"
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </div>
     </div>
   )

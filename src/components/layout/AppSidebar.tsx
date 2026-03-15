@@ -52,7 +52,7 @@ const AI_ASSISTANT_ITEMS: NavItem[] = [
 
 const AI_TOOLS: ToolItem[] = [
   { label: 'Coloring Pages', icon: Palette, prefill: 'I want a coloring page!' },
-  { label: 'Presentations', icon: Presentation, prefill: 'Can you make a presentation for me about something cool?' },
+  { label: 'Presentations', icon: Presentation, prefill: 'I want to make a presentation!' },
   { label: 'Homework Help', icon: PencilLine, prefill: "Can you check my homework? I'm uploading a photo!" },
   { label: 'Bedtime Story', icon: BookOpen, prefill: 'Tell me a bedtime story' },
 ]

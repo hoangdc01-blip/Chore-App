@@ -186,7 +186,8 @@ Rules:
 - Content in English or Vietnamese matching the user's language. NEVER include Chinese characters unless the presentation is specifically about Chinese language learning.
 - Write a friendly message BEFORE the block
 - NEVER put anything after the [/GENERATE_PRESENTATION] tag
-- Output the JSON on a SINGLE LINE, no line breaks inside the JSON`
+- Output the JSON on a SINGLE LINE, no line breaks inside the JSON
+- PRESENTATION REQUEST: When the kid says they want a presentation but does NOT specify a topic, ask them what topic they'd like! Suggest some fun options like dinosaurs, space, animals, oceans, volcanoes, etc. Do NOT output the [GENERATE_PRESENTATION] block until they tell you what topic they want. Only output [GENERATE_PRESENTATION] when you know the specific topic.`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

@@ -297,7 +297,7 @@ export default function ClassCalendarView() {
           const time = occ.classItem.startTime
             ? `${occ.classItem.startTime}${occ.classItem.endTime ? '-' + occ.classItem.endTime : ''}`
             : ''
-          return `<div style="background:${bgHex};color:${textHex};padding:2px 4px;border-radius:4px;margin:1px 0;font-size:11px;">
+          return `<div style="background:${bgHex};color:${textHex};padding:4px 6px;border-radius:4px;margin:1px 0;font-size:13px;">
             <strong>${occ.classItem.emoji ?? ''} ${occ.classItem.name}</strong><br/>
             <span>${name}</span>
             ${time ? `<br/><span>${time}</span>` : ''}
@@ -318,8 +318,8 @@ export default function ClassCalendarView() {
   h1 { font-size: 18px; margin-bottom: 4px; }
   h2 { font-size: 14px; font-weight: normal; color: #6b7280; margin-top: 0; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th { background: #f3f4f6; padding: 6px 4px; font-size: 12px; border: 1px solid #d1d5db; text-align: center; }
-  td { border: 1px solid #d1d5db; padding: 2px; vertical-align: top; font-size: 11px; min-height: 30px; }
+  th { background: #f3f4f6; padding: 6px 4px; font-size: 14px; border: 1px solid #d1d5db; text-align: center; }
+  td { border: 1px solid #d1d5db; padding: 4px; vertical-align: top; font-size: 13px; min-height: 50px; }
   .time-col { width: 60px; text-align: right; padding-right: 6px; font-size: 11px; color: #6b7280; font-weight: 600; }
   @media print {
     body { margin: 10px; }
@@ -507,7 +507,7 @@ ${TIME_SLOTS.map(
         <table className="w-full border-collapse table-fixed">
           <thead className="sticky top-0 z-10">
             <tr>
-              <th className="w-16 bg-card border border-border p-1 text-xs font-semibold text-muted-foreground">
+              <th className="w-20 bg-card border border-border p-1 text-xs font-semibold text-muted-foreground">
                 Time
               </th>
               {weekDays.map((day) => {
@@ -516,14 +516,14 @@ ${TIME_SLOTS.map(
                   <th
                     key={format(day, 'yyyy-MM-dd')}
                     className={cn(
-                      'bg-card border border-border p-1.5 text-center',
+                      'bg-card border border-border p-2 text-center',
                       today && 'bg-primary/5'
                     )}
                   >
-                    <div className="text-xs font-semibold text-muted-foreground">{format(day, 'EEE')}</div>
+                    <div className="text-sm font-semibold text-muted-foreground">{format(day, 'EEE')}</div>
                     <div
                       className={cn(
-                        'text-sm font-bold mt-0.5 w-7 h-7 flex items-center justify-center rounded-full mx-auto',
+                        'text-base font-bold mt-0.5 w-8 h-8 flex items-center justify-center rounded-full mx-auto',
                         today && 'bg-primary text-white'
                       )}
                     >
@@ -537,7 +537,7 @@ ${TIME_SLOTS.map(
           <tbody>
             {hasNoTimeClasses && (
               <tr>
-                <td className="border border-border p-1 text-[10px] text-muted-foreground text-right pr-2 align-top font-medium italic">
+                <td className="border border-border p-2 text-xs text-muted-foreground text-right pr-2 align-top font-medium italic">
                   No time
                 </td>
                 {weekDays.map((day) => {
@@ -556,7 +556,7 @@ ${TIME_SLOTS.map(
             )}
             {TIME_SLOTS.map((hour) => (
               <tr key={hour}>
-                <td className="border border-border p-1 text-[10px] text-muted-foreground text-right pr-2 align-top font-medium">
+                <td className="border border-border p-2 text-xs text-muted-foreground text-right pr-2 align-top font-medium">
                   {formatHour(hour)}
                 </td>
                 {weekDays.map((day) => {
@@ -566,7 +566,7 @@ ${TIME_SLOTS.map(
                     <td
                       key={dateStr}
                       className={cn(
-                        'border border-border p-0.5 align-top min-h-[36px]',
+                        'border border-border p-0.5 align-top min-h-[60px]',
                         isToday(day) && 'bg-primary/5'
                       )}
                     >
@@ -590,24 +590,24 @@ ${TIME_SLOTS.map(
         key={occ.classId + occ.date}
         onClick={() => openEdit(occ.classItem)}
         className={cn(
-          'w-full text-left rounded p-1 mb-0.5 transition-opacity hover:opacity-80',
+          'w-full text-left rounded p-1.5 mb-0.5 transition-opacity hover:opacity-80',
           color?.bg ?? 'bg-blue-100 dark:bg-blue-900/30',
           color?.text ?? 'text-blue-700 dark:text-blue-300'
         )}
       >
-        <div className="text-[10px] font-bold leading-tight truncate">
+        <div className="text-xs font-bold leading-tight truncate">
           {occ.classItem.emoji ? `${occ.classItem.emoji} ` : ''}
           {occ.classItem.name}
         </div>
-        {member && <div className="text-[9px] leading-tight truncate opacity-80">{member.name}</div>}
+        {member && <div className="text-[11px] leading-tight truncate opacity-80">{member.name}</div>}
         {occ.classItem.startTime && (
-          <div className="text-[9px] leading-tight opacity-70">
+          <div className="text-[11px] leading-tight opacity-70">
             {occ.classItem.startTime}
             {occ.classItem.endTime ? `-${occ.classItem.endTime}` : ''}
           </div>
         )}
         {occ.classItem.location && (
-          <div className="text-[9px] leading-tight truncate opacity-70">{occ.classItem.location}</div>
+          <div className="text-[11px] leading-tight truncate opacity-70">{occ.classItem.location}</div>
         )}
       </button>
     )

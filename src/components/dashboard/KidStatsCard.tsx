@@ -19,7 +19,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
   const choresDone = countCompletionsForMember(completions, member.id)
 
   return (
-    <div className={`rounded-xl border-2 border-border p-4 space-y-3 ${color.bg}`}>
+    <div className={`rounded-xl border-2 border-border p-4 space-y-3 ${color.bg} ${color.darkBg}`}>
       <div className="flex items-center gap-3">
         {member.avatar ? (
           <img src={member.avatar} alt={member.name} className="h-14 w-14 xl:h-12 xl:w-12 rounded-full object-cover" />
@@ -30,7 +30,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className={`font-bold ${color.text} truncate`}>{member.name}</h3>
+            <h3 className={`font-bold ${color.text} ${color.darkText} truncate`}>{member.name}</h3>
             <span className="shrink-0 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded-full px-2 py-0.5">
               Lv.{level.level} {level.title}
             </span>
@@ -49,7 +49,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
             <span>Next: Lv.{level.level + 1}</span>
             <span>{member.points ?? 0}/{level.nextXp} XP</span>
           </div>
-          <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-amber-500 transition-all"
               style={{ width: `${Math.min(100, (((member.points ?? 0) - level.xp) / (level.nextXp - level.xp)) * 100)}%` }}
@@ -66,7 +66,7 @@ export default function KidStatsCard({ member, stats }: KidStatsCardProps) {
           </span>
           <span className="font-medium">{stats.completionRate}%</span>
         </div>
-        <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
             className="h-full rounded-full bg-green-500 transition-all"
             style={{ width: `${stats.completionRate}%` }}

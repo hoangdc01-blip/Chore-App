@@ -232,12 +232,12 @@ export default function ProfileSelectScreen() {
     const avatarColor = AVATAR_COLORS[kidIndex % AVATAR_COLORS.length]
 
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-background">
         <div className="flex flex-col items-center w-full max-w-[320px] animate-fade-in-up">
           <button
             onClick={() => { setSelectedKid(null); setEmojiInput([]); setKidError(''); setKidSuccess(false) }}
             className="self-start mb-10 flex items-center gap-1.5 text-[13px] tracking-wide transition-colors
-              text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-400"
+              text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft size={14} />
             Back
@@ -253,8 +253,8 @@ export default function ProfileSelectScreen() {
               </span>
             )}
           </div>
-          <h2 className="text-lg tracking-wide mb-1 font-normal text-neutral-900 dark:text-neutral-100">{selectedKid.name}</h2>
-          <p className="text-[13px] tracking-wide mb-8 text-neutral-400 dark:text-neutral-500">Enter your emoji password</p>
+          <h2 className="text-lg tracking-wide mb-1 font-normal text-foreground">{selectedKid.name}</h2>
+          <p className="text-[13px] tracking-wide mb-8 text-muted-foreground">Enter your emoji password</p>
 
           {/* 4 emoji slots */}
           <div className={`flex gap-3 justify-center mb-6 ${kidShake ? 'animate-shake' : ''}`}>
@@ -266,7 +266,7 @@ export default function ProfileSelectScreen() {
                     ? 'border-green-300 dark:border-green-700 bg-green-100 dark:bg-green-900/30 scale-105'
                     : emojiInput[i]
                       ? 'border-primary bg-primary/10 scale-110'
-                      : 'border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900'}`}
+                      : 'border-border bg-muted'}`}
               >
                 {emojiInput[i] || ''}
               </div>
@@ -280,7 +280,7 @@ export default function ProfileSelectScreen() {
             ) : kidError ? (
               <p className="text-[13px] text-center text-red-500">{kidError}</p>
             ) : isKidLockedOut && kidCountdown ? (
-              <p className="text-[13px] font-mono text-neutral-400 dark:text-neutral-500">Try again in {kidCountdown}</p>
+              <p className="text-[13px] font-mono text-muted-foreground">Try again in {kidCountdown}</p>
             ) : null}
           </div>
 
@@ -294,8 +294,8 @@ export default function ProfileSelectScreen() {
                 className="aspect-square rounded-2xl text-3xl flex items-center justify-center
                   transition-all duration-150 active:scale-90
                   disabled:opacity-20 disabled:cursor-not-allowed
-                  bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800
-                  hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600"
+                  bg-card border border-border
+                  hover:bg-muted hover:border-muted-foreground/30"
               >
                 {emoji}
               </button>
@@ -310,8 +310,8 @@ export default function ProfileSelectScreen() {
               className="aspect-square rounded-2xl text-lg flex items-center justify-center
                 transition-all duration-150 active:scale-90
                 disabled:opacity-20 disabled:cursor-not-allowed
-                bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800
-                hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600"
+                bg-card border border-border
+                hover:bg-muted hover:border-muted-foreground/30"
             >
               <Delete size={20} />
             </button>
@@ -324,22 +324,22 @@ export default function ProfileSelectScreen() {
   // ── Parent PIN Pad ──
   if (showPinPad) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
         <div className="flex flex-col items-center w-full max-w-[260px] px-4 animate-fade-in-up">
           <button
             onClick={() => { setShowPinPad(false); setPin(''); setError('') }}
             className="self-start mb-10 flex items-center gap-1.5 text-[13px] tracking-wide transition-colors
-              text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-400"
+              text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft size={14} />
             Back
           </button>
 
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5 bg-neutral-200 dark:bg-neutral-800">
-            <Lock size={26} className="text-neutral-400 dark:text-neutral-500" />
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5 bg-muted">
+            <Lock size={26} className="text-muted-foreground" />
           </div>
-          <h2 className="text-lg tracking-wide mb-1 font-normal text-neutral-900 dark:text-neutral-100">Parent</h2>
-          <p className="text-[13px] tracking-wide mb-12 text-neutral-400 dark:text-neutral-500">Enter your PIN</p>
+          <h2 className="text-lg tracking-wide mb-1 font-normal text-foreground">Parent</h2>
+          <p className="text-[13px] tracking-wide mb-12 text-muted-foreground">Enter your PIN</p>
 
           {/* PIN dots */}
           <div className={`flex gap-6 mb-10 ${shake ? 'animate-shake' : ''}`}>
@@ -348,8 +348,8 @@ export default function ProfileSelectScreen() {
                 key={i}
                 className={`w-2.5 h-2.5 rounded-full transition-all duration-200
                   ${i < pin.length
-                    ? 'bg-neutral-900 dark:bg-neutral-100 scale-[1.2]'
-                    : 'bg-neutral-300 dark:bg-neutral-600'}`}
+                    ? 'bg-foreground scale-[1.2]'
+                    : 'bg-muted-foreground/40'}`}
               />
             ))}
           </div>
@@ -358,9 +358,9 @@ export default function ProfileSelectScreen() {
             {error ? (
               <p className="text-[13px] text-center text-red-500">{error}</p>
             ) : isLockedOut && countdown ? (
-              <p className="text-[13px] font-mono text-neutral-400 dark:text-neutral-500">Try again in {countdown}</p>
+              <p className="text-[13px] font-mono text-muted-foreground">Try again in {countdown}</p>
             ) : checking ? (
-              <p className="text-[13px] text-neutral-400 dark:text-neutral-500">Verifying...</p>
+              <p className="text-[13px] text-muted-foreground">Verifying...</p>
             ) : null}
           </div>
 
@@ -372,9 +372,9 @@ export default function ProfileSelectScreen() {
                 disabled={isLockedOut || checking}
                 className="aspect-square rounded-2xl text-xl font-normal transition-all duration-100
                   active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
-                  bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200
-                  border border-neutral-200 dark:border-neutral-800
-                  hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  bg-card text-foreground
+                  border border-border
+                  hover:bg-muted"
               >
                 {n}
               </button>
@@ -385,9 +385,9 @@ export default function ProfileSelectScreen() {
               disabled={isLockedOut || checking}
               className="aspect-square rounded-2xl text-xl font-normal transition-all duration-100
                 active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
-                bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200
-                border border-neutral-200 dark:border-neutral-800
-                hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                bg-card text-foreground
+                border border-border
+                hover:bg-muted"
             >
               0
             </button>
@@ -396,7 +396,7 @@ export default function ProfileSelectScreen() {
               disabled={isLockedOut || checking || pin.length === 0}
               className="aspect-square rounded-2xl flex items-center justify-center
                 transition-all duration-100 active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
-                text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-400"
+                text-muted-foreground hover:text-foreground"
             >
               <Delete size={18} />
             </button>
@@ -408,15 +408,15 @@ export default function ProfileSelectScreen() {
 
   // ── Profile Selection ──
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-background safe-top safe-bottom">
       <div className="flex flex-col items-center w-full max-w-[420px]">
 
         {/* Header */}
         <div className="animate-fade-in-up text-center mb-14">
-          <h1 className="text-[28px] tracking-tight mb-2 font-light text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-[28px] tracking-tight mb-2 font-light text-foreground">
             Váu Váu &#x1F427;
           </h1>
-          <p className="text-[14px] tracking-wide text-neutral-400 dark:text-neutral-500">
+          <p className="text-[14px] tracking-wide text-muted-foreground">
             Your family's AI assistant
           </p>
         </div>
@@ -427,30 +427,30 @@ export default function ProfileSelectScreen() {
           className="animate-fade-in-up group relative flex flex-col items-center gap-4 w-[140px] py-6
             rounded-2xl transition-all duration-300 ease-out
             active:scale-[0.97]
-            bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800
-            hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 hover:scale-[1.03]"
+            bg-card border border-border
+            hover:bg-muted hover:border-muted-foreground/30 hover:scale-[1.03]"
         >
           <div className="relative">
             <div className="w-[68px] h-[68px] rounded-full flex items-center justify-center transition-all duration-300
-              bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500">
+              bg-muted text-muted-foreground">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center
-              bg-neutral-200 dark:bg-neutral-800 border-2 border-neutral-50 dark:border-neutral-950">
-              <Lock size={9} className="text-neutral-400 dark:text-neutral-500" />
+              bg-muted border-2 border-background">
+              <Lock size={9} className="text-muted-foreground" />
             </div>
           </div>
-          <span className="text-[14px] tracking-wide font-normal text-neutral-700 dark:text-neutral-200">Parent</span>
+          <span className="text-[14px] tracking-wide font-normal text-foreground/80">Parent</span>
         </button>
 
         {/* Divider */}
         <div className="w-full flex items-center gap-4 my-10 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-          <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
-          <span className="text-[11px] uppercase tracking-[0.15em] text-neutral-300 dark:text-neutral-600">Kids</span>
-          <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
+          <div className="flex-1 h-px bg-muted" />
+          <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground/50">Kids</span>
+          <div className="flex-1 h-px bg-muted" />
         </div>
 
         {/* Kid profiles — 4 across */}
@@ -463,8 +463,8 @@ export default function ProfileSelectScreen() {
               className="animate-fade-in-up group flex flex-col items-center gap-3 py-5
                 rounded-2xl transition-all duration-300 ease-out
                 active:scale-[0.97]
-                bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800
-                hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-600 hover:scale-[1.03]"
+                bg-card border border-border
+                hover:bg-muted hover:border-muted-foreground/30 hover:scale-[1.03]"
               style={{ animationDelay: `${150 + i * 60}ms` }}
             >
               <div className={`w-14 h-14 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center overflow-hidden
@@ -477,7 +477,7 @@ export default function ProfileSelectScreen() {
                   </span>
                 )}
               </div>
-              <span className="text-[13px] tracking-wide font-normal text-neutral-600 dark:text-neutral-300">
+              <span className="text-[13px] tracking-wide font-normal text-muted-foreground">
                 {member.name}
               </span>
             </button>

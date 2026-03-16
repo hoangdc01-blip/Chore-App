@@ -134,7 +134,7 @@ export default function ChoreDetails({ occurrence, open, onClose, onEdit }: Chor
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Assigned to:</span>
             {member ? (
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${color?.bg} ${color?.text}`}>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${color?.bg} ${color?.darkBg} ${color?.text} ${color?.darkText}`}>
                 {member.avatar ? (
                   <img src={member.avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
                 ) : (

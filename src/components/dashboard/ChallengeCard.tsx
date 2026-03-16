@@ -64,7 +64,7 @@ export default function ChallengeCard({ memberId, memberName }: ChallengeCardPro
       </div>
       {/* Progress bar */}
       <div className="mt-2 flex items-center gap-2">
-        <div className="flex-1 h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${isComplete ? 'bg-green-500' : 'bg-amber-500'}`}
             style={{ width: `${Math.min(100, (progress / challenge.target) * 100)}%` }}

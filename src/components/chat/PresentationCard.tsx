@@ -62,7 +62,7 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
 
       {isGenerating ? (
         <div className="flex flex-col items-center gap-3 py-4">
-          <div className="w-10 h-10 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin" />
+          <div className="w-10 h-10 rounded-full border-4 border-blue-200 dark:border-blue-800 border-t-blue-500 animate-spin" />
           <p className="text-sm text-muted-foreground font-medium">
             {isContentStage && result.contentProgress
               ? `Writing slide content (${result.contentProgress.current}/${result.contentProgress.total})...`

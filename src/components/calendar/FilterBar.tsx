@@ -50,7 +50,7 @@ export default function FilterBar({ statusFilter, onStatusFilterChange, hiddenMe
             className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 ${
               hidden
                 ? 'bg-muted text-muted-foreground opacity-50'
-                : `${color.bg} ${color.text}`
+                : `${color.bg} ${color.darkBg} ${color.text} ${color.darkText}`
             }`}
           >
             {member.avatar ? (

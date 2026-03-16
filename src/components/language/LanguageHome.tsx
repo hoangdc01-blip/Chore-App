@@ -56,7 +56,7 @@ export function LanguageHome({ onStartLesson }: Props) {
         <div className="space-y-3">
           {language.topics.map((topic) => {
             const topicProgress = progress[topic.id]
-            const masteredWords = topicProgress?.masteredWords ?? 0
+            const masteredWords = topicProgress?.masteredWords?.length ?? 0
             const totalWords = topic.words.length
             const allMastered = masteredWords >= totalWords
             const pct =
@@ -69,7 +69,7 @@ export function LanguageHome({ onStartLesson }: Props) {
                 key={topic.id}
                 className={cn(
                   'flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md',
-                  allMastered && 'border-yellow-400/50 bg-yellow-50/30',
+                  allMastered && 'border-yellow-400/50 bg-yellow-50/30 dark:bg-yellow-900/20',
                 )}
               >
                 {/* Emoji */}

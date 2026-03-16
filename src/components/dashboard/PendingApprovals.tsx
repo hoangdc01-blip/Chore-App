@@ -50,7 +50,7 @@ export default function PendingApprovals() {
               {item.member?.avatar ? (
                 <img src={item.member.avatar} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
               ) : (
-                <span className={`h-8 w-8 rounded-full ${color?.dot ?? 'bg-gray-400'} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+                <span className={`h-8 w-8 rounded-full ${color?.dot ?? 'bg-muted-foreground'} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
                   {item.member?.name.charAt(0).toUpperCase()}
                 </span>
               )}

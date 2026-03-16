@@ -242,7 +242,7 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
           {isKidMode && activeMember && (
             <div className="mb-2 p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full ${activeColor?.dot ?? 'bg-gray-400'} flex items-center justify-center overflow-hidden shadow-md`}>
+                <div className={`w-10 h-10 rounded-full ${activeColor?.dot ?? 'bg-muted-foreground'} flex items-center justify-center overflow-hidden shadow-md`}>
                   {activeMember.avatar ? (
                     <img src={activeMember.avatar} alt={activeMember.name} className="w-full h-full object-cover" />
                   ) : (
@@ -273,7 +273,7 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
             </div>
             <div
               className={`w-9 h-5 rounded-full transition-colors relative ${
-                dark ? 'bg-purple-500' : 'bg-neutral-300 dark:bg-neutral-600'
+                dark ? 'bg-purple-500' : 'bg-muted-foreground/40'
               }`}
             >
               <div

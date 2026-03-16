@@ -109,8 +109,8 @@ function ClassCardCompact({ occ, onClick }: { occ: ClassOccurrence; onClick: () 
   const color = member ? getMemberColor(member) : null
 
   const cardClasses = color
-    ? `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
-    : 'bg-white dark:bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+    ? `bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    : 'bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
 
   return (
     <div
@@ -139,8 +139,8 @@ function ClassCardFull({ occ, onClick }: { occ: ClassOccurrence; onClick: () => 
   const color = member ? getMemberColor(member) : null
 
   const cardClasses = color
-    ? `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
-    : 'bg-white dark:bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+    ? `bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    : 'bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
 
   return (
     <div
@@ -741,9 +741,9 @@ ${timeSlots.map(
               onClick={() => toggleKidFilter(member.id)}
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5 ${
                 active
-                  ? `${color.bg} ${color.text}`
+                  ? `${color.bg} ${color.darkBg} ${color.text} ${color.darkText}`
                   : !isFilterActive
-                    ? `${color.bg} ${color.text}`
+                    ? `${color.bg} ${color.darkBg} ${color.text} ${color.darkText}`
                     : 'bg-muted text-muted-foreground opacity-50'
               }`}
             >

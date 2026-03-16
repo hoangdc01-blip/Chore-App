@@ -97,13 +97,13 @@ export default function PinLockScreen() {
   }, [addDigit, removeDigit])
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
       <div className="flex flex-col items-center w-full max-w-[280px] px-4">
         {/* App branding */}
-        <h1 className="text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 mb-1">
-          Váu Váu AI
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground mb-1">
+          Vau Vau AI
         </h1>
-        <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-10">
+        <p className="text-sm text-muted-foreground mb-10">
           Enter your PIN to continue
         </p>
 
@@ -114,8 +114,8 @@ export default function PinLockScreen() {
               key={i}
               className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
                 i < pin.length
-                  ? 'bg-neutral-800 dark:bg-neutral-100 scale-110'
-                  : 'border-2 border-neutral-300 dark:border-neutral-600 bg-transparent'
+                  ? 'bg-foreground scale-110'
+                  : 'border-2 border-muted-foreground/40 bg-transparent'
               }`}
             />
           ))}
@@ -126,9 +126,9 @@ export default function PinLockScreen() {
           {error ? (
             <p className="text-sm text-red-500 font-medium text-center">{error}</p>
           ) : isLockedOut && countdown ? (
-            <p className="text-sm text-neutral-400 font-mono">Try again in {countdown}</p>
+            <p className="text-sm text-muted-foreground font-mono">Try again in {countdown}</p>
           ) : checking ? (
-            <p className="text-sm text-neutral-400">Verifying...</p>
+            <p className="text-sm text-muted-foreground">Verifying...</p>
           ) : null}
         </div>
 
@@ -139,11 +139,11 @@ export default function PinLockScreen() {
               key={n}
               onClick={() => addDigit(String(n))}
               disabled={isLockedOut || checking}
-              className="aspect-square rounded-full bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
-                text-xl font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
-                active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
+              className="aspect-square rounded-full bg-card text-foreground
+                text-xl font-semibold shadow-sm border border-border
+                active:scale-90 active:bg-muted
                 transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-                hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                hover:bg-muted"
             >
               {n}
             </button>
@@ -154,11 +154,11 @@ export default function PinLockScreen() {
           <button
             onClick={() => addDigit('0')}
             disabled={isLockedOut || checking}
-            className="aspect-square rounded-full bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
-              text-xl font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
-              active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
+            className="aspect-square rounded-full bg-card text-foreground
+              text-xl font-semibold shadow-sm border border-border
+              active:scale-90 active:bg-muted
               transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-              hover:bg-neutral-50 dark:hover:bg-neutral-700"
+              hover:bg-muted"
           >
             0
           </button>
@@ -166,10 +166,10 @@ export default function PinLockScreen() {
             onClick={removeDigit}
             disabled={isLockedOut || checking || pin.length === 0}
             className="aspect-square rounded-full flex items-center justify-center
-              text-neutral-400 dark:text-neutral-500
-              active:scale-90 active:text-neutral-600 dark:active:text-neutral-300
+              text-muted-foreground
+              active:scale-90 active:text-foreground
               transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-              hover:text-neutral-500 dark:hover:text-neutral-400"
+              hover:text-foreground"
           >
             <Delete size={22} />
           </button>

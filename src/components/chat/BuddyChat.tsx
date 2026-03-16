@@ -703,7 +703,7 @@ export default function BuddyChat() {
       {docLoading && (
         <div className="px-4 pt-2">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-4 h-4 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin" />
+            <div className="w-4 h-4 rounded-full border-2 border-purple-200 dark:border-purple-800 border-t-purple-500 animate-spin" />
             Reading document...
           </div>
         </div>

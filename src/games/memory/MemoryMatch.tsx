@@ -180,7 +180,7 @@ export default function MemoryMatch({ onScore, onGameOver, isPlaying, onStart, h
             <button
               key={diff.name}
               onClick={() => startGame(diff)}
-              className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-white/80 dark:bg-gray-800/80 border-2 border-transparent hover:border-purple-400 hover:scale-105 active:scale-95 transition-all shadow-sm"
+              className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-card/80 border-2 border-transparent hover:border-purple-400 hover:scale-105 active:scale-95 transition-all shadow-sm"
             >
               <span className="text-2xl">{diff.emoji}</span>
               <div className="text-left flex-1">
@@ -250,7 +250,7 @@ export default function MemoryMatch({ onScore, onGameOver, isPlaying, onStart, h
                   {/* Back (face up) */}
                   <div
                     className={`absolute inset-0 rounded-xl flex items-center justify-center text-3xl
-                      bg-white dark:bg-gray-700 border-2 shadow-md
+                      bg-card border-2 shadow-md
                       ${isMatched ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-purple-300'}
                       ${isMatched ? 'opacity-60' : ''}
                     `}

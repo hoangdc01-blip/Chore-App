@@ -28,7 +28,7 @@ export default function BadgeCelebration() {
         role="alertdialog"
         aria-modal="true"
         aria-label="Badge earned celebration"
-        className="bg-white dark:bg-gray-800 rounded-3xl p-8 text-center shadow-2xl animate-[slideUp_300ms_ease-out] max-w-xs mx-4"
+        className="bg-card rounded-3xl p-8 text-center shadow-2xl animate-[slideUp_300ms_ease-out] max-w-xs mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-6xl mb-3 animate-bounce">{achievement.emoji}</div>

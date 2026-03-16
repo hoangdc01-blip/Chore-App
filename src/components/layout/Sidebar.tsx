@@ -70,7 +70,7 @@ export default function Sidebar({ hiddenMemberIds, onToggleMember, open, onClose
         {isKidMode && activeMember && (
           <div className="mb-4 pb-4 border-b border-border">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10">
-              <div className={`w-12 h-12 rounded-full ${activeColor?.dot ?? 'bg-gray-400'} flex items-center justify-center overflow-hidden shadow-md`}>
+              <div className={`w-12 h-12 rounded-full ${activeColor?.dot ?? 'bg-muted-foreground'} flex items-center justify-center overflow-hidden shadow-md`}>
                 {activeMember.avatar ? (
                   <img src={activeMember.avatar} alt={activeMember.name} className="w-full h-full object-cover" />
                 ) : (
@@ -129,7 +129,7 @@ export default function Sidebar({ hiddenMemberIds, onToggleMember, open, onClose
             </div>
             <div
               className={`w-9 h-5 rounded-full transition-colors relative ${
-                dark ? 'bg-purple-500' : 'bg-neutral-300 dark:bg-neutral-600'
+                dark ? 'bg-purple-500' : 'bg-muted-foreground/40'
               }`}
             >
               <div

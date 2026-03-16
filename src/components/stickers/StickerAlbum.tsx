@@ -19,7 +19,7 @@ const RARITY_COLORS: Record<string, string> = {
 }
 
 const RARITY_BG: Record<string, string> = {
-  common: 'bg-gray-50 dark:bg-gray-800/50',
+  common: 'bg-muted/50',
   rare: 'bg-blue-50 dark:bg-blue-900/30',
   legendary: 'bg-amber-50 dark:bg-amber-900/30',
 }
@@ -86,7 +86,7 @@ export default function StickerAlbum({ memberId }: StickerAlbumProps) {
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
             className={cn(
               'h-full rounded-full transition-all',
@@ -128,7 +128,7 @@ export default function StickerAlbum({ memberId }: StickerAlbumProps) {
       {/* Rarity legend */}
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2 h-2 rounded-full bg-gray-400" />
+          <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground" />
           Common
         </span>
         <span className="flex items-center gap-1">

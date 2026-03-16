@@ -11,7 +11,7 @@ interface LeaderboardProps {
 
 const RANK_STYLES = [
   'text-amber-500',
-  'text-gray-400',
+  'text-muted-foreground',
   'text-amber-700',
 ]
 

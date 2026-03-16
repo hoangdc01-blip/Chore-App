@@ -127,19 +127,19 @@ export default function ChangePinDialog({ open, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Change PIN"
-        className="bg-neutral-50 dark:bg-neutral-900 rounded-2xl shadow-xl p-6 w-full max-w-[300px] mx-4 flex flex-col items-center"
+        className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-[300px] mx-4 flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between w-full mb-6">
-          <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">{titles[step]}</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors">
+          <h2 className="text-lg font-bold text-foreground">{titles[step]}</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <X size={18} />
           </button>
         </div>
 
         {success ? (
           <div className="py-10 text-center">
-            <p className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">PIN changed</p>
+            <p className="text-lg font-semibold text-foreground">PIN changed</p>
           </div>
         ) : (
           <>
@@ -150,8 +150,8 @@ export default function ChangePinDialog({ open, onClose }: Props) {
                   key={i}
                   className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
                     i < pin.length
-                      ? 'bg-neutral-800 dark:bg-neutral-100 scale-110'
-                      : 'border-2 border-neutral-300 dark:border-neutral-600 bg-transparent'
+                      ? 'bg-foreground scale-110'
+                      : 'border-2 border-muted-foreground/40 bg-transparent'
                   }`}
                 />
               ))}
@@ -169,11 +169,11 @@ export default function ChangePinDialog({ open, onClose }: Props) {
                   key={n}
                   onClick={() => addDigit(String(n))}
                   disabled={saving}
-                  className="h-14 rounded-full bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
-                    text-lg font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
-                    active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
+                  className="h-14 rounded-full bg-card text-foreground
+                    text-lg font-semibold shadow-sm border border-border
+                    active:scale-90 active:bg-muted
                     transition-all duration-100 disabled:opacity-30
-                    hover:bg-neutral-50 dark:hover:bg-neutral-750"
+                    hover:bg-muted"
                 >
                   {n}
                 </button>
@@ -182,11 +182,11 @@ export default function ChangePinDialog({ open, onClose }: Props) {
               <button
                 onClick={() => addDigit('0')}
                 disabled={saving}
-                className="h-14 rounded-full bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100
-                  text-lg font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
-                  active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
+                className="h-14 rounded-full bg-card text-foreground
+                  text-lg font-semibold shadow-sm border border-border
+                  active:scale-90 active:bg-muted
                   transition-all duration-100 disabled:opacity-30
-                  hover:bg-neutral-50 dark:hover:bg-neutral-750"
+                  hover:bg-muted"
               >
                 0
               </button>
@@ -194,10 +194,10 @@ export default function ChangePinDialog({ open, onClose }: Props) {
                 onClick={removeDigit}
                 disabled={saving || pin.length === 0}
                 className="h-14 rounded-full flex items-center justify-center
-                  text-neutral-400 dark:text-neutral-500
-                  active:scale-90 active:text-neutral-600 dark:active:text-neutral-300
+                  text-muted-foreground
+                  active:scale-90 active:text-foreground
                   transition-all duration-100 disabled:opacity-30
-                  hover:text-neutral-500 dark:hover:text-neutral-400"
+                  hover:text-foreground"
               >
                 <Delete size={20} />
               </button>

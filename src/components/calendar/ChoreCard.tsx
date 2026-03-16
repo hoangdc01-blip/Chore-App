@@ -53,9 +53,9 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
   } else if (isOverdue) {
     cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-red-950 border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
   } else if (color) {
-    cardClasses = `bg-white dark:bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    cardClasses = `bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
   } else {
-    cardClasses = 'bg-white dark:bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+    cardClasses = 'bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
   }
 
   // ── Compact mode: small cards for desktop grid cells ──

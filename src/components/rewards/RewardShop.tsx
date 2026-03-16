@@ -86,7 +86,7 @@ export default function RewardShop() {
                   onClick={() => setSelectedMemberId(isSelected ? null : member.id)}
                   className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all min-h-[48px] border-2 ${
                     isSelected
-                      ? `${color.bg} ${color.text} ${color.border} shadow-md scale-105`
+                      ? `${color.bg} ${color.darkBg} ${color.text} ${color.darkText} ${color.border} shadow-md scale-105`
                       : 'border-border hover:border-muted-foreground/30'
                   }`}
                 >

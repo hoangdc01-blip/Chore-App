@@ -76,7 +76,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const color = MEMBER_COLORS[nextColorIndex]
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Family setup wizard" className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950 safe-top safe-bottom">
+    <div role="dialog" aria-modal="true" aria-label="Family setup wizard" className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-background safe-top safe-bottom">
       <div
         className={`flex flex-col items-center w-full max-w-[480px] transition-opacity duration-200 ${
           transitioning ? 'opacity-0' : 'opacity-100'
@@ -88,10 +88,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-8">
               <span className="text-5xl">&#127968;</span>
             </div>
-            <h1 className="text-[28px] tracking-tight mb-3 font-light text-neutral-900 dark:text-neutral-100">
-              Welcome to Family Chores!
+            <h1 className="text-[28px] tracking-tight mb-3 font-light text-foreground">
+              Welcome to Váu Váu AI!
             </h1>
-            <p className="text-[15px] tracking-wide mb-12 text-neutral-400 dark:text-neutral-500 max-w-[320px]">
+            <p className="text-[15px] tracking-wide mb-12 text-muted-foreground max-w-[320px]">
               Let's set up your family. You'll add your kids and they can start tracking their chores right away.
             </p>
             <button
@@ -108,10 +108,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         {/* Step 2: Add Kids */}
         {step === 2 && (
           <div className="flex flex-col items-center w-full animate-fade-in-up">
-            <h2 className="text-[24px] tracking-tight mb-2 font-light text-neutral-900 dark:text-neutral-100">
+            <h2 className="text-[24px] tracking-tight mb-2 font-light text-foreground">
               Add your kids
             </h2>
-            <p className="text-[14px] tracking-wide mb-8 text-neutral-400 dark:text-neutral-500">
+            <p className="text-[14px] tracking-wide mb-8 text-muted-foreground">
               Add at least 1 kid to get started (max 8)
             </p>
 
@@ -123,7 +123,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   return (
                     <div
                       key={i}
-                      className={`flex items-center gap-2 ${kidColor.bg} ${kidColor.text} rounded-full pl-1.5 pr-3 py-1.5
+                      className={`flex items-center gap-2 ${kidColor.bg} ${kidColor.darkBg} ${kidColor.text} ${kidColor.darkText} rounded-full pl-1.5 pr-3 py-1.5
                         animate-fade-in-up`}
                     >
                       <div className={`w-7 h-7 rounded-full ${kidColor.dot} flex items-center justify-center overflow-hidden`}>
@@ -149,7 +149,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {/* Add kid form */}
             {kids.length < 8 && (
-              <div className="w-full max-w-[360px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 mb-6">
+              <div className="w-full max-w-[360px] bg-card border border-border rounded-2xl p-5 mb-6">
                 {/* Avatar preview + upload */}
                 <div className="flex justify-center mb-4">
                   <button
@@ -180,7 +180,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Kid's name"
-                    className="flex-1 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800
+                    className="flex-1 rounded-xl border border-border bg-muted
                       px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     autoFocus
                   />
@@ -200,7 +200,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             )}
 
             {kids.length >= 8 && (
-              <p className="text-[13px] text-neutral-400 dark:text-neutral-500 mb-6">
+              <p className="text-[13px] text-muted-foreground mb-6">
                 Maximum of 8 kids reached
               </p>
             )}
@@ -224,10 +224,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-8">
               <Check size={48} className="text-green-500" />
             </div>
-            <h2 className="text-[28px] tracking-tight mb-3 font-light text-neutral-900 dark:text-neutral-100">
+            <h2 className="text-[28px] tracking-tight mb-3 font-light text-foreground">
               You're all set!
             </h2>
-            <p className="text-[15px] tracking-wide mb-10 text-neutral-400 dark:text-neutral-500">
+            <p className="text-[15px] tracking-wide mb-10 text-muted-foreground">
               Here's your family
             </p>
 
@@ -242,14 +242,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     style={{ animationDelay: `${i * 100}ms` }}
                   >
                     <div className={`w-16 h-16 rounded-full ${kidColor.dot} flex items-center justify-center overflow-hidden
-                      ring-4 ring-white dark:ring-neutral-900 shadow-lg`}>
+                      ring-4 ring-background shadow-lg`}>
                       {kid.avatar ? (
                         <img src={kid.avatar} alt={kid.name} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-xl font-bold text-white">{kid.name.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
-                    <span className="text-[13px] font-medium text-neutral-700 dark:text-neutral-300">{kid.name}</span>
+                    <span className="text-[13px] font-medium text-muted-foreground">{kid.name}</span>
                   </div>
                 )
               })}
@@ -260,7 +260,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 text-[15px] font-medium text-primary-foreground
                 hover:bg-primary/90 transition-all duration-200 active:scale-[0.97]"
             >
-              Start Using Family Chores
+              Start Using Váu Váu AI
               <ArrowRight size={18} />
             </button>
           </div>

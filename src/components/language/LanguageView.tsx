@@ -3,11 +3,13 @@ import { useLanguageStore } from '@/store/language-store'
 import { useMemberStore } from '@/store/member-store'
 import { useAppStore } from '@/store/app-store'
 import { getTopic } from '@/lib/language-data'
-import LanguageHome from './LanguageHome'
-import LessonView from './LessonView'
-import LessonComplete from './LessonComplete'
+import type { VocabWord } from '@/lib/language-data'
+import { LanguageHome } from './LanguageHome'
+import { LessonView } from './LessonView'
+import { LessonComplete } from './LessonComplete'
+import PronunciationGame from './PronunciationGame'
 
-type Screen = 'home' | 'lesson' | 'results'
+type Screen = 'home' | 'lesson' | 'results' | 'pronunciation'
 
 interface LessonResults {
   total: number
@@ -19,6 +21,8 @@ interface LessonResults {
 export default function LanguageView() {
   const [screen, setScreen] = useState<Screen>('home')
   const [results, setResults] = useState<LessonResults | null>(null)
+  const [pronunciationWords, setPronunciationWords] = useState<VocabWord[]>([])
+  const [pronunciationLang, setPronunciationLang] = useState('')
 
   const startQuiz = useLanguageStore((s) => s.startQuiz)
   const quizState = useLanguageStore((s) => s.quizState)
@@ -83,13 +87,36 @@ export default function LanguageView() {
     setScreen('home')
   }, [])
 
+  const handleStartPronunciation = useCallback((topicId: string) => {
+    const info = getTopic(topicId)
+    if (!info) return
+    setPronunciationWords(info.topic.words)
+    setPronunciationLang(info.language.code)
+    setScreen('pronunciation')
+  }, [])
+
   return (
     <main className="flex-1 overflow-y-auto">
       {screen === 'home' && (
-        <LanguageHome onStartLesson={handleStartLesson} />
+        <LanguageHome onStartLesson={handleStartLesson} onStartPronunciation={handleStartPronunciation} />
       )}
       {screen === 'lesson' && quizState && (
-        <LessonView onComplete={handleLessonComplete} />
+        <LessonView onComplete={handleLessonComplete} onQuit={handleBackToTopics} />
+      )}
+      {screen === 'pronunciation' && (
+        <PronunciationGame
+          words={pronunciationWords}
+          languageCode={pronunciationLang}
+          onQuit={handleBackToTopics}
+          onComplete={(score, total) => {
+            const pointsEarned = score * 2
+            if (pointsEarned > 0 && mode === 'kid' && activeKidId) {
+              useMemberStore.getState().adjustPoints(activeKidId, pointsEarned)
+            }
+            setResults({ total, correct: score, pointsEarned, questions: [] })
+            setScreen('results')
+          }}
+        />
       )}
       {screen === 'results' && results && (
         <LessonComplete

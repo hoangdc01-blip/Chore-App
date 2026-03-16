@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Star, CheckCircle2, Play } from 'lucide-react'
+import { ArrowLeft, Star, CheckCircle2, Play, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LANGUAGES, getLanguage } from '@/lib/language-data'
 import type { LanguageCode, LanguageInfo } from '@/lib/language-data'
@@ -7,9 +7,10 @@ import { useLanguageStore } from '@/store/language-store'
 
 interface Props {
   onStartLesson: (topicId: string) => void
+  onStartPronunciation: (topicId: string) => void
 }
 
-export function LanguageHome({ onStartLesson }: Props) {
+export function LanguageHome({ onStartLesson, onStartPronunciation }: Props) {
   const { activeLanguage, setActiveLanguage, progress } = useLanguageStore()
   const [selectedLang, setSelectedLang] = useState<LanguageCode | null>(
     activeLanguage ?? null,
@@ -107,24 +108,33 @@ export function LanguageHome({ onStartLesson }: Props) {
                   </div>
                 </div>
 
-                {/* Practice / Complete button */}
-                {allMastered ? (
+                {/* Practice / Complete / Speak buttons */}
+                <div className="flex flex-col gap-2">
+                  {allMastered ? (
+                    <button
+                      onClick={() => onStartLesson(topic.id)}
+                      className="flex items-center gap-1.5 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-yellow-900 shadow transition-transform hover:scale-105 active:scale-95"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Review
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onStartLesson(topic.id)}
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow transition-transform hover:scale-105 active:scale-95"
+                    >
+                      <Play className="h-4 w-4" />
+                      Practice
+                    </button>
+                  )}
                   <button
-                    onClick={() => onStartLesson(topic.id)}
-                    className="flex items-center gap-1.5 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-yellow-900 shadow transition-transform hover:scale-105 active:scale-95"
+                    onClick={() => onStartPronunciation(topic.id)}
+                    className="flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300"
                   >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Review
+                    <Mic size={12} />
+                    Speak
                   </button>
-                ) : (
-                  <button
-                    onClick={() => onStartLesson(topic.id)}
-                    className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow transition-transform hover:scale-105 active:scale-95"
-                  >
-                    <Play className="h-4 w-4" />
-                    Practice
-                  </button>
-                )}
+                </div>
               </div>
             )
           })}

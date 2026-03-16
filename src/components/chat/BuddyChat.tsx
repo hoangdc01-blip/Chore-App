@@ -45,10 +45,10 @@ function cleanMessageContent(content: string): string {
 }
 
 const TOOL_CARDS = [
-  { label: 'Draw a picture', icon: Palette, text: 'Can you draw me something fun?' },
-  { label: 'Make a presentation', icon: Presentation, text: 'Can you make a presentation for me about something cool?' },
-  { label: 'Check my homework', icon: PencilLine, text: "Can you check my homework? I'm uploading a photo!" },
-  { label: 'Help me study', icon: GraduationCap, text: 'Help me study for my upcoming test' },
+  { label: 'Draw a picture', icon: Palette, text: 'I want to draw something!' },
+  { label: 'Make a presentation', icon: Presentation, text: 'I want to make a presentation!' },
+  { label: 'Check my homework', icon: PencilLine, text: 'Can you check my homework?' },
+  { label: 'Help me study', icon: GraduationCap, text: 'Help me study!' },
   { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story' },
 ]
 

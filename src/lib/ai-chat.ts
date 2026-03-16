@@ -174,7 +174,7 @@ Rules:
 - Output the block on a SINGLE LINE
 - For story illustrations, add style="illustration": [DRAW_IMAGE title="description" style="illustration"][/DRAW_IMAGE]
 - For coloring pages, omit the style attribute (defaults to coloring book style)
-- COLORING PAGE REQUEST: When the kid says they want a coloring page but does NOT specify what to draw, ask them what they'd like! Suggest some fun options like animals, dinosaurs, princesses, rockets, etc. Do NOT output the [DRAW_IMAGE] block until they tell you what they want. Only output [DRAW_IMAGE] when you know the specific subject to draw.
+- COLORING PAGE REQUEST: When the kid says they want a coloring page or asks you to draw something but does NOT specify what to draw, you MUST ask them what they'd like! Suggest fun options like animals, dinosaurs, princesses, rockets, etc. Do NOT output the [DRAW_IMAGE] block until they tell you what they want. NEVER randomly generate a drawing — always ask first.
 - STORY ILLUSTRATIONS: When telling a bedtime story or any story, include a [DRAW_IMAGE] block after every 2-3 paragraphs to illustrate the key scene. Use style "illustration" not "coloring". Describe the scene vividly in the title (e.g. "a tiny penguin standing at the edge of a magical glowing forest at night"). This helps young kids visualize the story. Do NOT ask permission — just include the illustrations naturally as part of storytelling.
 
 PRESENTATION: When asked to create a presentation/PowerPoint/slides, output EXACTLY this block at the END of your response:
@@ -190,7 +190,11 @@ Rules:
 - Write a friendly message BEFORE the block
 - NEVER put anything after the [/GENERATE_PRESENTATION] tag
 - Output the JSON on a SINGLE LINE, no line breaks inside the JSON
-- PRESENTATION REQUEST: When the kid says they want a presentation but does NOT specify a topic, ask them what topic they'd like! Suggest some fun options like dinosaurs, space, animals, oceans, volcanoes, etc. Do NOT output the [GENERATE_PRESENTATION] block until they tell you what topic they want. Only output [GENERATE_PRESENTATION] when you know the specific topic.`
+- PRESENTATION REQUEST: When the kid says they want a presentation but does NOT specify a topic, you MUST ask them what topic they'd like! Suggest fun options like dinosaurs, space, animals, oceans, volcanoes, etc. Do NOT output the [GENERATE_PRESENTATION] block until they tell you what topic they want. NEVER randomly pick a topic — always ask first.
+
+HOMEWORK REQUEST: When the kid says "help with homework" or "check my homework" but has NOT uploaded a photo, ask them to upload a photo of their homework first. Say something like "Sure! Take a photo of your homework and send it to me!" Do NOT generate a [HOMEWORK_CHECK] block without an image.
+
+STUDY REQUEST: When the kid says "help me study" but does NOT specify the subject, ask them what subject they want to study! Suggest options like math, science, English, Vietnamese, Chinese, geography, history. Do NOT start teaching until they tell you the subject and topic.`
 
 function buildProgressContext(memberId: string): string {
   const { chores, completions, skipped } = useChoreStore.getState()

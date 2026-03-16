@@ -98,12 +98,14 @@ export const useLanguageStore = create<LanguageState>()(
 
         const questions: QuizQuestion[] = picked.map((wordIndex) => {
           const word = words[wordIndex]
-          const questionType: 'word-to-meaning' | 'meaning-to-word' =
-            Math.random() < 0.5 ? 'word-to-meaning' : 'meaning-to-word'
+          const rand = Math.random()
+          const questionType: 'word-to-meaning' | 'meaning-to-word' | 'listen' =
+            rand < 0.33 ? 'word-to-meaning' : rand < 0.66 ? 'meaning-to-word' : 'listen'
 
           // Correct answer and distractors depend on question type
-          const correctAnswer =
-            questionType === 'word-to-meaning' ? word.meaning : word.word
+          // 'listen' uses meanings as options (same as word-to-meaning)
+          const usesMeaning = questionType === 'word-to-meaning' || questionType === 'listen'
+          const correctAnswer = usesMeaning ? word.meaning : word.word
 
           // Gather wrong options from other words in the same topic
           const wrongIndices = words
@@ -111,7 +113,7 @@ export const useLanguageStore = create<LanguageState>()(
             .filter((i) => i !== wordIndex)
           shuffle(wrongIndices)
           const wrongOptions = wrongIndices.slice(0, 3).map((i) =>
-            questionType === 'word-to-meaning' ? words[i].meaning : words[i].word
+            usesMeaning ? words[i].meaning : words[i].word
           )
 
           const options = shuffle([correctAnswer, ...wrongOptions])

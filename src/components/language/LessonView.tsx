@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Volume2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTopic } from '@/lib/language-data'
@@ -30,6 +30,33 @@ export function LessonView({ onComplete }: Props) {
     ? currentQ.options.indexOf(currentQ.correctAnswer)
     : -1
 
+  // Language code for TTS
+  const langMap: Record<string, string> = {
+    ko: 'ko-KR',
+    ja: 'ja-JP',
+    zh: 'zh-CN',
+    vi: 'vi-VN',
+    en: 'en-US',
+  }
+  const lang = topicData ? langMap[topicData.language.code] ?? 'en-US' : 'en-US'
+
+  // Track the wordIndex to detect question changes for auto-speak
+  const prevWordIndexRef = useRef<number | null>(null)
+
+  // Auto-speak for 'listen' type questions when the question first appears
+  useEffect(() => {
+    if (
+      currentQ?.type === 'listen' &&
+      currentWord &&
+      currentQ.wordIndex !== prevWordIndexRef.current
+    ) {
+      prevWordIndexRef.current = currentQ.wordIndex
+      speak(currentWord.word, lang)
+    } else if (currentQ && currentQ.type !== 'listen') {
+      prevWordIndexRef.current = currentQ.wordIndex
+    }
+  }, [currentQ?.type, currentQ?.wordIndex, currentWord, lang])
+
   // Auto-advance after showing result
   useEffect(() => {
     if (!showResult) return
@@ -43,7 +70,7 @@ export function LessonView({ onComplete }: Props) {
       if (quizState?.isComplete) {
         onComplete()
       }
-    }, 1000)
+    }, 1800)
 
     return () => clearTimeout(timer)
   }, [showResult, quizState?.isComplete, onComplete])
@@ -59,23 +86,27 @@ export function LessonView({ onComplete }: Props) {
 
       // Update store
       answerQuestion(optionIndex)
+
+      // Speak the correct word after answering so kids learn the pronunciation
+      if (currentWord) {
+        speak(currentWord.word, lang)
+      }
     },
-    [showResult, selectedOption, currentQ, answerQuestion],
+    [showResult, selectedOption, correctOptionIndex, answerQuestion, currentWord, lang],
   )
 
   const handleSpeak = useCallback(() => {
-    if (!currentQ) return
-    // Determine language code for TTS
-    const langMap: Record<string, string> = {
-      ko: 'ko-KR',
-      ja: 'ja-JP',
-      zh: 'zh-CN',
-      vi: 'vi-VN',
-      en: 'en-US',
-    }
-    const lang = topicData ? langMap[topicData.language.code] ?? 'en-US' : 'en-US'
-    speak(currentWord?.word ?? '', lang)
-  }, [currentQ, topicData])
+    if (!currentWord) return
+    speak(currentWord.word, lang)
+  }, [currentWord, lang])
+
+  const handleSpeakOption = useCallback(
+    (optionText: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      speak(optionText, lang)
+    },
+    [lang],
+  )
 
   if (!quizState || !currentQ) {
     return (
@@ -116,7 +147,16 @@ export function LessonView({ onComplete }: Props) {
             <p className="text-base font-medium text-muted-foreground">
               What does this mean?
             </p>
-            <p className="text-5xl font-bold text-foreground">{currentWord?.word}</p>
+            <div className="flex items-center justify-center gap-3">
+              <p className="text-5xl font-bold text-foreground">{currentWord?.word}</p>
+              <button
+                onClick={handleSpeak}
+                className="p-3 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                aria-label="Listen to pronunciation"
+              >
+                <Volume2 size={20} />
+              </button>
+            </div>
             <p className="text-lg text-muted-foreground">
               ({currentWord?.romanization})
             </p>
@@ -175,6 +215,9 @@ export function LessonView({ onComplete }: Props) {
             }
           }
 
+          // For meaning-to-word, options are foreign words -- show speak icon
+          const isForeignWordOption = currentQ.type === 'meaning-to-word'
+
           return (
             <button
               key={i}
@@ -186,7 +229,20 @@ export function LessonView({ onComplete }: Props) {
                 optionStyle,
               )}
             >
-              {option}
+              <span className="flex items-center justify-center gap-2">
+                {option}
+                {isForeignWordOption && (
+                  <span
+                    role="button"
+                    tabIndex={-1}
+                    onClick={(e) => handleSpeakOption(option, e)}
+                    className="inline-flex items-center justify-center p-1 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                    aria-label={`Listen to ${option}`}
+                  >
+                    <Volume2 size={14} />
+                  </span>
+                )}
+              </span>
               {showResult && isCorrectAnswer && (
                 <span className="absolute -top-2 -right-2 text-2xl">
                   {isSelected ? '🎉' : '👈'}
@@ -204,7 +260,7 @@ export function LessonView({ onComplete }: Props) {
 
       {/* Result feedback */}
       {showResult && (
-        <div className="text-center">
+        <div className="space-y-2 text-center">
           {isCorrect ? (
             <p className="text-xl font-bold text-green-600">
               Correct! Great job! 🌟
@@ -213,6 +269,19 @@ export function LessonView({ onComplete }: Props) {
             <p className="text-xl font-bold text-red-600">
               Not quite! Keep trying! 💪
             </p>
+          )}
+          {currentWord && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg font-bold">{currentWord.word}</span>
+              <span className="text-sm text-muted-foreground">({currentWord.romanization})</span>
+              <button
+                onClick={handleSpeak}
+                className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                aria-label="Listen to pronunciation"
+              >
+                <Volume2 size={16} />
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -160,6 +160,15 @@ export default function App() {
     return unsubscribe
   }, [unlocked])
 
+  // Timeout: don't keep loading forever if Firebase is slow
+  useEffect(() => {
+    if (!syncing) return
+    const timeout = setTimeout(() => {
+      setSyncing(false)
+    }, 10000) // 10 second max
+    return () => clearTimeout(timeout)
+  }, [syncing])
+
   // When entering kid mode, default to chat view
   useEffect(() => {
     if (mode === 'kid') {

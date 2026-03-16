@@ -345,6 +345,7 @@ export function subscribeToAll(onData: (data: {
 
   // Initialize listeners asynchronously
   ;(async () => {
+    try {
     const db = await getFirebaseDb()
     if (cancelled) return
     const { collection, onSnapshot } = await getFirestoreMethods()
@@ -444,6 +445,12 @@ export function subscribeToAll(onData: (data: {
       notify()
     }, handleError('stickers'))
     unsubFns.push(unsub10)
+    } catch (err) {
+      console.error('[firestore] Failed to initialize:', err)
+      // Force notify with empty data so the app doesn't hang
+      initialLoad = TOTAL_COLLECTIONS
+      notify()
+    }
   })()
 
   return () => {

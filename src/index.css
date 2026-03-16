@@ -1,43 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #fafafa;
-  --color-foreground: #0a0a0a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-muted: #e8e8e8;
-  --color-muted-foreground: #404040;
-  --color-border: #bfbfbf;
-  --color-primary: #2563eb;
-  --color-primary-foreground: #ffffff;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-accent: #e8e8e8;
-  --color-accent-foreground: #0a0a0a;
-  --color-ring: #2563eb;
-  --radius: 0.5rem;
+  --color-background: #FEFBFF;
+  --color-foreground: #1C1B1D;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1C1B1D;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1C1B1D;
+  --color-primary: #6442D6;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #DCDAF5;
+  --color-secondary-foreground: #1E0060;
+  --color-muted: #F2ECF0;
+  --color-muted-foreground: #787579;
+  --color-accent: #F2ECF0;
+  --color-accent-foreground: #1C1B1D;
+  --color-destructive: #FF6240;
+  --color-border: #E6E1E3;
+  --color-input: #E6E1E3;
+  --color-ring: #6442D6;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-card: #09090b;
-  --color-card-foreground: #fafafa;
-  --color-popover: #09090b;
-  --color-popover-foreground: #fafafa;
-  --color-primary: #fafafa;
-  --color-primary-foreground: #18181b;
-  --color-secondary: #27272a;
-  --color-secondary-foreground: #fafafa;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #27272a;
-  --color-accent-foreground: #fafafa;
-  --color-destructive: #7f1d1d;
-  --color-destructive-foreground: #fafafa;
-  --color-border: #27272a;
-  --color-input: #27272a;
-  --color-ring: #d4d4d8;
+  --color-background: #1C1B1D;
+  --color-foreground: #E6E1E5;
+  --color-card: #2B2930;
+  --color-card-foreground: #E6E1E5;
+  --color-popover: #2B2930;
+  --color-popover-foreground: #E6E1E5;
+  --color-primary: #CBBEFF;
+  --color-primary-foreground: #340098;
+  --color-secondary: #454559;
+  --color-secondary-foreground: #C8C3DC;
+  --color-muted: #36343B;
+  --color-muted-foreground: #CAC4D0;
+  --color-accent: #36343B;
+  --color-accent-foreground: #E6E1E5;
+  --color-destructive: #FFB4AB;
+  --color-border: #49454F;
+  --color-input: #49454F;
+  --color-ring: #CBBEFF;
 }
 
 body {
@@ -95,4 +98,8 @@ html {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+.gemini-gradient {
+  background: linear-gradient(135deg, #4285F4, #9B72CB, #D96570);
 }

@@ -63,14 +63,14 @@ export interface KidStats {
 }
 
 export const MEMBER_COLORS = [
-  { bg: 'bg-blue-200', text: 'text-blue-900', border: 'border-blue-400', dot: 'bg-blue-500', accent: 'border-l-blue-500', darkBg: 'dark:bg-blue-900/30', darkText: 'dark:text-blue-200' },
-  { bg: 'bg-green-200', text: 'text-green-900', border: 'border-green-400', dot: 'bg-green-500', accent: 'border-l-green-500', darkBg: 'dark:bg-green-900/30', darkText: 'dark:text-green-200' },
-  { bg: 'bg-orange-200', text: 'text-orange-900', border: 'border-orange-400', dot: 'bg-orange-500', accent: 'border-l-orange-500', darkBg: 'dark:bg-orange-900/30', darkText: 'dark:text-orange-200' },
-  { bg: 'bg-purple-200', text: 'text-purple-900', border: 'border-purple-400', dot: 'bg-purple-500', accent: 'border-l-purple-500', darkBg: 'dark:bg-purple-900/30', darkText: 'dark:text-purple-200' },
-  { bg: 'bg-pink-200', text: 'text-pink-900', border: 'border-pink-400', dot: 'bg-pink-500', accent: 'border-l-pink-500', darkBg: 'dark:bg-pink-900/30', darkText: 'dark:text-pink-200' },
-  { bg: 'bg-teal-200', text: 'text-teal-900', border: 'border-teal-400', dot: 'bg-teal-500', accent: 'border-l-teal-500', darkBg: 'dark:bg-teal-900/30', darkText: 'dark:text-teal-200' },
-  { bg: 'bg-red-200', text: 'text-red-900', border: 'border-red-400', dot: 'bg-red-500', accent: 'border-l-red-500', darkBg: 'dark:bg-red-900/30', darkText: 'dark:text-red-200' },
-  { bg: 'bg-amber-200', text: 'text-amber-900', border: 'border-amber-400', dot: 'bg-amber-500', accent: 'border-l-amber-500', darkBg: 'dark:bg-amber-900/30', darkText: 'dark:text-amber-200' },
+  { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500', accent: 'border-l-blue-500', darkBg: 'dark:bg-blue-900/25', darkText: 'dark:text-blue-300' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-800', dot: 'bg-emerald-500', accent: 'border-l-emerald-500', darkBg: 'dark:bg-emerald-900/25', darkText: 'dark:text-emerald-300' },
+  { bg: 'bg-orange-100', text: 'text-orange-800', dot: 'bg-orange-500', accent: 'border-l-orange-500', darkBg: 'dark:bg-orange-900/25', darkText: 'dark:text-orange-300' },
+  { bg: 'bg-violet-100', text: 'text-violet-800', dot: 'bg-violet-500', accent: 'border-l-violet-500', darkBg: 'dark:bg-violet-900/25', darkText: 'dark:text-violet-300' },
+  { bg: 'bg-pink-100', text: 'text-pink-800', dot: 'bg-pink-500', accent: 'border-l-pink-500', darkBg: 'dark:bg-pink-900/25', darkText: 'dark:text-pink-300' },
+  { bg: 'bg-teal-100', text: 'text-teal-800', dot: 'bg-teal-500', accent: 'border-l-teal-500', darkBg: 'dark:bg-teal-900/25', darkText: 'dark:text-teal-300' },
+  { bg: 'bg-rose-100', text: 'text-rose-800', dot: 'bg-rose-500', accent: 'border-l-rose-500', darkBg: 'dark:bg-rose-900/25', darkText: 'dark:text-rose-300' },
+  { bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-500', accent: 'border-l-amber-500', darkBg: 'dark:bg-amber-900/25', darkText: 'dark:text-amber-300' },
 ] as const
 
 export type MemberColor = typeof MEMBER_COLORS[number]

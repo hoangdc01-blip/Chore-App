@@ -181,7 +181,7 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
                       <span key={i} className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary' : 'bg-muted-foreground/50'}`} />
                     ))}
                     {dayOccs.length > 3 && (
-                      <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary/120' : 'bg-muted-foreground/30'}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
                     )}
                   </div>
                 )}

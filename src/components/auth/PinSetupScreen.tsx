@@ -80,7 +80,7 @@ export default function PinSetupScreen() {
       <div className="flex flex-col items-center w-full max-w-[280px] px-4">
         {/* App branding */}
         <h1 className="text-2xl font-extrabold tracking-tight text-neutral-800 dark:text-neutral-100 mb-1">
-          Family Chores
+          Váu Váu AI
         </h1>
         <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-10">
           {step === 'create' ? 'Choose a 4-digit PIN' : 'Enter the same PIN again'}
@@ -120,7 +120,7 @@ export default function PinSetupScreen() {
                 text-xl font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
                 active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
                 transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-                hover:bg-neutral-50 dark:hover:bg-neutral-750"
+                hover:bg-neutral-50 dark:hover:bg-neutral-700"
             >
               {n}
             </button>
@@ -134,7 +134,7 @@ export default function PinSetupScreen() {
               text-xl font-semibold shadow-sm border border-neutral-200 dark:border-neutral-700
               active:scale-90 active:bg-neutral-100 dark:active:bg-neutral-700
               transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-              hover:bg-neutral-50 dark:hover:bg-neutral-750"
+              hover:bg-neutral-50 dark:hover:bg-neutral-700"
           >
             0
           </button>

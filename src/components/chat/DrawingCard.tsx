@@ -16,7 +16,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
     if (!isGeneratingImage && !hasImage) return null
     return (
       <div className="mb-3 ml-10">
-        <div className="bg-white rounded-xl border border-border overflow-hidden inline-block max-w-[350px]">
+        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-border overflow-hidden inline-block max-w-[350px]">
           {isGeneratingImage ? (
             <div className="flex items-center justify-center p-8">
               <div className="w-8 h-8 rounded-full border-3 border-purple-200 border-t-purple-500 animate-spin" />
@@ -83,7 +83,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
   return (
     <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
       <div
-        className="bg-white rounded-lg border border-border p-2 mb-3 flex items-center justify-center"
+        className="bg-white dark:bg-neutral-900 rounded-lg border border-border p-2 mb-3 flex items-center justify-center"
         style={{ minHeight: '200px' }}
       >
         {isGeneratingImage ? (

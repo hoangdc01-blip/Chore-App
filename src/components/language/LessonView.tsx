@@ -22,6 +22,14 @@ export function LessonView({ onComplete }: Props) {
   const currentIndex = quizState?.currentIndex ?? 0
   const progressPct = total > 0 ? Math.round(((currentIndex) / total) * 100) : 0
 
+  // Derive display data from the topic words using wordIndex
+  const currentWord = (currentQ && topicData)
+    ? topicData.topic.words[currentQ.wordIndex]
+    : null
+  const correctOptionIndex = currentQ
+    ? currentQ.options.indexOf(currentQ.correctAnswer)
+    : -1
+
   // Auto-advance after showing result
   useEffect(() => {
     if (!showResult) return
@@ -45,7 +53,7 @@ export function LessonView({ onComplete }: Props) {
       if (showResult || selectedOption !== null) return
 
       setSelectedOption(optionIndex)
-      const correct = optionIndex === currentQ?.correctIndex
+      const correct = optionIndex === correctOptionIndex
       setIsCorrect(correct)
       setShowResult(true)
 
@@ -66,7 +74,7 @@ export function LessonView({ onComplete }: Props) {
       en: 'en-US',
     }
     const lang = topicData ? langMap[topicData.language.code] ?? 'en-US' : 'en-US'
-    speak(currentQ.word, lang)
+    speak(currentWord?.word ?? '', lang)
   }, [currentQ, topicData])
 
   if (!quizState || !currentQ) {
@@ -81,8 +89,8 @@ export function LessonView({ onComplete }: Props) {
     <div
       className={cn(
         'mx-auto max-w-lg space-y-6 rounded-3xl p-6 transition-colors duration-300',
-        showResult && isCorrect && 'bg-green-50',
-        showResult && !isCorrect && 'bg-red-50',
+        showResult && isCorrect && 'bg-green-50 dark:bg-green-900/20',
+        showResult && !isCorrect && 'bg-red-50 dark:bg-red-900/20',
       )}
     >
       {/* Progress bar */}
@@ -108,9 +116,9 @@ export function LessonView({ onComplete }: Props) {
             <p className="text-base font-medium text-muted-foreground">
               What does this mean?
             </p>
-            <p className="text-5xl font-bold text-foreground">{currentQ.word}</p>
+            <p className="text-5xl font-bold text-foreground">{currentWord?.word}</p>
             <p className="text-lg text-muted-foreground">
-              ({currentQ.romanization})
+              ({currentWord?.romanization})
             </p>
           </>
         )}
@@ -121,9 +129,9 @@ export function LessonView({ onComplete }: Props) {
               How do you say this?
             </p>
             <div className="flex items-center justify-center gap-3">
-              <span className="text-5xl">{currentQ.emoji}</span>
+              <span className="text-5xl">{currentWord?.emoji}</span>
               <p className="text-3xl font-bold text-foreground">
-                {currentQ.meaning}
+                {currentWord?.meaning}
               </p>
             </div>
           </>
@@ -151,17 +159,17 @@ export function LessonView({ onComplete }: Props) {
       <div className="grid grid-cols-2 gap-3">
         {currentQ.options.map((option, i) => {
           const isSelected = selectedOption === i
-          const isCorrectAnswer = i === currentQ.correctIndex
+          const isCorrectAnswer = i === correctOptionIndex
 
           let optionStyle = 'border-border bg-card hover:border-primary hover:bg-primary/5'
 
           if (showResult) {
             if (isCorrectAnswer) {
               optionStyle =
-                'border-green-500 bg-green-100 text-green-900 ring-2 ring-green-400'
+                'border-green-500 bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-100 ring-2 ring-green-400'
             } else if (isSelected && !isCorrectAnswer) {
               optionStyle =
-                'border-red-500 bg-red-100 text-red-900 ring-2 ring-red-400'
+                'border-red-500 bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100 ring-2 ring-red-400'
             } else {
               optionStyle = 'border-border bg-card opacity-50'
             }

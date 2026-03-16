@@ -194,7 +194,6 @@ export default function BuddyChat() {
     presentations,
     generatingPresentationIndex,
     dismissPresentation,
-    storyProgress,
     autoReadAloud,
     toggleAutoReadAloud,
   } = useChatStore()
@@ -207,8 +206,7 @@ export default function BuddyChat() {
   // In kid mode, auto-select the active kid
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
   const buddyName = BUDDY_CHARACTER.name
-  const storyStep = effectiveMemberId ? (storyProgress[effectiveMemberId] ?? 0) : 0
-  const storyChapter = Math.floor(storyStep / 5) + 1
+  // storyStep/storyChapter can be derived from useChatStore().storyProgress if needed
 
   // Sync chat store member for kid mode
   useEffect(() => {

@@ -10,6 +10,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'date-fns': ['date-fns'],
+          'zustand': ['zustand'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/sd-api': {

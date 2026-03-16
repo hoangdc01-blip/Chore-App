@@ -226,13 +226,15 @@ export async function changePin(currentPin: string, newPin: string): Promise<boo
 export async function signInAfterPin(): Promise<void> {
   if (!useFirebase) return
   const { signInAnonymously } = await import('firebase/auth')
-  const { auth } = await import('./firebase')
+  const { getFirebaseAuth } = await import('./firebase')
+  const auth = await getFirebaseAuth()
   await signInAnonymously(auth)
 }
 
 export async function lockApp(): Promise<void> {
   if (!useFirebase) return
   const { signOut } = await import('firebase/auth')
-  const { auth } = await import('./firebase')
+  const { getFirebaseAuth } = await import('./firebase')
+  const auth = await getFirebaseAuth()
   await signOut(auth)
 }

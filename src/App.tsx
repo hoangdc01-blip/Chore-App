@@ -2,20 +2,21 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import type { CalendarViewMode, AppView } from './types'
 import Header from './components/layout/Header'
 import AppSidebar from './components/layout/AppSidebar'
-import CalendarView from './components/calendar/CalendarView'
-import Dashboard from './components/dashboard/Dashboard'
-import RewardShop from './components/rewards/RewardShop'
-import MyCoupons from './components/rewards/MyCoupons'
-import GameMenu from './games/GameMenu'
-import MembersView from './components/members/MembersView'
-import LanguageView from './components/language/LanguageView'
-import ClassCalendarView from './components/classes/ClassCalendarView'
 import Toaster from './components/ui/Toaster'
-const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
-const ChatPage = lazy(() => import('./components/chat/ChatPage'))
 import BadgeCelebration from './components/achievements/BadgeCelebration'
 import PinSetupScreen from './components/auth/PinSetupScreen'
 import ProfileSelectScreen from './components/auth/ProfileSelectScreen'
+
+const CalendarView = lazy(() => import('./components/calendar/CalendarView'))
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'))
+const RewardShop = lazy(() => import('./components/rewards/RewardShop'))
+const MyCoupons = lazy(() => import('./components/rewards/MyCoupons'))
+const GameMenu = lazy(() => import('./games/GameMenu'))
+const MembersView = lazy(() => import('./components/members/MembersView'))
+const LanguageView = lazy(() => import('./components/language/LanguageView'))
+const ClassCalendarView = lazy(() => import('./components/classes/ClassCalendarView'))
+const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
+const ChatPage = lazy(() => import('./components/chat/ChatPage'))
 const SetupWizard = lazy(() => import('./components/setup/SetupWizard'))
 import { useFirebase } from './lib/firebase-flag'
 import { subscribeToAll, updateMemberDoc, saveEarnedBadges, setClaimedBonus } from './lib/firestore-sync'
@@ -250,27 +251,27 @@ export default function App() {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        {activeView === 'chat' ? (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>}>
+          {activeView === 'chat' ? (
             <ChatPage />
-          </Suspense>
-        ) : activeView === 'calendar' ? (
-          <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
-        ) : activeView === 'classes' ? (
-          <ClassCalendarView />
-        ) : activeView === 'dashboard' ? (
-          <Dashboard />
-        ) : activeView === 'language' ? (
-          <LanguageView />
-        ) : activeView === 'games' ? (
-          <GameMenu onNavigate={setActiveView} />
-        ) : activeView === 'coupons' ? (
-          <MyCoupons />
-        ) : activeView === 'members' ? (
-          <MembersView />
-        ) : (
-          <RewardShop />
-        )}
+          ) : activeView === 'calendar' ? (
+            <CalendarView viewMode={viewMode} searchQuery={searchQuery} hiddenMemberIds={hiddenMemberIds} onToggleMember={toggleMemberFilter} />
+          ) : activeView === 'classes' ? (
+            <ClassCalendarView />
+          ) : activeView === 'dashboard' ? (
+            <Dashboard />
+          ) : activeView === 'language' ? (
+            <LanguageView />
+          ) : activeView === 'games' ? (
+            <GameMenu onNavigate={setActiveView} />
+          ) : activeView === 'coupons' ? (
+            <MyCoupons />
+          ) : activeView === 'members' ? (
+            <MembersView />
+          ) : (
+            <RewardShop />
+          )}
+        </Suspense>
       </div>
       <Toaster />
       {/* Floating BuddyChat on non-chat views */}

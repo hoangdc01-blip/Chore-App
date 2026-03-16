@@ -96,7 +96,7 @@ async function speakWithKokoro(text: string): Promise<boolean> {
 // ─── Language detection & text cleaning ───────────────────────────────────────
 
 /** Detect language from text content */
-function detectTTSLang(text: string): string {
+export function detectTTSLang(text: string): string {
   // Count Vietnamese vs English characters to determine dominant language
   const vietnamesePattern = /[àáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]/gi
   const vietnameseMatches = text.match(vietnamesePattern)

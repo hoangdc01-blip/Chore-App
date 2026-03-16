@@ -1,4 +1,4 @@
-import PptxGenJS from 'pptxgenjs'
+import type PptxGenJS from 'pptxgenjs'
 import type { PresentationAction, PresentationSlide } from '../types'
 import { generateImage } from './image-gen'
 import { generateSlideContentDirect } from './ai-chat'
@@ -76,7 +76,8 @@ export async function generatePptx(
   const slideImages = images.slice(1)
 
   // Step 3: Build the PPTX
-  const prs = new PptxGenJS()
+  const PptxGenJSModule = (await import('pptxgenjs')).default
+  const prs = new PptxGenJSModule()
   prs.layout = 'LAYOUT_16x9'
 
   const colors = THEMES.jungle
@@ -109,7 +110,7 @@ export async function generatePptx(
       shadow: { type: 'outer', blur: 6, offset: 3, color: '000000', opacity: 0.4 },
     })
   }
-  titleSlide.addText('Made with AI Buddy \u{1F427}', {
+  titleSlide.addText('Made with AI Váu Váu \u{1F427}', {
     x: 0.5, y: 4.2, w: 9, h: 0.5,
     fontSize: 16, color: 'C8E6C9', align: 'center', fontFace: 'Arial',
   })

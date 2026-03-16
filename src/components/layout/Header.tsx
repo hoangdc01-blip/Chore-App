@@ -29,7 +29,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
   const activeKidId = useAppStore((s) => s.activeKidId)
   const members = useMemberStore((s) => s.members)
   const isKidMode = mode === 'kid'
-  const kidName = isKidMode ? members.find((m) => m.id === activeKidId)?.name : null
+  // kidName available for future use: members.find((m) => m.id === activeKidId)?.name
   const kidPoints = isKidMode ? members.find((m) => m.id === activeKidId)?.points ?? 0 : 0
 
   const viewTitle = VIEW_TITLES[activeView] || ''

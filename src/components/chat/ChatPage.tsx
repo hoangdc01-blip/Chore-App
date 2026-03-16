@@ -193,7 +193,6 @@ export default function ChatPage() {
     presentations,
     generatingPresentationIndex,
     dismissPresentation,
-    storyProgress,
     autoReadAloud,
     toggleAutoReadAloud,
   } = useChatStore()
@@ -205,8 +204,7 @@ export default function ChatPage() {
 
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
   const buddyName = BUDDY_CHARACTER.name
-  const storyStep = effectiveMemberId ? (storyProgress[effectiveMemberId] ?? 0) : 0
-  const storyChapter = Math.floor(storyStep / 5) + 1
+  // storyStep/storyChapter can be derived from useChatStore().storyProgress if needed
 
   // Sync chat store member
   useEffect(() => {

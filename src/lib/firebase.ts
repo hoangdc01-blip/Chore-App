@@ -1,8 +1,5 @@
 import { useFirebase } from './firebase-flag'
 import { getEnv } from './env'
-import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: getEnv('VITE_FIREBASE_API_KEY'),
@@ -14,14 +11,37 @@ const firebaseConfig = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+let app: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let auth: any = null
 
-if (useFirebase) {
-  const app = initializeApp(firebaseConfig)
-  db = getFirestore(app)
-  auth = getAuth(app)
+async function ensureApp() {
+  if (app) return app
+  const { initializeApp } = await import('firebase/app')
+  app = initializeApp(firebaseConfig)
+  return app
 }
 
+export async function getFirebaseDb() {
+  if (!useFirebase) return null
+  if (db) return db
+  const firebaseApp = await ensureApp()
+  const { getFirestore } = await import('firebase/firestore')
+  db = getFirestore(firebaseApp)
+  return db
+}
+
+export async function getFirebaseAuth() {
+  if (!useFirebase) return null
+  if (auth) return auth
+  await ensureApp()
+  const { getAuth } = await import('firebase/auth')
+  auth = getAuth(app)
+  return auth
+}
+
+// Legacy synchronous exports for backward compatibility during migration
+// These will be null until getFirebaseDb()/getFirebaseAuth() are called
 export { db, auth }

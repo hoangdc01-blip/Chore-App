@@ -35,7 +35,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
   const viewTitle = VIEW_TITLES[activeView] || ''
 
   return (
-    <header className="safe-top border-b border-border px-3 xl:px-6 py-2 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
+    <header className="safe-top border-b border-border/50 px-3 xl:px-6 py-2 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
       <div className="flex items-center gap-2" role="navigation" aria-label="Main navigation">
         {/* Left: hamburger + branding */}
         <div className="flex items-center gap-2 shrink-0">
@@ -48,7 +48,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
           </button>
           {isKidMode ? (
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 Váu Váu
               </h1>
               <span className="flex items-center gap-0.5 text-sm font-bold text-amber-600">
@@ -57,7 +57,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
               </span>
             </div>
           ) : (
-            <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
               Váu Váu
             </h1>
           )}

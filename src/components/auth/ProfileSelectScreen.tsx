@@ -346,9 +346,9 @@ export default function ProfileSelectScreen() {
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-200
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ease-out
                   ${i < pin.length
-                    ? 'bg-foreground scale-[1.2]'
+                    ? 'bg-foreground scale-[1.3] animate-pulse'
                     : 'bg-muted-foreground/40'}`}
               />
             ))}
@@ -370,11 +370,11 @@ export default function ProfileSelectScreen() {
                 key={n}
                 onClick={() => addDigit(String(n))}
                 disabled={isLockedOut || checking}
-                className="aspect-square rounded-2xl text-xl font-normal transition-all duration-100
+                className="w-16 h-16 rounded-full text-xl font-normal transition-all duration-100
                   active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
                   bg-card text-foreground
                   border border-border
-                  hover:bg-muted"
+                  hover:bg-muted flex items-center justify-center mx-auto"
               >
                 {n}
               </button>
@@ -383,18 +383,18 @@ export default function ProfileSelectScreen() {
             <button
               onClick={() => addDigit('0')}
               disabled={isLockedOut || checking}
-              className="aspect-square rounded-2xl text-xl font-normal transition-all duration-100
+              className="w-16 h-16 rounded-full text-xl font-normal transition-all duration-100
                 active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
                 bg-card text-foreground
                 border border-border
-                hover:bg-muted"
+                hover:bg-muted flex items-center justify-center mx-auto"
             >
               0
             </button>
             <button
               onClick={removeDigit}
               disabled={isLockedOut || checking || pin.length === 0}
-              className="aspect-square rounded-2xl flex items-center justify-center
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto
                 transition-all duration-100 active:scale-90 disabled:opacity-20 disabled:cursor-not-allowed
                 text-muted-foreground hover:text-foreground"
             >
@@ -424,8 +424,8 @@ export default function ProfileSelectScreen() {
         {/* Parent profile */}
         <button
           onClick={() => setShowPinPad(true)}
-          className="animate-fade-in-up group relative flex flex-col items-center gap-4 w-[140px] py-6
-            rounded-2xl transition-all duration-300 ease-out
+          className="animate-fade-in-up group relative flex flex-col items-center gap-4 w-[140px] p-6
+            rounded-3xl transition-all duration-300 ease-out
             active:scale-[0.97]
             bg-card border border-border
             hover:bg-muted hover:border-muted-foreground/30 hover:scale-[1.03]"
@@ -460,8 +460,8 @@ export default function ProfileSelectScreen() {
               key={member.id}
               onClick={() => handleKidClick(member)}
               aria-label={`Log in as ${member.name}`}
-              className="animate-fade-in-up group flex flex-col items-center gap-3 py-5
-                rounded-2xl transition-all duration-300 ease-out
+              className="animate-fade-in-up group flex flex-col items-center gap-3 p-6
+                rounded-3xl transition-all duration-300 ease-out
                 active:scale-[0.97]
                 bg-card border border-border
                 hover:bg-muted hover:border-muted-foreground/30 hover:scale-[1.03]"

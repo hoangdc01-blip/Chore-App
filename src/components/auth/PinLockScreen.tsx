@@ -112,9 +112,9 @@ export default function PinLockScreen() {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ease-out ${
                 i < pin.length
-                  ? 'bg-foreground scale-110'
+                  ? 'bg-foreground scale-125 animate-pulse'
                   : 'border-2 border-muted-foreground/40 bg-transparent'
               }`}
             />
@@ -139,11 +139,11 @@ export default function PinLockScreen() {
               key={n}
               onClick={() => addDigit(String(n))}
               disabled={isLockedOut || checking}
-              className="aspect-square rounded-full bg-card text-foreground
+              className="w-16 h-16 rounded-full bg-card text-foreground
                 text-xl font-semibold shadow-sm border border-border
                 active:scale-90 active:bg-muted
                 transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-                hover:bg-muted"
+                hover:bg-muted flex items-center justify-center mx-auto"
             >
               {n}
             </button>
@@ -154,18 +154,18 @@ export default function PinLockScreen() {
           <button
             onClick={() => addDigit('0')}
             disabled={isLockedOut || checking}
-            className="aspect-square rounded-full bg-card text-foreground
+            className="w-16 h-16 rounded-full bg-card text-foreground
               text-xl font-semibold shadow-sm border border-border
               active:scale-90 active:bg-muted
               transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed
-              hover:bg-muted"
+              hover:bg-muted flex items-center justify-center mx-auto"
           >
             0
           </button>
           <button
             onClick={removeDigit}
             disabled={isLockedOut || checking || pin.length === 0}
-            className="aspect-square rounded-full flex items-center justify-center
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto
               text-muted-foreground
               active:scale-90 active:text-foreground
               transition-all duration-100 disabled:opacity-30 disabled:cursor-not-allowed

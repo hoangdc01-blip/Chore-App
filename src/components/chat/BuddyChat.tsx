@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText, Palette, Presentation, PencilLine, BookOpen, GraduationCap } from 'lucide-react'
+import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText, Palette, Presentation, PencilLine, BookOpen, GraduationCap, Mic, MicOff } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -121,6 +121,8 @@ function TypingIndicator() {
   )
 }
 
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
 /** Extract the first image File from a DataTransfer (drag/paste), or null */
 function getImageFile(dt: DataTransfer): File | null {
   for (let i = 0; i < dt.files.length; i++) {
@@ -145,10 +147,12 @@ export default function BuddyChat() {
   const [isDragging, setIsDragging] = useState(false)
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
   const dragCounterRef = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const recognitionRef = useRef<any>(null)
 
   const {
     messages,
@@ -350,6 +354,51 @@ export default function BuddyChat() {
     e.target.value = ''
   }, [processImageFile, processDocFile])
 
+  // Voice input
+  const handleVoiceInput = useCallback(() => {
+    if (!SpeechRecognition) return
+
+    if (isRecording) {
+      recognitionRef.current?.stop()
+      setIsRecording(false)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognitionRef.current = recognition
+    recognition.lang = 'en-US'
+    recognition.interimResults = true
+    recognition.continuous = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setIsRecording(true)
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = ''
+      let interimTranscript = ''
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript
+        } else {
+          interimTranscript += event.results[i][0].transcript
+        }
+      }
+      setInput(finalTranscript || interimTranscript)
+    }
+
+    recognition.onerror = () => setIsRecording(false)
+    recognition.onend = () => setIsRecording(false)
+
+    recognition.start()
+  }, [isRecording])
+
+  // Cleanup speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort()
+    }
+  }, [])
+
   // ── Send ──
 
   const handleSend = useCallback(async () => {
@@ -506,6 +555,25 @@ export default function BuddyChat() {
                 ? `I can help ${members.find((m) => m.id === effectiveMemberId)?.name} with chores, fun facts, and more!`
                 : 'Pick a kid above, then ask me anything!'}
             </p>
+            {isKidMode && SpeechRecognition && (
+              <div className="flex flex-col items-center gap-2 mt-3">
+                <button
+                  onClick={handleVoiceInput}
+                  className={cn(
+                    'w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all',
+                    isRecording
+                      ? 'bg-red-500 text-white animate-pulse scale-110'
+                      : 'bg-primary text-primary-foreground hover:scale-105'
+                  )}
+                  aria-label={isRecording ? 'Stop recording' : 'Tap to speak'}
+                >
+                  {isRecording ? <MicOff size={28} /> : <Mic size={28} />}
+                </button>
+                <p className="text-sm text-muted-foreground">
+                  {isRecording ? 'Listening...' : 'Tap to talk'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -717,6 +785,22 @@ export default function BuddyChat() {
               <ImagePlus size={16} />
             </button>
           </>
+        )}
+        {effectiveMemberId && SpeechRecognition && (
+          <button
+            onClick={handleVoiceInput}
+            disabled={isLoading}
+            className={cn(
+              'rounded-full px-3 py-2.5 font-bold transition-all flex items-center justify-center disabled:opacity-40',
+              isRecording
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'bg-muted border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent'
+            )}
+            aria-label={isRecording ? 'Stop recording' : 'Voice input'}
+            title={isRecording ? 'Tap to stop' : 'Tap to speak'}
+          >
+            {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
         )}
         <button
           onClick={handleSend}

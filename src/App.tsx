@@ -33,6 +33,7 @@ import { computeKidStats, getAllTimeRange } from './lib/stats'
 import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
 import OfflineBanner from './components/layout/OfflineBanner'
+import { getCurrentLocation } from './lib/location'
 
 function LoadingScreen({ text }: { text?: string }) {
   return (
@@ -175,6 +176,11 @@ export default function App() {
       setActiveView('chat')
     }
   }, [mode])
+
+  // Fetch user location for AI context (silent fail if denied)
+  useEffect(() => {
+    getCurrentLocation().catch(() => {})
+  }, [])
 
   const toggleMemberFilter = (memberId: string) => {
     setHiddenMemberIds((prev) => {

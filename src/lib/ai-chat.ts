@@ -9,6 +9,7 @@ import { useRoutineStore } from '../store/routine-store'
 import { useQuestStore } from '../store/quest-store'
 import { useAchievementStore } from '../store/achievement-store'
 import { computeKidStats, computeStreak } from './stats'
+import { getCachedLocation } from './location'
 import { getLevel, STICKER_CATEGORIES } from '../types'
 
 export interface ChatMessage {
@@ -105,6 +106,7 @@ ROTATION: In parent mode, when asked about chore rotation or fairness, use FAIRN
 FUN FACTS: If this is the kid's first message today (FIRST_MESSAGE_TODAY: true), start with a fun fact about animals, space, or dinosaurs appropriate for ages 4-7. Keep it to 1 sentence. Then respond to their question.
 
 You help with: 1) Daily chores 2) Fun facts 3) Homework (math, science, geography, history, Vietnamese, English, Chinese)
+You can answer questions about local weather, nearby places, and location-based suggestions when the user's location is available.
 Never discuss anything inappropriate or scary. Be kind, patient, fun.`
 
 const CHORE_CREATION_PROMPT = `
@@ -767,7 +769,11 @@ export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyConte
   if (hasImages) return buildVisionSystemPrompt()
   const now = format(new Date(), 'EEEE, MMMM d, yyyy h:mm a')
   const context = memberId ? buildChoreContext(memberId) : buildGeneralContext()
-  let prompt = BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + context + buildMemberDirectory() + buildChoresSummary()
+  const location = getCachedLocation()
+  const locationStr = location
+    ? `\nUser's location: ${location.display} (lat: ${location.latitude.toFixed(4)}, lon: ${location.longitude.toFixed(4)}). You can use this to answer questions about local weather, nearby places, time zone, etc.`
+    : ''
+  let prompt = BASE_SYSTEM_PROMPT + CHORE_CREATION_PROMPT + `\n\nCurrent date and time: ${now}` + locationStr + context + buildMemberDirectory() + buildChoresSummary()
 
   if (memberId) {
     prompt += buildRoutineContext(memberId)

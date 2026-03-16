@@ -414,7 +414,7 @@ export default function ProfileSelectScreen() {
         {/* Header */}
         <div className="animate-fade-in-up text-center mb-14">
           <h1 className="text-[28px] tracking-tight mb-2 font-light text-neutral-900 dark:text-neutral-100">
-            Váu Váu AI &#x1F427;
+            Váu Váu &#x1F427;
           </h1>
           <p className="text-[14px] tracking-wide text-neutral-400 dark:text-neutral-500">
             Your family's AI assistant
@@ -459,6 +459,7 @@ export default function ProfileSelectScreen() {
             <button
               key={member.id}
               onClick={() => handleKidClick(member)}
+              aria-label={`Log in as ${member.name}`}
               className="animate-fade-in-up group flex flex-col items-center gap-3 py-5
                 rounded-2xl transition-all duration-300 ease-out
                 active:scale-[0.97]

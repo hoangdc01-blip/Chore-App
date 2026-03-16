@@ -49,7 +49,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
           {isKidMode ? (
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Váu Váu AI
+                Váu Váu
               </h1>
               <span className="flex items-center gap-0.5 text-sm font-bold text-amber-600">
                 <Star size={14} fill="currentColor" />
@@ -58,7 +58,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
             </div>
           ) : (
             <h1 className="text-lg font-extrabold whitespace-nowrap bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Váu Váu AI
+              Váu Váu
             </h1>
           )}
         </div>

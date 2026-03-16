@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import type { CalendarViewMode, AppView } from './types'
 import Header from './components/layout/Header'
 import AppSidebar from './components/layout/AppSidebar'
-import Sidebar from './components/layout/Sidebar'
 import CalendarView from './components/calendar/CalendarView'
 import Dashboard from './components/dashboard/Dashboard'
 import RewardShop from './components/rewards/RewardShop'
@@ -33,13 +32,25 @@ import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
 import OfflineBanner from './components/layout/OfflineBanner'
 
+function LoadingScreen({ text }: { text?: string }) {
+  return (
+    <div className="h-dvh flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
+      <div className="flex gap-1">
+        <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="h-3 w-3 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+      {text && <span className="text-sm">{text}</span>}
+    </div>
+  )
+}
+
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('chat')
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
   const [searchQuery, setSearchQuery] = useState('')
   const [hiddenMemberIds, setHiddenMemberIds] = useState<Set<string>>(new Set())
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [oldSidebarOpen, setOldSidebarOpen] = useState(false)
   const [syncing, setSyncing] = useState(true)
 
   const unlocked = useAuthStore((s) => s.unlocked)
@@ -165,15 +176,7 @@ export default function App() {
 
   // Loading: checking if PIN exists
   if (pinExists === null) {
-    return (
-      <div className="h-dvh flex items-center justify-center bg-background">
-        <div className="flex gap-1">
-          <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="h-3 w-3 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   // No PIN set yet — show setup (auto-enters parent mode after)
@@ -185,16 +188,7 @@ export default function App() {
   if (mode === 'select') {
     // If unlocked (PIN exists and auth ready), wait for sync before deciding
     if (unlocked && syncing) {
-      return (
-        <div className="h-dvh flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
-          <div className="flex gap-1">
-            <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="h-3 w-3 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-          <span className="text-sm">Loading...</span>
-        </div>
-      )
+      return <LoadingScreen text="Loading..." />
     }
 
     // No members and not initialized — show setup wizard
@@ -221,16 +215,7 @@ export default function App() {
 
   // Syncing data — show loading (only after profile is selected)
   if (syncing) {
-    return (
-      <div className="h-dvh flex flex-col items-center justify-center bg-background text-muted-foreground gap-3">
-        <div className="flex gap-1">
-          <div className="h-3 w-3 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="h-3 w-3 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="h-3 w-3 rounded-full bg-pink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-        <span className="text-sm">Loading...</span>
-      </div>
-    )
+    return <LoadingScreen text="Loading..." />
   }
 
   // Apply kid theme
@@ -292,14 +277,6 @@ export default function App() {
         </Suspense>
       )}
       <BadgeCelebration />
-
-      {/* Old sidebar for member management — accessible from settings or other means */}
-      <Sidebar
-        hiddenMemberIds={hiddenMemberIds}
-        onToggleMember={toggleMemberFilter}
-        open={oldSidebarOpen}
-        onClose={() => setOldSidebarOpen(false)}
-      />
     </div>
   )
 }

@@ -145,11 +145,11 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <AiAvatar size="sm" />
           <span className="text-lg font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Vau Vau AI
+            Váu Váu
           </span>
           <button
             onClick={onClose}
-            className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Close sidebar"
           >
             <X size={18} />
@@ -264,6 +264,8 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
           {/* Night mode toggle */}
           <button
             onClick={() => setDark((d) => !d)}
+            role="switch"
+            aria-checked={dark}
             className="flex items-center justify-between px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <div className="flex items-center gap-3">

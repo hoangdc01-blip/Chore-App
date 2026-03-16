@@ -64,7 +64,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
     return (
       <div className="flex items-center gap-2 px-4 py-3">
-        <button onClick={onPrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+        <button onClick={onPrev} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ChevronLeft size={20} />
         </button>
 
@@ -127,7 +127,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
         <button onClick={handleToday} className={todayBtnClasses}>Today</button>
 
-        <button onClick={onNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+        <button onClick={onNext} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ChevronRight size={20} />
         </button>
       </div>
@@ -145,7 +145,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
     return (
       <div className="flex items-center gap-2 px-4 py-3">
-        <button onClick={onPrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+        <button onClick={onPrev} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ChevronLeft size={20} />
         </button>
 
@@ -200,7 +200,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
         <button onClick={handleToday} className={todayBtnClasses}>Today</button>
 
-        <button onClick={onNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+        <button onClick={onNext} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
           <ChevronRight size={20} />
         </button>
       </div>
@@ -219,7 +219,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
   return (
     <div className="flex items-center gap-2 px-4 py-3">
-      <button onClick={onPrev} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+      <button onClick={onPrev} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
         <ChevronLeft size={20} />
       </button>
 
@@ -273,7 +273,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
 
       <button onClick={handleToday} className={todayBtnClasses}>Today</button>
 
-      <button onClick={onNext} className="rounded-md p-2 hover:bg-muted transition-colors shrink-0">
+      <button onClick={onNext} className="rounded-md p-2.5 hover:bg-muted transition-colors shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center">
         <ChevronRight size={20} />
       </button>
     </div>

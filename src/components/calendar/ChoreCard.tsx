@@ -47,15 +47,15 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
 
   let cardClasses: string
   if (occurrence.isCompleted) {
-    cardClasses = 'bg-green-100 border-l-4 border-l-green-600 text-green-950 border border-green-400 dark:bg-green-900/30 dark:text-green-100 dark:border-green-800 dark:border-l-green-500'
+    cardClasses = 'bg-emerald-50 border-l-4 border-l-emerald-500 text-foreground border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-50 dark:border-emerald-800/50 dark:border-l-emerald-400'
   } else if (occurrence.isPending) {
-    cardClasses = 'bg-amber-100 border-l-4 border-l-amber-500 text-amber-950 border border-amber-400 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-800 dark:border-l-amber-500'
+    cardClasses = 'bg-amber-50 border-l-4 border-l-amber-400 text-foreground border border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-50 dark:border-amber-800/50 dark:border-l-amber-400'
   } else if (isOverdue) {
-    cardClasses = 'bg-red-100 border-l-4 border-l-red-600 text-red-950 border border-red-400 dark:bg-red-900/30 dark:text-red-100 dark:border-red-800 dark:border-l-red-500'
+    cardClasses = 'bg-rose-50 border-l-4 border-l-rose-500 text-foreground border border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-50 dark:border-rose-800/50 dark:border-l-rose-400'
   } else if (color) {
-    cardClasses = `bg-card border-l-4 ${color.accent} text-foreground border border-border shadow-md dark:shadow-none`
+    cardClasses = `bg-card border-l-4 ${color.accent} text-foreground border border-border/60 shadow-sm dark:shadow-none`
   } else {
-    cardClasses = 'bg-card border-l-4 border-l-neutral-400 text-foreground border border-border shadow-md dark:shadow-none'
+    cardClasses = 'bg-card border-l-4 border-l-neutral-300 text-foreground border border-border/60 shadow-sm dark:shadow-none'
   }
 
   // ── Compact mode: small cards for desktop grid cells ──
@@ -73,9 +73,9 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
             aria-label={`Mark ${occurrence.chore.name} as ${occurrence.isCompleted ? 'not done' : 'done'}`}
             className={`shrink-0 h-5 w-5 xl:h-4 xl:w-4 rounded-md border-2 flex items-center justify-center transition-colors ${
               occurrence.isCompleted
-                ? 'bg-green-600 border-green-600 text-white'
+                ? 'bg-emerald-500 border-emerald-500 text-white'
                 : isOverdue
-                  ? 'border-red-400 hover:border-red-600 hover:bg-red-50 dark:border-red-400 dark:hover:border-red-300 dark:hover:bg-red-900/20'
+                  ? 'border-rose-300 hover:border-rose-500 hover:bg-rose-50 dark:border-rose-400 dark:hover:border-rose-300 dark:hover:bg-rose-900/20'
                   : 'border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted'
             }`}
           >
@@ -88,10 +88,10 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         {occurrence.chore.emoji && (
           <span className="shrink-0 text-sm xl:text-xs">{occurrence.chore.emoji}</span>
         )}
-        {isOverdue && <AlertCircle size={12} className="shrink-0 text-red-600 dark:text-red-400" />}
+        {isOverdue && <AlertCircle size={12} className="shrink-0 text-rose-500 dark:text-rose-400" />}
         <span className={`truncate font-semibold ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.startTime && (
-            <span className={`font-normal ${isOverdue ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
+            <span className={`font-normal ${isOverdue ? 'text-rose-600 dark:text-rose-300' : 'text-muted-foreground'} hidden xl:inline`}>{occurrence.chore.startTime} </span>
           )}
           {occurrence.chore.name}
         </span>
@@ -116,9 +116,9 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
           aria-label={`Mark ${occurrence.chore.name} as ${occurrence.isCompleted ? 'not done' : 'done'}`}
           className={`shrink-0 h-7 w-7 rounded-lg border-2 flex items-center justify-center transition-colors ${
             occurrence.isCompleted
-              ? 'bg-green-600 border-green-600 text-white'
+              ? 'bg-emerald-500 border-emerald-500 text-white'
               : isOverdue
-                ? 'border-red-400 hover:border-red-600 hover:bg-red-50 dark:border-red-400 dark:hover:border-red-300 dark:hover:bg-red-900/20'
+                ? 'border-rose-300 hover:border-rose-500 hover:bg-rose-50 dark:border-rose-400 dark:hover:border-rose-300 dark:hover:bg-rose-900/20'
                 : 'border-muted-foreground/50 hover:border-muted-foreground hover:bg-muted'
           }`}
         >
@@ -137,14 +137,14 @@ export default function ChoreCard({ occurrence, onClick, compact = true }: Chore
         <span className={`block text-sm font-semibold truncate ${occurrence.isCompleted ? 'line-through' : ''}`}>
           {occurrence.chore.name}
         </span>
-        <span className={`block text-xs ${isOverdue ? 'text-red-700 dark:text-red-300' : occurrence.isPending ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+        <span className={`block text-xs ${isOverdue ? 'text-rose-600 dark:text-rose-300' : occurrence.isPending ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground'}`}>
           {member?.name ?? 'Unassigned'}
           {occurrence.chore.startTime && ` · ${occurrence.chore.startTime}`}
           {occurrence.isPending && ' · Waiting for approval'}
           {isOverdue && ' · Overdue'}
         </span>
       </div>
-      {isOverdue && <AlertCircle size={16} className="shrink-0 text-red-600 dark:text-red-400" />}
+      {isOverdue && <AlertCircle size={16} className="shrink-0 text-rose-500 dark:text-rose-400" />}
       {member?.avatar ? (
         <img src={member.avatar} alt="" className="shrink-0 h-7 w-7 rounded-full object-cover" />
       ) : member ? (

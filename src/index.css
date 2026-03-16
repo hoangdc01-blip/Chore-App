@@ -1,67 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #FEFBFF;
-  --fg: #1C1B1D;
-  --card-bg: #FFFFFF;
-  --card-fg: #1C1B1D;
-  --popover-bg: #FFFFFF;
-  --popover-fg: #1C1B1D;
-  --primary-color: #6442D6;
-  --primary-fg: #FFFFFF;
-  --secondary-color: #DCDAF5;
-  --secondary-fg: #1E0060;
-  --muted-color: #F2ECF0;
-  --muted-fg: #787579;
-  --accent-color: #F2ECF0;
-  --accent-fg: #1C1B1D;
-  --destructive-color: #FF6240;
-  --border-color: #E6E1E3;
-  --input-color: #E6E1E3;
-  --ring-color: #6442D6;
+@theme {
+  --color-background: #FEFBFF;
+  --color-foreground: #1C1B1D;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1C1B1D;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1C1B1D;
+  --color-primary: #6442D6;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #DCDAF5;
+  --color-secondary-foreground: #1E0060;
+  --color-muted: #F2ECF0;
+  --color-muted-foreground: #787579;
+  --color-accent: #F2ECF0;
+  --color-accent-foreground: #1C1B1D;
+  --color-destructive: #FF6240;
+  --color-border: #E6E1E3;
+  --color-input: #E6E1E3;
+  --color-ring: #6442D6;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --bg: #1C1B1D;
-  --fg: #E6E1E5;
-  --card-bg: #2B2930;
-  --card-fg: #E6E1E5;
-  --popover-bg: #2B2930;
-  --popover-fg: #E6E1E5;
-  --primary-color: #CBBEFF;
-  --primary-fg: #340098;
-  --secondary-color: #454559;
-  --secondary-fg: #C8C3DC;
-  --muted-color: #36343B;
-  --muted-fg: #CAC4D0;
-  --accent-color: #36343B;
-  --accent-fg: #E6E1E5;
-  --destructive-color: #FFB4AB;
-  --border-color: #49454F;
-  --input-color: #49454F;
-  --ring-color: #CBBEFF;
-}
-
-@theme {
-  --color-background: var(--bg);
-  --color-foreground: var(--fg);
-  --color-card: var(--card-bg);
-  --color-card-foreground: var(--card-fg);
-  --color-popover: var(--popover-bg);
-  --color-popover-foreground: var(--popover-fg);
-  --color-primary: var(--primary-color);
-  --color-primary-foreground: var(--primary-fg);
-  --color-secondary: var(--secondary-color);
-  --color-secondary-foreground: var(--secondary-fg);
-  --color-muted: var(--muted-color);
-  --color-muted-foreground: var(--muted-fg);
-  --color-accent: var(--accent-color);
-  --color-accent-foreground: var(--accent-fg);
-  --color-destructive: var(--destructive-color);
-  --color-border: var(--border-color);
-  --color-input: var(--input-color);
-  --color-ring: var(--ring-color);
-  --radius: 0.75rem;
+  --color-background: #1C1B1D;
+  --color-foreground: #E6E1E5;
+  --color-card: #2B2930;
+  --color-card-foreground: #E6E1E5;
+  --color-popover: #2B2930;
+  --color-popover-foreground: #E6E1E5;
+  --color-primary: #CBBEFF;
+  --color-primary-foreground: #340098;
+  --color-secondary: #454559;
+  --color-secondary-foreground: #C8C3DC;
+  --color-muted: #36343B;
+  --color-muted-foreground: #CAC4D0;
+  --color-accent: #36343B;
+  --color-accent-foreground: #E6E1E5;
+  --color-destructive: #FFB4AB;
+  --color-border: #49454F;
+  --color-input: #49454F;
+  --color-ring: #CBBEFF;
 }
 
 body {

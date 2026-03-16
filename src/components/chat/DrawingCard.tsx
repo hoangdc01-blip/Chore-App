@@ -16,7 +16,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
     if (!isGeneratingImage && !hasImage) return null
     return (
       <div className="mb-3 ml-10">
-        <div className="bg-card rounded-xl border border-border overflow-hidden inline-block max-w-[350px]">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden inline-block max-w-[350px]">
           {isGeneratingImage ? (
             <div className="flex items-center justify-center p-8">
               <div className="w-8 h-8 rounded-full border-3 border-purple-200 dark:border-purple-800 border-t-purple-500 animate-spin" />
@@ -81,7 +81,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
   }, [result.title, result.imageDataUrl])
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
+    <div className="bg-card border border-border rounded-2xl p-3 mb-3 ml-10 animate-fade-in-up">
       <div
         className="bg-card rounded-lg border border-border p-2 mb-3 flex items-center justify-center"
         style={{ minHeight: '200px' }}
@@ -111,13 +111,13 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
         <div className="flex gap-2 mb-2">
           <button
             onClick={downloadAsPng}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 text-sm font-bold transition-colors"
           >
             Download PNG {'\u{1F4F7}'}
           </button>
           <button
             onClick={handlePrintA4}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-purple-500 hover:bg-purple-600 text-white py-2 text-sm font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:opacity-90 text-white py-2 text-sm font-bold transition-colors"
           >
             Print A4 {'\u{1F5A8}\uFE0F'}
           </button>
@@ -127,7 +127,7 @@ export default function DrawingCard({ result, isGenerating = false, onDismiss }:
       {!isGeneratingImage && (
         <button
           onClick={onDismiss}
-          className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white py-2 text-sm font-bold transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 rounded-full bg-green-500 hover:bg-green-600 text-white py-2 text-sm font-bold transition-colors"
         >
           Done!
         </button>

@@ -94,8 +94,8 @@ function ChatBubble({
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
             isUser
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-br-md'
-              : 'bg-muted text-foreground rounded-bl-md'
+              ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-br-sm'
+              : 'bg-card shadow-sm text-foreground rounded-bl-md'
           }`}
         >
           {message.image && (
@@ -391,7 +391,7 @@ export default function ChatPage() {
       onDrop={handleDrop}
     >
       {/* Top bar: kid selector (parent mode) + actions */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-3">
           <AiAvatar size="sm" className="shadow-sm" />
           <div>
@@ -490,7 +490,7 @@ export default function ChatPage() {
                       key={label}
                       onClick={() => handleQuickAction(text)}
                       disabled={isLoading}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br ${gradient} border border-border/50 transition-all hover:shadow-md disabled:opacity-50 text-center`}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-3xl bg-gradient-to-br ${gradient} border border-border/50 transition-all hover:shadow-md disabled:opacity-50 text-center`}
                     >
                       <Icon size={24} className="text-foreground/70" />
                       <span className="text-sm font-medium text-foreground/80">{label}</span>
@@ -635,7 +635,7 @@ export default function ChatPage() {
               key={action.text}
               onClick={() => handleQuickAction(action.text)}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
             >
               {action.label}
             </button>
@@ -700,7 +700,7 @@ export default function ChatPage() {
       />
 
       {/* Input bar */}
-      <div className="shrink-0 border-t border-border bg-background">
+      <div className="shrink-0 border-t border-border/50 bg-background">
         <div className="max-w-[800px] mx-auto px-4 py-3 flex gap-2">
           <Input
             ref={inputRef}
@@ -710,13 +710,13 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder={effectiveMemberId ? "Ask Váu Váu anything..." : "Pick a kid first..."}
             disabled={!effectiveMemberId || isLoading}
-            className="flex-1 rounded-xl bg-muted px-4 py-2.5 disabled:opacity-50"
+            className="flex-1 rounded-2xl bg-muted px-4 py-2.5 shadow-sm disabled:opacity-50"
           />
           {effectiveMemberId && (
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="rounded-xl px-3 py-2.5 bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center disabled:opacity-40"
+              className="rounded-full px-3 py-2.5 bg-muted border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center disabled:opacity-40"
               title="Attach image"
               aria-label="Attach image"
             >
@@ -726,7 +726,7 @@ export default function ChatPage() {
           <button
             onClick={handleSend}
             disabled={(!input.trim() && !pendingImage && !pendingDoc) || !effectiveMemberId || isLoading}
-            className="rounded-xl px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
+            className="rounded-full px-4 py-2.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white font-bold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center"
             aria-label="Send message"
           >
             <Send size={16} />

@@ -18,7 +18,7 @@ export default function HomeworkResultCard({ result, onDismiss }: Props) {
   const isPerfect = result.errors.length === 0
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
+    <div className="bg-card border border-border rounded-2xl p-3 mb-3 ml-10 animate-fade-in-up">
       <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
         Homework Check
       </div>
@@ -56,7 +56,7 @@ export default function HomeworkResultCard({ result, onDismiss }: Props) {
 
       <button
         onClick={onDismiss}
-        className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white py-2 text-sm font-bold transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 text-sm font-bold transition-colors"
       >
         Got it!
       </button>

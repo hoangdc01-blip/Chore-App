@@ -38,7 +38,7 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 mb-3 ml-10 animate-fade-in-up">
+    <div className="bg-card border border-border rounded-2xl p-3 mb-3 ml-10 animate-fade-in-up">
       <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
         Presentation
       </div>
@@ -83,7 +83,7 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
         <div className="flex gap-2 mb-2">
           <button
             onClick={downloadPptx}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-2 text-sm font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground py-2 text-sm font-bold transition-colors"
           >
             Download PPTX {'\u{1F4E5}'}
           </button>
@@ -100,7 +100,7 @@ export default function PresentationCard({ result, isGenerating = false, onDismi
       {!isGenerating && (
         <button
           onClick={onDismiss}
-          className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white py-2 text-sm font-bold transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 rounded-full bg-green-500 hover:bg-green-600 text-white py-2 text-sm font-bold transition-colors"
         >
           Done!
         </button>

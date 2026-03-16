@@ -1,3 +1,6 @@
+import { signInAnonymously, signOut } from 'firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 import { useFirebase } from './firebase-flag'
 
 const PBKDF2_ITERATIONS = 100_000
@@ -137,23 +140,17 @@ function setLocalPinData(data: { hash: string; salt: string }): void {
   localStorage.setItem(LOCAL_PIN_KEY, JSON.stringify(data))
 }
 
-// ── Firestore helpers (lazy-loaded) ──
+// ── Firestore helpers ──
 
-async function getFirestorePinDoc() {
-  const { doc, getDoc, setDoc } = await import('firebase/firestore')
-  const { db } = await import('./firebase')
-  const PIN_DOC = doc(db, 'config', 'pin')
-  return { PIN_DOC, getDoc, setDoc }
-}
+const PIN_DOC = db ? doc(db, 'config', 'pin') : null
 
 // ── Public API ──
 
 export async function getPinHash(): Promise<string | null> {
-  if (!useFirebase) {
+  if (!useFirebase || !PIN_DOC) {
     const data = getLocalPinData()
     return data?.hash ?? null
   }
-  const { PIN_DOC, getDoc } = await getFirestorePinDoc()
   const snap = await getDoc(PIN_DOC)
   if (!snap.exists()) return null
   return snap.data().hash as string
@@ -179,7 +176,7 @@ export async function verifyPin(pin: string): Promise<boolean> {
     return false
   }
 
-  const { PIN_DOC, getDoc } = await getFirestorePinDoc()
+  if (!PIN_DOC) return false
   const snap = await getDoc(PIN_DOC)
   if (!snap.exists()) return false
   const snapData = snap.data()
@@ -212,7 +209,7 @@ export async function savePin(pin: string): Promise<void> {
     return
   }
 
-  const { PIN_DOC, setDoc } = await getFirestorePinDoc()
+  if (!PIN_DOC) return
   await setDoc(PIN_DOC, { hash, salt: saltHex })
 }
 
@@ -224,17 +221,11 @@ export async function changePin(currentPin: string, newPin: string): Promise<boo
 }
 
 export async function signInAfterPin(): Promise<void> {
-  if (!useFirebase) return
-  const { signInAnonymously } = await import('firebase/auth')
-  const { getFirebaseAuth } = await import('./firebase')
-  const auth = await getFirebaseAuth()
+  if (!useFirebase || !auth) return
   await signInAnonymously(auth)
 }
 
 export async function lockApp(): Promise<void> {
-  if (!useFirebase) return
-  const { signOut } = await import('firebase/auth')
-  const { getFirebaseAuth } = await import('./firebase')
-  const auth = await getFirebaseAuth()
+  if (!useFirebase || !auth) return
   await signOut(auth)
 }

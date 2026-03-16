@@ -1,11 +1,7 @@
-import { getFirebaseDb } from './firebase'
+import { collection, doc, getDocs, setDoc, deleteDoc, query, where, writeBatch, onSnapshot } from 'firebase/firestore'
+import { db } from './firebase'
 import { useFirebase } from './firebase-flag'
 import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, PendingRecord, Reward, Redemption, Coupon } from '../types'
-
-async function getFirestoreMethods() {
-  const mod = await import('firebase/firestore')
-  return mod
-}
 
 // Strip undefined values — Firestore rejects them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,62 +16,46 @@ function clean<T>(obj: T): Record<string, any> {
 // ── Members ──
 
 export async function fetchMembers(): Promise<FamilyMember[]> {
-  if (!useFirebase) return []
-  const db = await getFirebaseDb()
-  const { collection, getDocs } = await getFirestoreMethods()
+  if (!useFirebase || !db) return []
   const snap = await getDocs(collection(db, 'members'))
   return snap.docs.map((d) => d.data() as FamilyMember)
 }
 
 export async function saveMember(member: FamilyMember): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'members', member.id), clean(member))
 }
 
 export async function deleteMemberDoc(id: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'members', id))
 }
 
 export async function updateMemberDoc(id: string, updates: Partial<FamilyMember>): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'members', id), clean(updates), { merge: true })
 }
 
 // ── Chores ──
 
 export async function fetchChores(): Promise<Chore[]> {
-  if (!useFirebase) return []
-  const db = await getFirebaseDb()
-  const { collection, getDocs } = await getFirestoreMethods()
+  if (!useFirebase || !db) return []
   const snap = await getDocs(collection(db, 'chores'))
   return snap.docs.map((d) => d.data() as Chore)
 }
 
 export async function saveChore(chore: Chore): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'chores', chore.id), clean(chore))
 }
 
 export async function deleteChoreDoc(id: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'chores', id))
 }
 
 export async function deleteChoresByMemberDocs(memberId: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { collection, query, where, getDocs, writeBatch } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   const q = query(collection(db, 'chores'), where('assigneeId', '==', memberId))
   const snap = await getDocs(q)
   if (snap.empty) return
@@ -85,18 +65,14 @@ export async function deleteChoresByMemberDocs(memberId: string): Promise<void> 
 }
 
 export async function updateChoreDoc(id: string, updates: Partial<Chore>): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'chores', id), clean(updates), { merge: true })
 }
 
 // ── Completions ──
 
 export async function fetchCompletions(): Promise<CompletionRecord> {
-  if (!useFirebase) return {}
-  const db = await getFirebaseDb()
-  const { collection, getDocs } = await getFirestoreMethods()
+  if (!useFirebase || !db) return {}
   const snap = await getDocs(collection(db, 'completions'))
   const record: CompletionRecord = {}
   snap.docs.forEach((d) => {
@@ -106,25 +82,19 @@ export async function fetchCompletions(): Promise<CompletionRecord> {
 }
 
 export async function setCompletion(key: string, choreId: string, memberId: string, date: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'completions', key), { choreId, memberId, date, done: true })
 }
 
 export async function removeCompletion(key: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'completions', key))
 }
 
 // ── Skipped ──
 
 export async function fetchSkipped(): Promise<SkippedRecord> {
-  if (!useFirebase) return {}
-  const db = await getFirebaseDb()
-  const { collection, getDocs } = await getFirestoreMethods()
+  if (!useFirebase || !db) return {}
   const snap = await getDocs(collection(db, 'skipped'))
   const record: SkippedRecord = {}
   snap.docs.forEach((d) => {
@@ -134,25 +104,19 @@ export async function fetchSkipped(): Promise<SkippedRecord> {
 }
 
 export async function setSkipped(key: string, choreId: string, memberId: string, date: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'skipped', key), { choreId, memberId, date, skipped: true })
 }
 
 export async function removeSkipped(key: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'skipped', key))
 }
 
 // ── Pending Approvals ──
 
 export async function fetchPendingApprovals(): Promise<PendingRecord> {
-  if (!useFirebase) return {}
-  const db = await getFirebaseDb()
-  const { collection, getDocs } = await getFirestoreMethods()
+  if (!useFirebase || !db) return {}
   const snap = await getDocs(collection(db, 'pendingApprovals'))
   const record: PendingRecord = {}
   snap.docs.forEach((d) => {
@@ -162,98 +126,74 @@ export async function fetchPendingApprovals(): Promise<PendingRecord> {
 }
 
 export async function setPendingApproval(key: string, choreId: string, memberId: string, date: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'pendingApprovals', key), { choreId, memberId, date, pending: true, submittedAt: Date.now() })
 }
 
 export async function removePendingApproval(key: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'pendingApprovals', key))
 }
 
 // ── Rewards ──
 
 export async function saveReward(reward: Reward): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'rewards', reward.id), clean(reward))
 }
 
 export async function deleteRewardDoc(id: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'rewards', id))
 }
 
 // ── Redemptions ──
 
 export async function saveRedemption(redemption: Redemption): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'redemptions', redemption.id), clean(redemption))
 }
 
 // ── Coupons ──
 
 export async function saveCoupon(coupon: Coupon): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'coupons', coupon.id), clean(coupon))
 }
 
 export async function updateCouponDoc(id: string, updates: Partial<Coupon>): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'coupons', id), clean(updates), { merge: true })
 }
 
 // ── Achievements ──
 
 export async function saveEarnedBadges(memberId: string, badgeIds: string[]): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'achievements', memberId), { badgeIds })
 }
 
 // ── Stickers ──
 
 export async function saveEarnedStickers(memberId: string, stickerIds: string[]): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'stickers', memberId), { stickerIds })
 }
 
 // ── Routines ──
 
 export async function saveRoutine(routine: Record<string, unknown> & { id: string }): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'routines', routine.id), clean(routine))
 }
 
 export async function deleteRoutineDoc(id: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, deleteDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await deleteDoc(doc(db, 'routines', id))
 }
 
 export async function saveRoutineProgress(key: string, progress: { routineId: string; memberId: string; date: string; completedSteps: string[]; startedAt: string }): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'routineProgress', key), clean(progress))
 }
 
@@ -261,18 +201,14 @@ export async function saveRoutineProgress(key: string, progress: { routineId: st
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function saveQuestDoc(quest: { id: string } & Record<string, any>): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'quests', quest.id), clean(quest))
 }
 
 // ── Claimed Bonuses ──
 
 export async function setClaimedBonus(key: string): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, setDoc } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   await setDoc(doc(db, 'claimedBonuses', key), { claimed: true })
 }
 
@@ -309,7 +245,7 @@ export function subscribeToAll(onData: (data: {
   claimedBonuses: Record<string, boolean>
   earnedStickers: Record<string, string[]>
 }) => void): () => void {
-  if (!useFirebase) {
+  if (!useFirebase || !db) {
     // No-op: data is already in localStorage via Zustand persist
     return () => {}
   }
@@ -339,18 +275,9 @@ export function subscribeToAll(onData: (data: {
     notify()
   }
 
-  // Store unsubscribe functions as they become available
   const unsubFns: (() => void)[] = []
-  let cancelled = false
 
-  // Initialize listeners asynchronously
-  ;(async () => {
-    try {
-    const db = await getFirebaseDb()
-    if (cancelled) return
-    const { collection, onSnapshot } = await getFirestoreMethods()
-    if (cancelled) return
-
+  try {
     const unsub1 = onSnapshot(collection(db, 'members'), (snap) => {
       members = snap.docs.map((d) => {
         const data = d.data()
@@ -445,16 +372,14 @@ export function subscribeToAll(onData: (data: {
       notify()
     }, handleError('stickers'))
     unsubFns.push(unsub10)
-    } catch (err) {
-      console.error('[firestore] Failed to initialize:', err)
-      // Force notify with empty data so the app doesn't hang
-      initialLoad = TOTAL_COLLECTIONS
-      notify()
-    }
-  })()
+  } catch (err) {
+    console.error('[firestore] Failed to initialize:', err)
+    // Force notify with empty data so the app doesn't hang
+    initialLoad = TOTAL_COLLECTIONS
+    notify()
+  }
 
   return () => {
-    cancelled = true
     unsubFns.forEach((fn) => fn())
   }
 }
@@ -467,9 +392,7 @@ export async function pushAllData(
   completions: CompletionRecord,
   skipped: SkippedRecord,
 ): Promise<void> {
-  if (!useFirebase) return
-  const db = await getFirebaseDb()
-  const { doc, writeBatch } = await getFirestoreMethods()
+  if (!useFirebase || !db) return
   const batch = writeBatch(db)
 
   for (const member of members) {

@@ -1,3 +1,6 @@
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 import { useFirebase } from './firebase-flag'
 import { getEnv } from './env'
 
@@ -10,38 +13,12 @@ const firebaseConfig = {
   appId: getEnv('VITE_FIREBASE_APP_ID'),
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let app: any = null
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let db: any = null
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let auth: any = null
+const app = useFirebase ? initializeApp(firebaseConfig) : null
+const db = app ? getFirestore(app) : null
+const auth = app ? getAuth(app) : null
 
-async function ensureApp() {
-  if (app) return app
-  const { initializeApp } = await import('firebase/app')
-  app = initializeApp(firebaseConfig)
-  return app
-}
+export { db, auth, useFirebase }
 
-export async function getFirebaseDb() {
-  if (!useFirebase) return null
-  if (db) return db
-  const firebaseApp = await ensureApp()
-  const { getFirestore } = await import('firebase/firestore')
-  db = getFirestore(firebaseApp)
-  return db
-}
-
-export async function getFirebaseAuth() {
-  if (!useFirebase) return null
-  if (auth) return auth
-  await ensureApp()
-  const { getAuth } = await import('firebase/auth')
-  auth = getAuth(app)
-  return auth
-}
-
-// Legacy synchronous exports for backward compatibility during migration
-// These will be null until getFirebaseDb()/getFirebaseAuth() are called
-export { db, auth }
+// Async getters for backward compat with code that was updated to use them
+export async function getFirebaseDb() { return db }
+export async function getFirebaseAuth() { return auth }

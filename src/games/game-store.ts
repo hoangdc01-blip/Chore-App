@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useFirebase } from '../lib/firebase-flag'
 import { format } from 'date-fns'
 import { showToast } from '../store/toast-store'
@@ -54,8 +56,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       return
     }
     try {
-      const { doc, getDoc } = await import('firebase/firestore')
-      const { db } = await import('../lib/firebase')
+      if (!db) return
       const snap = await getDoc(doc(db, 'config', 'gameScores'))
       if (snap.exists()) {
         const data = snap.data()
@@ -87,8 +88,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
       return
     }
     try {
-      const { doc, setDoc } = await import('firebase/firestore')
-      const { db } = await import('../lib/firebase')
+      if (!db) return
       await setDoc(doc(db, 'config', 'gameScores'), { scores })
     } catch {
       showToast('Score sync failed', 'error')

@@ -8,10 +8,6 @@ import {
   Gift,
   Languages,
   Ticket,
-  Palette,
-  Presentation,
-  PencilLine,
-  BookOpen,
   ArrowLeftRight,
   Moon,
   Sun,
@@ -22,7 +18,6 @@ import {
 import type { AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
-import { useChatStore } from '../../store/chat-store'
 import AiAvatar from '../chat/AiAvatar'
 
 interface AppSidebarProps {
@@ -40,21 +35,8 @@ interface NavItem {
   parentOnly?: boolean
 }
 
-interface ToolItem {
-  label: string
-  icon: typeof Palette
-  prefill: string
-}
-
 const AI_ASSISTANT_ITEMS: NavItem[] = [
   { view: 'chat', icon: MessageCircle, label: 'Chat' },
-]
-
-const AI_TOOLS: ToolItem[] = [
-  { label: 'Coloring Pages', icon: Palette, prefill: 'I want a coloring page!' },
-  { label: 'Presentations', icon: Presentation, prefill: 'I want to make a presentation!' },
-  { label: 'Homework Help', icon: PencilLine, prefill: "Can you check my homework? I'm uploading a photo!" },
-  { label: 'Bedtime Story', icon: BookOpen, prefill: 'Tell me a bedtime story' },
 ]
 
 const FAMILY_ITEMS: NavItem[] = [
@@ -112,16 +94,6 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
     onClose()
   }
 
-  const handleToolClick = (prefill: string) => {
-    onActiveViewChange('chat')
-    // Pre-fill and send the message to chat
-    setTimeout(() => {
-      const store = useChatStore.getState()
-      store.sendMessageStreaming(prefill)
-    }, 100)
-    onClose()
-  }
-
   return (
     <>
       {/* Mobile overlay */}
@@ -170,23 +142,6 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
                   ? 'bg-primary/12 text-primary font-bold'
                   : 'text-foreground/70 hover:text-foreground hover:bg-primary/5'
               }`}
-            >
-              <Icon size={18} />
-              {label}
-            </button>
-          ))}
-
-          <div className="border-t border-border my-3" />
-
-          {/* Tools */}
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
-            Tools
-          </p>
-          {AI_TOOLS.map(({ label, icon: Icon, prefill }) => (
-            <button
-              key={label}
-              onClick={() => handleToolClick(prefill)}
-              className="flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-primary/5 transition-colors w-full text-left"
             >
               <Icon size={18} />
               {label}

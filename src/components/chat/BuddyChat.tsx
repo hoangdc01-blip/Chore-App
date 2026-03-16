@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText } from 'lucide-react'
+import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText, Palette, Presentation, PencilLine, BookOpen, GraduationCap } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -44,25 +44,12 @@ function cleanMessageContent(content: string): string {
     .trim()
 }
 
-const KID_QUICK_ACTIONS = [
-  { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
-  { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
-  { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
-  { label: "Check homework \u270F\uFE0F", text: "Can you check my homework? I'm uploading a photo!" },
-  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
-  { label: "Draw something \u{1F3A8}", text: "Can you draw me something fun?" },
-  { label: "Make slides \u{1F4CA}", text: "Can you make a presentation for me about something cool?" },
-  { label: "Say it simpler \u{1F5E3}\uFE0F", text: "Can you say that in a simpler way? I don't understand." },
-]
-
-const PARENT_QUICK_ACTIONS = [
-  { label: "What should I do now? \u{1F914}", text: "What should I do now?" },
-  { label: "What's next? \u27A1\uFE0F", text: "What's next?" },
-  { label: "Weekly report \u{1F4CB}", text: "Give me a weekly report on how the kids are doing with their chores." },
-  { label: "Fun fact! \u{1F31F}", text: "Tell me a fun fact!" },
-  { label: "Help with homework \u{1F4DA}", text: "Help me with homework" },
-  { label: "Add a chore \u270F\uFE0F", text: "Add a new chore for me" },
+const TOOL_CARDS = [
+  { label: 'Draw a picture', icon: Palette, text: 'Can you draw me something fun?' },
+  { label: 'Make a presentation', icon: Presentation, text: 'Can you make a presentation for me about something cool?' },
+  { label: 'Check my homework', icon: PencilLine, text: "Can you check my homework? I'm uploading a photo!" },
+  { label: 'Help me study', icon: GraduationCap, text: 'Help me study for my upcoming test' },
+  { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story' },
 ]
 
 function ChatBubble({
@@ -633,32 +620,20 @@ export default function BuddyChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick actions */}
-      {messages.length === 0 && effectiveMemberId && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          {(isKidMode ? KID_QUICK_ACTIONS : PARENT_QUICK_ACTIONS).map((action) => (
+      {/* Quick tools */}
+      {effectiveMemberId && !isLoading && (
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {TOOL_CARDS.map(({ label, icon: Icon, text }) => (
             <button
-              key={action.text}
-              onClick={() => handleQuickAction(action.text)}
+              key={label}
+              onClick={() => handleQuickAction(text)}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border/50 shadow-sm text-xs font-medium text-foreground/70 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all whitespace-nowrap shrink-0 disabled:opacity-50"
             >
-              {action.label}
+              <Icon size={14} />
+              {label}
             </button>
           ))}
-        </div>
-      )}
-
-      {/* Contextual "Explain more" suggestion after homework check */}
-      {messages.length > 0 && homeworkCheckResult && !isLoading && !isStreaming && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          <button
-            onClick={() => handleQuickAction("Explain more please, I don't understand")}
-            disabled={isLoading}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
-          >
-            Explain more {'\uD83E\uDD14'}
-          </button>
         </div>
       )}
 

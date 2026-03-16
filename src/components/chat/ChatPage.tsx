@@ -39,33 +39,12 @@ function cleanMessageContent(content: string): string {
     .trim()
 }
 
-const KID_QUICK_ACTIONS = [
-  { label: "What should I do now?", text: "What should I do now?" },
-  { label: "What's next?", text: "What's next?" },
-  { label: "Fun fact!", text: "Tell me a fun fact!" },
-  { label: "Help with homework", text: "Help me with homework" },
-  { label: "Check homework", text: "Can you check my homework? I'm uploading a photo!" },
-  { label: "Add a chore", text: "Add a new chore for me" },
-  { label: "Draw something", text: "Can you draw me something fun?" },
-  { label: "Make slides", text: "Can you make a presentation for me about something cool?" },
-  { label: "Say it simpler", text: "Can you say that in a simpler way? I don't understand." },
-]
-
-const PARENT_QUICK_ACTIONS = [
-  { label: "What should I do now?", text: "What should I do now?" },
-  { label: "What's next?", text: "What's next?" },
-  { label: "Weekly report", text: "Give me a weekly report on how the kids are doing with their chores." },
-  { label: "Fun fact!", text: "Tell me a fun fact!" },
-  { label: "Help with homework", text: "Help me with homework" },
-  { label: "Add a chore", text: "Add a new chore for me" },
-]
-
 const TOOL_CARDS = [
-  { label: 'Draw a picture', icon: Palette, text: 'Can you draw me something fun?', gradient: 'from-pink-500/10 to-rose-500/10 hover:from-pink-500/15 hover:to-rose-500/15' },
-  { label: 'Make a presentation', icon: Presentation, text: 'Can you make a presentation for me about something cool?', gradient: 'from-blue-500/10 to-indigo-500/10 hover:from-blue-500/15 hover:to-indigo-500/15' },
-  { label: 'Check my homework', icon: PencilLine, text: "Can you check my homework? I'm uploading a photo!", gradient: 'from-amber-500/10 to-orange-500/10 hover:from-amber-500/15 hover:to-orange-500/15' },
-  { label: 'Help me study', icon: GraduationCap, text: 'Help me study for my upcoming test', gradient: 'from-green-500/10 to-emerald-500/10 hover:from-green-500/15 hover:to-emerald-500/15' },
-  { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story', gradient: 'from-purple-500/10 to-violet-500/10 hover:from-purple-500/15 hover:to-violet-500/15' },
+  { label: 'Draw a picture', icon: Palette, text: 'Can you draw me something fun?' },
+  { label: 'Make a presentation', icon: Presentation, text: 'Can you make a presentation for me about something cool?' },
+  { label: 'Check my homework', icon: PencilLine, text: "Can you check my homework? I'm uploading a photo!" },
+  { label: 'Help me study', icon: GraduationCap, text: 'Help me study for my upcoming test' },
+  { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story' },
 ]
 
 function ChatBubble({
@@ -481,23 +460,6 @@ export default function ChatPage() {
                   ? 'What would you like to do today?'
                   : 'I can help with chores, homework, presentations, drawings, and more!'}
               </p>
-
-              {/* Tool cards */}
-              {(
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4 w-full max-w-[600px]">
-                  {TOOL_CARDS.map(({ label, icon: Icon, text, gradient }) => (
-                    <button
-                      key={label}
-                      onClick={() => handleQuickAction(text)}
-                      disabled={isLoading}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-3xl bg-gradient-to-br ${gradient} border border-border/50 transition-all hover:shadow-md disabled:opacity-50 text-center`}
-                    >
-                      <Icon size={24} className="text-foreground/70" />
-                      <span className="text-sm font-medium text-foreground/80">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -612,32 +574,18 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Quick actions (shown when conversation has started) */}
-      {hasMessages && effectiveMemberId && !isLoading && !isStreaming && (
-        <div className="max-w-[800px] mx-auto px-4 pb-2 flex flex-wrap gap-2">
-          {/* Contextual homework explain */}
-          {homeworkCheckResult && (
+      {/* Quick tools */}
+      {effectiveMemberId && !isLoading && (
+        <div className="max-w-[800px] mx-auto px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {TOOL_CARDS.map(({ label, icon: Icon, text }) => (
             <button
-              onClick={() => handleQuickAction("Explain more please, I don't understand")}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-            >
-              Explain more
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Quick actions (shown when no messages yet, below tool cards) */}
-      {!hasMessages && effectiveMemberId && (
-        <div className="max-w-[800px] mx-auto px-4 pb-2 flex flex-wrap gap-2 justify-center">
-          {(isKidMode ? KID_QUICK_ACTIONS : PARENT_QUICK_ACTIONS).map((action) => (
-            <button
-              key={action.text}
-              onClick={() => handleQuickAction(action.text)}
+              key={label}
+              onClick={() => handleQuickAction(text)}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border/50 shadow-sm text-xs font-medium text-foreground/70 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all whitespace-nowrap shrink-0 disabled:opacity-50"
             >
-              {action.label}
+              <Icon size={14} />
+              {label}
             </button>
           ))}
         </div>

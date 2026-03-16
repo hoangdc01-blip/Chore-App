@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Star, CheckCircle2, Play, Mic } from 'lucide-react'
+import { ArrowLeft, Star, CheckCircle2, Play, Mic, Headphones } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LANGUAGES, getLanguage } from '@/lib/language-data'
 import type { LanguageCode, LanguageInfo } from '@/lib/language-data'
@@ -8,9 +8,10 @@ import { useLanguageStore } from '@/store/language-store'
 interface Props {
   onStartLesson: (topicId: string) => void
   onStartPronunciation: (topicId: string) => void
+  onStartListening: (topicId: string) => void
 }
 
-export function LanguageHome({ onStartLesson, onStartPronunciation }: Props) {
+export function LanguageHome({ onStartLesson, onStartPronunciation, onStartListening }: Props) {
   const { activeLanguage, setActiveLanguage, progress } = useLanguageStore()
   const [selectedLang, setSelectedLang] = useState<LanguageCode | null>(
     activeLanguage ?? null,
@@ -127,13 +128,22 @@ export function LanguageHome({ onStartLesson, onStartPronunciation }: Props) {
                       Practice
                     </button>
                   )}
-                  <button
-                    onClick={() => onStartPronunciation(topic.id)}
-                    className="flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300"
-                  >
-                    <Mic size={12} />
-                    Speak
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onStartPronunciation(topic.id)}
+                      className="flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300"
+                    >
+                      <Mic size={12} />
+                      Speak
+                    </button>
+                    <button
+                      onClick={() => onStartListening(topic.id)}
+                      className="flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300"
+                    >
+                      <Headphones size={12} />
+                      Listen
+                    </button>
+                  </div>
                 </div>
               </div>
             )

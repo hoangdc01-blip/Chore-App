@@ -8,8 +8,9 @@ import { LanguageHome } from './LanguageHome'
 import { LessonView } from './LessonView'
 import { LessonComplete } from './LessonComplete'
 import PronunciationGame from './PronunciationGame'
+import ListeningGame from './ListeningGame'
 
-type Screen = 'home' | 'lesson' | 'results' | 'pronunciation'
+type Screen = 'home' | 'lesson' | 'results' | 'pronunciation' | 'listening'
 
 interface LessonResults {
   total: number
@@ -95,16 +96,39 @@ export default function LanguageView() {
     setScreen('pronunciation')
   }, [])
 
+  const handleStartListening = useCallback((topicId: string) => {
+    const info = getTopic(topicId)
+    if (!info) return
+    setPronunciationWords(info.topic.words)
+    setPronunciationLang(info.language.code)
+    setScreen('listening')
+  }, [])
+
   return (
     <main className="flex-1 overflow-y-auto">
       {screen === 'home' && (
-        <LanguageHome onStartLesson={handleStartLesson} onStartPronunciation={handleStartPronunciation} />
+        <LanguageHome onStartLesson={handleStartLesson} onStartPronunciation={handleStartPronunciation} onStartListening={handleStartListening} />
       )}
       {screen === 'lesson' && quizState && (
         <LessonView onComplete={handleLessonComplete} onQuit={handleBackToTopics} />
       )}
       {screen === 'pronunciation' && (
         <PronunciationGame
+          words={pronunciationWords}
+          languageCode={pronunciationLang}
+          onQuit={handleBackToTopics}
+          onComplete={(score, total) => {
+            const pointsEarned = score * 2
+            if (pointsEarned > 0 && mode === 'kid' && activeKidId) {
+              useMemberStore.getState().adjustPoints(activeKidId, pointsEarned)
+            }
+            setResults({ total, correct: score, pointsEarned, questions: [] })
+            setScreen('results')
+          }}
+        />
+      )}
+      {screen === 'listening' && (
+        <ListeningGame
           words={pronunciationWords}
           languageCode={pronunciationLang}
           onQuit={handleBackToTopics}

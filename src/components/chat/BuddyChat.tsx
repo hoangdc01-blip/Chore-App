@@ -15,6 +15,7 @@ import DrawingCard from './DrawingCard'
 import PresentationCard from './PresentationCard'
 import Input from '../ui/Input'
 import AiAvatar from './AiAvatar'
+import { cn } from '../../lib/utils'
 import { isDocumentFile, extractDocumentText, getDocumentLabel } from '../../lib/doc-parser'
 
 /** Strip action block tags from message content so users never see raw [TAG]...[/TAG] text.
@@ -108,11 +109,11 @@ function ChatBubble({
         {showTTS && (
           <button
             onClick={isSpeakingThis ? onStop : onSpeak}
-            className="self-start ml-1 mt-1 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            className="self-start ml-1 mt-1 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
             title={isSpeakingThis ? 'Stop reading' : 'Read aloud'}
             aria-label={isSpeakingThis ? 'Stop reading aloud' : 'Read this message aloud'}
           >
-            {isSpeakingThis ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            {isSpeakingThis ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
         )}
       </div>
@@ -156,6 +157,7 @@ export default function BuddyChat() {
   const [docLoading, setDocLoading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
   const dragCounterRef = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -443,10 +445,23 @@ export default function BuddyChat() {
             </button>
           )}
           <button
-            onClick={clearMessages}
-            className="rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Clear chat"
-            aria-label="Clear chat"
+            onClick={() => {
+              if (confirmClear) {
+                clearMessages()
+                setConfirmClear(false)
+              } else {
+                setConfirmClear(true)
+                setTimeout(() => setConfirmClear(false), 3000)
+              }
+            }}
+            className={cn(
+              'rounded-lg p-2 transition-colors',
+              confirmClear
+                ? 'text-white bg-destructive'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            )}
+            title={confirmClear ? 'Click again to clear' : 'Clear chat'}
+            aria-label={confirmClear ? 'Click again to clear chat' : 'Clear chat'}
           >
             <Trash2 size={16} />
           </button>
@@ -539,7 +554,7 @@ export default function BuddyChat() {
                   onSpeak={() => handleSpeak(originalIndex, msg.content)}
                   onStop={handleStopSpeaking}
                 />
-                {isLastAssistant && (
+                {isLastAssistant && appMode !== 'kid' && (
                   <div className="flex justify-start mb-3 ml-10">
                     <span className={`text-xs ${lastResponseTimeMs >= 10000 ? 'text-amber-500' : 'text-muted-foreground'}`}>
                       {'\u26A1'} {(lastResponseTimeMs / 1000).toFixed(1)}s

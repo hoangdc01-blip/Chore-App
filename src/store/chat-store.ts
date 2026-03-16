@@ -339,18 +339,35 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         ...windowed,
       ]
 
+      let tokenBuffer = ''
+      let rafId: number | null = null
+
+      const flushTokens = () => {
+        if (!tokenBuffer) return
+        const msgs = get().messages
+        const lastMsg = msgs[msgs.length - 1]
+        if (lastMsg?.role === 'assistant') {
+          const updated = [...msgs.slice(0, -1), { ...lastMsg, content: lastMsg.content + tokenBuffer }]
+          set({ messages: updated })
+        }
+        tokenBuffer = ''
+        rafId = null
+      }
+
       await streamFromOllama(
         messagesForApi,
         (token) => {
-          const msgs = get().messages
-          const lastMsg = msgs[msgs.length - 1]
-          if (lastMsg?.role === 'assistant') {
-            const updated = [...msgs.slice(0, -1), { ...lastMsg, content: lastMsg.content + token }]
-            set({ messages: updated })
+          tokenBuffer += token
+          if (!rafId) {
+            rafId = requestAnimationFrame(flushTokens)
           }
         },
         controller.signal
       )
+
+      // Flush any remaining buffered tokens
+      if (tokenBuffer) flushTokens()
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null }
 
       clearTimeout(timeoutId)
       set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })

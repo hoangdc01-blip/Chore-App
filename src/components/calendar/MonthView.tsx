@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format, isToday, isSameMonth, isSameDay } from 'date-fns'
 import { getMonthDays } from '../../lib/calendar'
 import type { ChoreOccurrence } from '../../types'
@@ -33,12 +33,15 @@ export default function MonthView({ currentDate, occurrences, onDayClick, onChor
     }
   }, [currentDate])
 
-  const occurrencesByDate = new Map<string, ChoreOccurrence[]>()
-  for (const occ of occurrences) {
-    const existing = occurrencesByDate.get(occ.date) ?? []
-    existing.push(occ)
-    occurrencesByDate.set(occ.date, existing)
-  }
+  const occurrencesByDate = useMemo(() => {
+    const map = new Map<string, ChoreOccurrence[]>()
+    for (const occ of occurrences) {
+      const existing = map.get(occ.date) ?? []
+      existing.push(occ)
+      map.set(occ.date, existing)
+    }
+    return map
+  }, [occurrences])
 
   const selectedDateKey = format(selectedDay, 'yyyy-MM-dd')
   const selectedDayOccurrences = occurrencesByDate.get(selectedDateKey) ?? []

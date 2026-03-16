@@ -45,12 +45,20 @@ export function computeKidStats(
   }
 }
 
+let streakCache: { key: string; value: number; time: number } | null = null
+
 export function computeStreak(
   memberId: string,
   chores: Chore[],
   completions: CompletionRecord,
   skipped: SkippedRecord,
 ): number {
+  const cacheKey = `${memberId}:${chores.length}:${Object.keys(completions).length}:${Object.keys(skipped).length}`
+  const now = Date.now()
+  if (streakCache && streakCache.key === cacheKey && now - streakCache.time < 1000) {
+    return streakCache.value
+  }
+
   const today = startOfDay(new Date())
   let streak = 0
 
@@ -86,6 +94,7 @@ export function computeStreak(
     // Days with no chores don't break the streak
   }
 
+  streakCache = { key: cacheKey, value: streak, time: now }
   return streak
 }
 

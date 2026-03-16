@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format, isToday } from 'date-fns'
 import { getWeekDays } from '../../lib/calendar'
 import type { ChoreOccurrence } from '../../types'
@@ -35,12 +35,15 @@ export default function WeekView({ currentDate, occurrences, onDayClick, onChore
     setSelectedDayIndex(todayIdx >= 0 ? todayIdx : 0)
   }, [currentDate])
 
-  const occurrencesByDate = new Map<string, ChoreOccurrence[]>()
-  for (const occ of occurrences) {
-    const existing = occurrencesByDate.get(occ.date) ?? []
-    existing.push(occ)
-    occurrencesByDate.set(occ.date, existing)
-  }
+  const occurrencesByDate = useMemo(() => {
+    const map = new Map<string, ChoreOccurrence[]>()
+    for (const occ of occurrences) {
+      const existing = map.get(occ.date) ?? []
+      existing.push(occ)
+      map.set(occ.date, existing)
+    }
+    return map
+  }, [occurrences])
 
   function getTimedOccurrences(dateKey: string, hour: number) {
     return (occurrencesByDate.get(dateKey) ?? []).filter(

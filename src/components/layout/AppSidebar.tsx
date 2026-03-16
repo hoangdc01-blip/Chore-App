@@ -15,7 +15,7 @@ import {
   ArrowLeftRight,
   Moon,
   Sun,
-  KeyRound,
+  Users,
   X,
   Star,
 } from 'lucide-react'
@@ -23,7 +23,6 @@ import type { AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { useChatStore } from '../../store/chat-store'
-import ChangePinDialog from '../auth/ChangePinDialog'
 import AiAvatar from '../chat/AiAvatar'
 
 interface AppSidebarProps {
@@ -64,6 +63,7 @@ const FAMILY_ITEMS: NavItem[] = [
   { view: 'dashboard', icon: BarChart3, label: 'Dashboard', parentOnly: true },
   { view: 'rewards', icon: Gift, label: 'Rewards' },
   { view: 'coupons', icon: Ticket, label: 'Coupons', kidOnly: true },
+  { view: 'members', icon: Users, label: 'Manage Family', parentOnly: true },
 ]
 
 const FUN_ITEMS: NavItem[] = [
@@ -73,7 +73,6 @@ const FUN_ITEMS: NavItem[] = [
 
 export default function AppSidebar({ activeView, onActiveViewChange, open, onClose }: AppSidebarProps) {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-  const [changePinOpen, setChangePinOpen] = useState(false)
 
   const mode = useAppStore((s) => s.mode)
   const activeKidId = useAppStore((s) => s.activeKidId)
@@ -285,17 +284,6 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
             </div>
           </button>
 
-          {/* Change Passcode — parent only */}
-          {!isKidMode && (
-            <button
-              onClick={() => setChangePinOpen(true)}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <KeyRound size={15} />
-              Change Passcode
-            </button>
-          )}
-
           {/* Switch profile */}
           <button
             onClick={() => { switchProfile(); onClose() }}
@@ -306,7 +294,6 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
           </button>
         </div>
 
-        <ChangePinDialog open={changePinOpen} onClose={() => setChangePinOpen(false)} />
       </aside>
     </>
   )

@@ -7,10 +7,20 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 
-export default function MemberDialog() {
+interface MemberDialogProps {
+  open?: boolean
+  onClose?: () => void
+}
+
+export default function MemberDialog({ open: externalOpen, onClose: externalOnClose }: MemberDialogProps = {}) {
   const addMember = useMemberStore((s) => s.addMember)
   const members = useMemberStore((s) => s.members)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = externalOpen !== undefined
+  const open = isControlled ? externalOpen : internalOpen
+  const setOpen = isControlled ? (v: boolean) => { if (!v && externalOnClose) externalOnClose() } : setInternalOpen
+
   const trapRef = useFocusTrap<HTMLDivElement>(open)
   const [name, setName] = useState('')
   const [colorIndex, setColorIndex] = useState(0)
@@ -65,13 +75,15 @@ export default function MemberDialog() {
 
   return (
     <>
-      <Button
-        onClick={() => setOpen(true)}
-        className="flex items-center justify-center gap-1.5 w-full mt-2"
-      >
-        <Plus size={16} />
-        Add Kid
-      </Button>
+      {!isControlled && (
+        <Button
+          onClick={() => setOpen(true)}
+          className="flex items-center justify-center gap-1.5 w-full mt-2"
+        >
+          <Plus size={16} />
+          Add Kid
+        </Button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>

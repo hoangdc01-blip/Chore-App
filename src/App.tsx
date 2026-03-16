@@ -7,6 +7,7 @@ import Dashboard from './components/dashboard/Dashboard'
 import RewardShop from './components/rewards/RewardShop'
 import MyCoupons from './components/rewards/MyCoupons'
 import GameMenu from './games/GameMenu'
+import MembersView from './components/members/MembersView'
 import LanguageView from './components/language/LanguageView'
 import ClassCalendarView from './components/classes/ClassCalendarView'
 import Toaster from './components/ui/Toaster'
@@ -265,6 +266,8 @@ export default function App() {
           <GameMenu onNavigate={setActiveView} />
         ) : activeView === 'coupons' ? (
           <MyCoupons />
+        ) : activeView === 'members' ? (
+          <MembersView />
         ) : (
           <RewardShop />
         )}

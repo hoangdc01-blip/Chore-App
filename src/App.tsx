@@ -15,6 +15,7 @@ const GameMenu = lazy(() => import('./games/GameMenu'))
 const MembersView = lazy(() => import('./components/members/MembersView'))
 const LanguageView = lazy(() => import('./components/language/LanguageView'))
 const ClassCalendarView = lazy(() => import('./components/classes/ClassCalendarView'))
+const MusicTeacher = lazy(() => import('./components/music/MusicTeacher'))
 const BuddyChat = lazy(() => import('./components/chat/BuddyChat'))
 const ChatPage = lazy(() => import('./components/chat/ChatPage'))
 const SetupWizard = lazy(() => import('./components/setup/SetupWizard'))
@@ -277,6 +278,8 @@ export default function App() {
             <Dashboard />
           ) : activeView === 'language' ? (
             <LanguageView />
+          ) : activeView === 'music' ? (
+            <MusicTeacher onQuit={() => setActiveView('chat')} />
           ) : activeView === 'games' ? (
             <GameMenu onNavigate={setActiveView} />
           ) : activeView === 'coupons' ? (

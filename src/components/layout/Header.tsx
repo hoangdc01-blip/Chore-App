@@ -17,11 +17,14 @@ interface HeaderProps {
 const VIEW_TITLES: Partial<Record<AppView, string>> = {
   chat: '',
   calendar: 'Calendar',
+  classes: 'Extra Classes',
   dashboard: 'Dashboard',
   rewards: 'Rewards',
   games: 'Games',
   coupons: 'Coupons',
   language: 'Learn',
+  music: 'Music',
+  members: 'Manage Family',
 }
 
 export default function Header({ activeView, onActiveViewChange: _onActiveViewChange, viewMode, onViewModeChange, searchQuery, onSearchChange, onMenuToggle }: HeaderProps) {
@@ -65,7 +68,7 @@ export default function Header({ activeView, onActiveViewChange: _onActiveViewCh
 
         {/* Center: view title */}
         {viewTitle && (
-          <span className="hidden sm:block text-sm font-medium text-muted-foreground ml-4">
+          <span className="text-sm font-semibold text-muted-foreground ml-1">
             {viewTitle}
           </span>
         )}

@@ -7,6 +7,7 @@ import {
   Gamepad2,
   Gift,
   Languages,
+  Music,
   Ticket,
   ArrowLeftRight,
   Moon,
@@ -51,6 +52,7 @@ const FAMILY_ITEMS: NavItem[] = [
 const FUN_ITEMS: NavItem[] = [
   { view: 'games', icon: Gamepad2, label: 'Games' },
   { view: 'language', icon: Languages, label: 'Learn' },
+  { view: 'music', icon: Music, label: 'Music' },
 ]
 
 export default function AppSidebar({ activeView, onActiveViewChange, open, onClose }: AppSidebarProps) {

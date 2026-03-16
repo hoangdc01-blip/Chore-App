@@ -2,7 +2,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly
 
 export type CalendarViewMode = 'month' | 'week' | 'day'
 
-export type AppView = 'chat' | 'calendar' | 'classes' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language' | 'members'
+export type AppView = 'chat' | 'calendar' | 'classes' | 'dashboard' | 'rewards' | 'games' | 'coupons' | 'language' | 'members' | 'music'
 
 export interface FamilyMember {
   id: string

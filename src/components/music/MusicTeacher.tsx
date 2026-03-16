@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Music, Play, Star, X, RotateCcw } from 'lucide-react'
+import { Music, Play, Star, X, RotateCcw, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { playCorrect, playWrong } from '@/games/sounds'
 
@@ -56,6 +56,22 @@ const LESSONS: MusicLesson[] = [
   { name: 'Fast Fingers', emoji: '\u26A1', description: 'Speed it up!', sequence: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'], speed: 400 },
 ]
 
+// ── Completion persistence ──
+
+const STORAGE_KEY = 'music-completed-lessons'
+
+function getCompletedLessons(): Set<number> {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY)
+    if (data) return new Set(JSON.parse(data))
+  } catch { /* ignore corrupt data */ }
+  return new Set()
+}
+
+function saveCompletedLessons(completed: Set<number>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]))
+}
+
 type GameState = 'menu' | 'listening' | 'playing' | 'result'
 
 export default function MusicTeacher({ onQuit }: { onQuit: () => void }) {
@@ -67,6 +83,8 @@ export default function MusicTeacher({ onQuit }: { onQuit: () => void }) {
   const [score, setScore] = useState(0)
   const [showNoteFlash, setShowNoteFlash] = useState<string | null>(null)
   const [results, setResults] = useState<boolean[]>([])
+  const [completedLessons, setCompletedLessons] = useState<Set<number>>(() => getCompletedLessons())
+  const [confirmReplay, setConfirmReplay] = useState<number | null>(null)
   const timeoutRefs = useRef<number[]>([])
 
   // Cleanup timeouts on unmount
@@ -122,11 +140,25 @@ export default function MusicTeacher({ onQuit }: { onQuit: () => void }) {
     if (nextIndex >= currentLesson.sequence.length) {
       // Lesson complete
       const finalScore = newResults.filter(Boolean).length
+      const finalPct = Math.round((finalScore / currentLesson.sequence.length) * 100)
       if (finalScore >= currentLesson.sequence.length * 0.7) {
         playCorrect()
       } else {
         playWrong()
       }
+
+      // Mark as completed if score >= 60%
+      if (finalPct >= 60) {
+        const lessonIndex = LESSONS.indexOf(currentLesson)
+        setCompletedLessons(prev => {
+          if (prev.has(lessonIndex)) return prev
+          const updated = new Set(prev)
+          updated.add(lessonIndex)
+          saveCompletedLessons(updated)
+          return updated
+        })
+      }
+
       setTimeout(() => setGameState('result'), 500)
     }
   }, [gameState, currentLesson, currentPlayerIndex, results])
@@ -175,11 +207,33 @@ export default function MusicTeacher({ onQuit }: { onQuit: () => void }) {
             <p className="text-center text-muted-foreground mb-4">
               Listen to the melody, then play it back!
             </p>
+
+            <div className="text-center mb-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                {completedLessons.size} / {LESSONS.length} lessons completed
+              </p>
+              <div className="h-2.5 overflow-hidden rounded-full bg-muted mt-2 max-w-xs mx-auto">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${(completedLessons.size / LESSONS.length) * 100}%` }}
+                />
+              </div>
+            </div>
+
             {LESSONS.map((lesson, i) => (
               <button
                 key={i}
-                onClick={() => startLesson(lesson)}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 hover:shadow-md transition-all text-left"
+                onClick={() => {
+                  if (completedLessons.has(i)) {
+                    setConfirmReplay(i)
+                  } else {
+                    startLesson(lesson)
+                  }
+                }}
+                className={cn(
+                  'w-full flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 hover:shadow-md transition-all text-left',
+                  completedLessons.has(i) && 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10'
+                )}
               >
                 <span className="text-3xl">{lesson.emoji}</span>
                 <div className="flex-1">
@@ -187,10 +241,47 @@ export default function MusicTeacher({ onQuit }: { onQuit: () => void }) {
                   <p className="text-sm text-muted-foreground">{lesson.description}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{lesson.sequence.length} notes</p>
                 </div>
-                <Play size={20} className="text-primary" />
+                {completedLessons.has(i) ? (
+                  <span className="text-emerald-500 shrink-0">
+                    <CheckCircle2 size={20} />
+                  </span>
+                ) : (
+                  <Play size={20} className="text-primary" />
+                )}
               </button>
             ))}
           </div>
+
+          {confirmReplay !== null && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setConfirmReplay(null)}>
+              <div className="bg-card rounded-3xl shadow-xl p-6 mx-4 max-w-sm text-center space-y-4" onClick={e => e.stopPropagation()}>
+                <span className="text-4xl">{LESSONS[confirmReplay].emoji}</span>
+                <h3 className="text-lg font-bold text-foreground">
+                  You already completed &quot;{LESSONS[confirmReplay].name}&quot;!
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Want to play it again to improve your score?
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setConfirmReplay(null)}
+                    className="px-5 py-2.5 rounded-full bg-muted text-foreground font-bold text-sm"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      startLesson(LESSONS[confirmReplay])
+                      setConfirmReplay(null)
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-sm"
+                  >
+                    Play Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )

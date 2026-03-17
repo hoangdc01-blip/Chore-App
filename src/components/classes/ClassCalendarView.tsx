@@ -415,7 +415,7 @@ export default function ClassCalendarView() {
           const time = occ.classItem.startTime
             ? `${occ.classItem.startTime}${occ.classItem.endTime ? '-' + occ.classItem.endTime : ''}`
             : ''
-          return `<div style="background:${bgHex};color:${textHex};padding:4px 6px;border-radius:4px;margin:1px 0;font-size:13px;">
+          return `<div style="background:${bgHex};color:${textHex};padding:6px 8px;border-radius:4px;margin:1px 0;font-size:14px;">
             <strong>${occ.classItem.emoji ?? ''} ${occ.classItem.name}</strong><br/>
             <span>${name}</span>
             ${time ? `<br/><span>${time}</span>` : ''}
@@ -433,13 +433,13 @@ export default function ClassCalendarView() {
 <meta charset="utf-8"/>
 <title>Extra Classes - Week of ${format(ws, 'MMM d, yyyy')}</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; color: #1f2937; }
-  h1 { font-size: 18px; margin-bottom: 4px; }
-  h2 { font-size: 14px; font-weight: normal; color: #6b7280; margin-top: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; color: #1f2937; font-size: 15px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  h2 { font-size: 16px; font-weight: normal; color: #6b7280; margin-top: 0; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th { background: #f3f4f6; padding: 6px 4px; font-size: 14px; border: 1px solid #d1d5db; text-align: center; }
-  td { border: 1px solid #d1d5db; padding: 4px; vertical-align: top; font-size: 13px; min-height: 50px; }
-  .time-col { width: 60px; text-align: right; padding-right: 6px; font-size: 11px; color: #6b7280; font-weight: 600; }
+  th { background: #f3f4f6; padding: 8px 6px; font-size: 15px; border: 1px solid #d1d5db; text-align: center; }
+  td { border: 1px solid #d1d5db; padding: 6px; vertical-align: top; font-size: 14px; min-height: 60px; }
+  .time-col { width: 70px; text-align: right; padding-right: 6px; font-size: 12px; color: #6b7280; font-weight: 600; }
   @media print {
     body { margin: 10px; }
     table { page-break-inside: auto; }
@@ -968,7 +968,7 @@ ${timeSlots.map(
         {/* Desktop: timeline grid — matching WeekView exactly */}
         <div className="hidden xl:flex xl:flex-col xl:flex-1 overflow-auto">
           {/* Header row */}
-          <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+          <div className="grid shrink-0 sticky top-0 z-10 bg-background" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
             <div className="border border-border bg-muted" />
             {days.map((day) => {
               const today = isToday(day)
@@ -994,7 +994,7 @@ ${timeSlots.map(
           </div>
 
           {/* All-day row */}
-          <div className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+          <div className="grid shrink-0" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
             <div className="border border-border px-1 py-1 text-sm text-muted-foreground font-semibold flex items-start justify-end pr-2">
               All day
             </div>
@@ -1020,8 +1020,8 @@ ${timeSlots.map(
 
           {/* Time grid */}
           {HOURS.map((hour) => (
-            <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
-              <div className="border border-border px-1 text-xs text-muted-foreground font-semibold flex items-start justify-end pr-2 pt-0.5 h-[60px]">
+            <div key={hour} className="grid shrink-0" style={{ gridTemplateColumns: '56px repeat(7, 1fr)' }}>
+              <div className="border border-border px-1 text-xs text-muted-foreground font-semibold flex items-start justify-end pr-2 pt-0.5 min-h-[60px]">
                 {formatHour(hour)}
               </div>
               {days.map((day) => {
@@ -1032,7 +1032,7 @@ ${timeSlots.map(
                   <div
                     key={dateKey}
                     onClick={() => openAdd(day, `${String(hour).padStart(2, '0')}:00`)}
-                    className={`border border-border p-0.5 h-[60px] cursor-pointer hover:bg-accent/50 transition-colors overflow-hidden ${todayCol ? 'bg-primary/12' : ''}`}
+                    className={`border border-border p-0.5 min-h-[60px] cursor-pointer hover:bg-accent/50 transition-colors ${todayCol ? 'bg-primary/12' : ''}`}
                   >
                     <div className="space-y-0.5">
                       {hourOccs.map((occ) => (

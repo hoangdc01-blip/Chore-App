@@ -42,11 +42,11 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
     if (viewMode === 'month') {
       const monthStart = startOfMonth(currentDate)
       const monthEnd = endOfMonth(currentDate)
-      start = startOfWeek(monthStart, { weekStartsOn: 0 })
-      end = endOfWeek(monthEnd, { weekStartsOn: 0 })
+      start = startOfWeek(monthStart, { weekStartsOn: 1 })
+      end = endOfWeek(monthEnd, { weekStartsOn: 1 })
     } else if (viewMode === 'week') {
-      start = startOfWeek(currentDate, { weekStartsOn: 0 })
-      end = endOfWeek(currentDate, { weekStartsOn: 0 })
+      start = startOfWeek(currentDate, { weekStartsOn: 1 })
+      end = endOfWeek(currentDate, { weekStartsOn: 1 })
     } else {
       start = startOfDay(currentDate)
       end = endOfDay(currentDate)
@@ -78,8 +78,8 @@ export default function CalendarView({ viewMode, searchQuery, hiddenMemberIds, o
   // For day view date picker: compute which dates have tasks (3-month window for prev/next month nav)
   const datesWithTasks = useMemo(() => {
     if (viewMode !== 'day') return new Set<string>()
-    const rangeStart = startOfWeek(startOfMonth(subMonths(currentDate, 1)), { weekStartsOn: 0 })
-    const rangeEnd = endOfWeek(endOfMonth(addMonths(currentDate, 1)), { weekStartsOn: 0 })
+    const rangeStart = startOfWeek(startOfMonth(subMonths(currentDate, 1)), { weekStartsOn: 1 })
+    const rangeEnd = endOfWeek(endOfMonth(addMonths(currentDate, 1)), { weekStartsOn: 1 })
     const allOccs = getOccurrencesForRange(rangeStart, rangeEnd)
     const dates = new Set<string>()
     for (const occ of allOccs) {

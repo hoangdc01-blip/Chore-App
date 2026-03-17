@@ -5,8 +5,8 @@ import type { ChoreOccurrence } from '../../types'
 import DayCell from './DayCell'
 import ChoreCard from './ChoreCard'
 
-const WEEKDAYS_LONG = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAYS_LONG = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEKDAYS_SHORT = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 interface MonthViewProps {
   currentDate: Date

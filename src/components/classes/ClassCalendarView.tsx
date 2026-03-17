@@ -25,8 +25,8 @@ import { getMonthDays, getWeekDays } from '../../lib/calendar'
 import type { ExtraClass, RecurrenceType, CalendarViewMode, ClassOccurrence } from '../../types'
 import { cn } from '../../lib/utils'
 
-const WEEKDAYS_LONG = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const WEEKDAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAYS_LONG = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEKDAYS_SHORT = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
   { value: 'none', label: 'Once' },
@@ -244,13 +244,13 @@ export default function ClassCalendarView() {
       const monthStart = startOfMonth(currentDate)
       const monthEnd = endOfMonth(currentDate)
       return {
-        rangeStart: startOfWeek(monthStart, { weekStartsOn: 0 }),
-        rangeEnd: endOfWeek(monthEnd, { weekStartsOn: 0 }),
+        rangeStart: startOfWeek(monthStart, { weekStartsOn: 1 }),
+        rangeEnd: endOfWeek(monthEnd, { weekStartsOn: 1 }),
       }
     } else if (viewMode === 'week') {
       return {
-        rangeStart: startOfWeek(currentDate, { weekStartsOn: 0 }),
-        rangeEnd: endOfWeek(currentDate, { weekStartsOn: 0 }),
+        rangeStart: startOfWeek(currentDate, { weekStartsOn: 1 }),
+        rangeEnd: endOfWeek(currentDate, { weekStartsOn: 1 }),
       }
     } else {
       return { rangeStart: currentDate, rangeEnd: currentDate }
@@ -373,8 +373,8 @@ export default function ClassCalendarView() {
 
   // Export weekly timetable to print
   const exportWeeklyPdf = useCallback(() => {
-    const ws = startOfWeek(currentDate, { weekStartsOn: 0 })
-    const we = endOfWeek(currentDate, { weekStartsOn: 0 })
+    const ws = startOfWeek(currentDate, { weekStartsOn: 1 })
+    const we = endOfWeek(currentDate, { weekStartsOn: 1 })
     const weekDays = eachDayOfInterval({ start: ws, end: we })
     const weekOccs = getOccurrencesForRange(ws, we).filter(
       (occ) => !isFilterActive || kidFilter.has(occ.classItem.assigneeId)
@@ -494,8 +494,8 @@ ${timeSlots.map(
     if (viewMode === 'day') {
       const pickerMonthStart = startOfMonth(pickerMonth)
       const pickerMonthEnd = endOfMonth(pickerMonth)
-      const calStart = startOfWeek(pickerMonthStart, { weekStartsOn: 0 })
-      const calEnd = endOfWeek(pickerMonthEnd, { weekStartsOn: 0 })
+      const calStart = startOfWeek(pickerMonthStart, { weekStartsOn: 1 })
+      const calEnd = endOfWeek(pickerMonthEnd, { weekStartsOn: 1 })
       const pickerDays = eachDayOfInterval({ start: calStart, end: calEnd })
 
       return (
@@ -574,10 +574,10 @@ ${timeSlots.map(
     if (viewMode === 'week') {
       const monthStart = startOfMonth(pickerMonth)
       const monthEnd = endOfMonth(pickerMonth)
-      const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 })
+      const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 })
 
-      const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
-      const weekLabel = `${format(currentWeekStart, 'MMM d')} \u2013 ${format(endOfWeek(currentWeekStart, { weekStartsOn: 0 }), 'MMM d, yyyy')}`
+      const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+      const weekLabel = `${format(currentWeekStart, 'MMM d')} \u2013 ${format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
 
       return (
         <div className="flex items-center gap-2 px-4 py-3">
@@ -605,8 +605,8 @@ ${timeSlots.map(
 
                 <div className="py-1 max-h-[280px] overflow-y-auto">
                   {weekStarts.map((ws) => {
-                    const we = endOfWeek(ws, { weekStartsOn: 0 })
-                    const isCurrentWeek = isSameWeek(ws, currentDate, { weekStartsOn: 0 })
+                    const we = endOfWeek(ws, { weekStartsOn: 1 })
+                    const isCurrentWeek = isSameWeek(ws, currentDate, { weekStartsOn: 1 })
                     const hasToday = eachDayOfInterval({ start: ws, end: we }).some((d) => isToday(d))
                     const label = `${format(ws, 'MMM d')} \u2013 ${format(we, 'MMM d')}`
 

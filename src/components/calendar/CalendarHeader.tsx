@@ -58,8 +58,8 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
   if (viewMode === 'day') {
     const pickerMonthStart = startOfMonth(pickerMonth)
     const pickerMonthEnd = endOfMonth(pickerMonth)
-    const calStart = startOfWeek(pickerMonthStart, { weekStartsOn: 0 })
-    const calEnd = endOfWeek(pickerMonthEnd, { weekStartsOn: 0 })
+    const calStart = startOfWeek(pickerMonthStart, { weekStartsOn: 1 })
+    const calEnd = endOfWeek(pickerMonthEnd, { weekStartsOn: 1 })
     const pickerDays = eachDayOfInterval({ start: calStart, end: calEnd })
 
     return (
@@ -89,7 +89,7 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
               </div>
 
               <div className="grid grid-cols-7 px-2 pt-2">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
                   <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>
                 ))}
               </div>
@@ -138,10 +138,10 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
   if (viewMode === 'week') {
     const monthStart = startOfMonth(pickerMonth)
     const monthEnd = endOfMonth(pickerMonth)
-    const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 })
+    const weekStarts = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 })
 
-    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
-    const weekLabel = `${format(currentWeekStart, 'MMM d')} – ${format(endOfWeek(currentWeekStart, { weekStartsOn: 0 }), 'MMM d, yyyy')}`
+    const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+    const weekLabel = `${format(currentWeekStart, 'MMM d')} – ${format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
 
     return (
       <div className="flex items-center gap-2 px-4 py-3">
@@ -171,8 +171,8 @@ export default function CalendarHeader({ currentDate, viewMode, datesWithTasks, 
               {/* Week list */}
               <div className="py-1 max-h-[280px] overflow-y-auto">
                 {weekStarts.map((ws) => {
-                  const we = endOfWeek(ws, { weekStartsOn: 0 })
-                  const isCurrentWeek = isSameWeek(ws, currentDate, { weekStartsOn: 0 })
+                  const we = endOfWeek(ws, { weekStartsOn: 1 })
+                  const isCurrentWeek = isSameWeek(ws, currentDate, { weekStartsOn: 1 })
                   const hasToday = eachDayOfInterval({ start: ws, end: we }).some((d) => isToday(d))
                   const label = `${format(ws, 'MMM d')} – ${format(we, 'MMM d')}`
 

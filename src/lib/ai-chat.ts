@@ -204,10 +204,10 @@ function buildProgressContext(memberId: string): string {
   if (!member) return ''
 
   const now = new Date()
-  const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 })
-  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 })
-  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
-  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 })
+  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
 
   const thisWeek = computeKidStats(memberId, chores, completions, skipped, thisWeekStart, thisWeekEnd)
   const lastWeek = computeKidStats(memberId, chores, completions, skipped, lastWeekStart, lastWeekEnd)
@@ -279,8 +279,8 @@ function buildRewardBalanceAdvice(): string {
   if (members.length === 0 || rewards.length === 0) return ''
 
   const now = new Date()
-  const weekStart = startOfWeek(now, { weekStartsOn: 0 })
-  const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
   const cheapest = Math.min(...rewards.map((r) => r.cost))
 
   const lines: string[] = []
@@ -335,8 +335,8 @@ function buildFairnessContext(): string {
 
   const store = useChoreStore.getState()
   const now = new Date()
-  const weekStart = startOfWeek(now, { weekStartsOn: 0 })
-  const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
   const occurrences = store.getOccurrencesForRange(weekStart, weekEnd)
 
   const lines = members.map(m => {
@@ -492,10 +492,10 @@ function buildWeeklyReportContext(): string {
 
   const { chores, completions, skipped } = useChoreStore.getState()
   const now = new Date()
-  const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 })
-  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 })
-  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
-  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 0 })
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 })
+  const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+  const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
 
   const kidLines: string[] = []
   for (const member of members) {

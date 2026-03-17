@@ -113,7 +113,7 @@ export function computeAllKidsStats(
 
 export function getWeekRange(): { start: Date; end: Date } {
   const now = new Date()
-  return { start: startOfWeek(now, { weekStartsOn: 0 }), end: endOfWeek(now, { weekStartsOn: 0 }) }
+  return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) }
 }
 
 export function getMonthRange(): { start: Date; end: Date } {

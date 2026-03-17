@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import { format } from 'date-fns'
 import type { ExtraClass, ClassOccurrence } from '../types'
 import { expandRecurrence } from '../lib/recurrence'
+import { saveClass, deleteClassDoc, updateClassDoc } from '../lib/firestore-sync'
+import { showToast } from './toast-store'
 
 interface ClassState {
   classes: ExtraClass[]
@@ -20,10 +22,12 @@ export const useClassStore = create<ClassState>()(
       addClass: (cls) => {
         const newClass: ExtraClass = { ...cls, id: crypto.randomUUID() }
         set({ classes: [...get().classes, newClass] })
+        saveClass(newClass).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       removeClass: (id) => {
         set({ classes: get().classes.filter((c) => c.id !== id) })
+        deleteClassDoc(id).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       updateClass: (id, updates) => {
@@ -32,6 +36,7 @@ export const useClassStore = create<ClassState>()(
             c.id === id ? { ...c, ...updates } : c
           ),
         })
+        updateClassDoc(id, updates).catch(() => showToast('Sync failed. Please try again.', 'error'))
       },
 
       getOccurrencesForRange: (start, end) => {

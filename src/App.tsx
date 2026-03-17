@@ -30,6 +30,9 @@ import { useAppStore } from './store/app-store'
 import { useAchievementStore } from './store/achievement-store'
 import { useChallengeStore } from './store/challenge-store'
 import { useStickerStore } from './store/sticker-store'
+import { useClassStore } from './store/class-store'
+import { useRoutineStore } from './store/routine-store'
+import { useQuestStore } from './store/quest-store'
 import { computeKidStats, getAllTimeRange } from './lib/stats'
 import { getPinHash } from './lib/pin'
 import { getThemeById } from './lib/kid-themes'
@@ -106,13 +109,20 @@ export default function App() {
       return
     }
 
-    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers }) => {
+    const unsubscribe = subscribeToAll(({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers, classes, routines, routineProgress, quests }) => {
       useMemberStore.setState({ members, _initialized: members.length > 0 || useMemberStore.getState()._initialized })
       useChoreStore.setState({ chores, completions, skipped, pendingApprovals })
       useRewardStore.setState({ rewards, redemptions, coupons })
       useAchievementStore.setState({ earnedBadges })
       useChallengeStore.setState({ claimedBonuses })
       useStickerStore.setState({ earnedStickers })
+      useClassStore.setState({ classes })
+      if (routines.length > 0) {
+        useRoutineStore.setState({ routines, progress: routineProgress })
+      } else if (Object.keys(routineProgress).length > 0) {
+        useRoutineStore.setState({ progress: routineProgress })
+      }
+      useQuestStore.setState({ quests })
 
       // One-time migration
       if (!migrated.current) {

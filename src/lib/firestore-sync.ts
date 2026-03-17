@@ -1,7 +1,9 @@
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where, writeBatch, onSnapshot } from 'firebase/firestore'
 import { db } from './firebase'
 import { useFirebase } from './firebase-flag'
-import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, PendingRecord, Reward, Redemption, Coupon } from '../types'
+import type { FamilyMember, Chore, CompletionRecord, SkippedRecord, PendingRecord, Reward, Redemption, Coupon, ExtraClass } from '../types'
+import type { Routine, RoutineProgress } from '../store/routine-store'
+import type { TeamQuest } from '../store/quest-store'
 
 // Strip undefined values — Firestore rejects them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -180,6 +182,23 @@ export async function saveEarnedStickers(memberId: string, stickerIds: string[])
   await setDoc(doc(db, 'stickers', memberId), { stickerIds })
 }
 
+// ── Classes ──
+
+export async function saveClass(classItem: ExtraClass): Promise<void> {
+  if (!useFirebase || !db) return
+  await setDoc(doc(db, 'classes', classItem.id), clean(classItem))
+}
+
+export async function deleteClassDoc(id: string): Promise<void> {
+  if (!useFirebase || !db) return
+  await deleteDoc(doc(db, 'classes', id))
+}
+
+export async function updateClassDoc(id: string, updates: Partial<ExtraClass>): Promise<void> {
+  if (!useFirebase || !db) return
+  await setDoc(doc(db, 'classes', id), clean(updates), { merge: true })
+}
+
 // ── Routines ──
 
 export async function saveRoutine(routine: Record<string, unknown> & { id: string }): Promise<void> {
@@ -244,6 +263,10 @@ export function subscribeToAll(onData: (data: {
   earnedBadges: Record<string, string[]>
   claimedBonuses: Record<string, boolean>
   earnedStickers: Record<string, string[]>
+  classes: ExtraClass[]
+  routines: Routine[]
+  routineProgress: Record<string, RoutineProgress>
+  quests: TeamQuest[]
 }) => void): () => void {
   if (!useFirebase || !db) {
     // No-op: data is already in localStorage via Zustand persist
@@ -261,12 +284,16 @@ export function subscribeToAll(onData: (data: {
   let earnedBadges: Record<string, string[]> = {}
   let claimedBonuses: Record<string, boolean> = {}
   let earnedStickersData: Record<string, string[]> = {}
+  let classes: ExtraClass[] = []
+  let routines: Routine[] = []
+  let routineProgress: Record<string, RoutineProgress> = {}
+  let quests: TeamQuest[] = []
   let initialLoad = 0
-  const TOTAL_COLLECTIONS = 11
+  const TOTAL_COLLECTIONS = 15
 
   const notify = () => {
     if (initialLoad < TOTAL_COLLECTIONS) return
-    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers: earnedStickersData })
+    onData({ members, chores, completions, skipped, pendingApprovals, rewards, redemptions, coupons, earnedBadges, claimedBonuses, earnedStickers: earnedStickersData, classes, routines, routineProgress, quests })
   }
 
   const handleError = (name: string) => (err: unknown) => {
@@ -372,6 +399,37 @@ export function subscribeToAll(onData: (data: {
       notify()
     }, handleError('stickers'))
     unsubFns.push(unsub10)
+
+    const unsub11 = onSnapshot(collection(db, 'classes'), (snap) => {
+      classes = snap.docs.map((d) => d.data() as ExtraClass)
+      if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+      notify()
+    }, handleError('classes'))
+    unsubFns.push(unsub11)
+
+    const unsub12 = onSnapshot(collection(db, 'routines'), (snap) => {
+      routines = snap.docs.map((d) => d.data() as Routine)
+      if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+      notify()
+    }, handleError('routines'))
+    unsubFns.push(unsub12)
+
+    const unsub13 = onSnapshot(collection(db, 'routineProgress'), (snap) => {
+      routineProgress = {}
+      snap.docs.forEach((d) => {
+        routineProgress[d.id] = d.data() as RoutineProgress
+      })
+      if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+      notify()
+    }, handleError('routineProgress'))
+    unsubFns.push(unsub13)
+
+    const unsub14 = onSnapshot(collection(db, 'quests'), (snap) => {
+      quests = snap.docs.map((d) => d.data() as TeamQuest)
+      if (initialLoad < TOTAL_COLLECTIONS) initialLoad++
+      notify()
+    }, handleError('quests'))
+    unsubFns.push(unsub14)
   } catch (err) {
     console.error('[firestore] Failed to initialize:', err)
     // Force notify with empty data so the app doesn't hang
@@ -391,6 +449,7 @@ export async function pushAllData(
   chores: Chore[],
   completions: CompletionRecord,
   skipped: SkippedRecord,
+  classes?: ExtraClass[],
 ): Promise<void> {
   if (!useFirebase || !db) return
   const batch = writeBatch(db)
@@ -421,6 +480,17 @@ export async function pushAllData(
       skipped: true,
     })
   }
+  if (classes) {
+    for (const cls of classes) {
+      batch.set(doc(db, 'classes', cls.id), clean(cls))
+    }
+  }
 
   await batch.commit()
+}
+
+export async function fetchClasses(): Promise<ExtraClass[]> {
+  if (!useFirebase || !db) return []
+  const snap = await getDocs(collection(db, 'classes'))
+  return snap.docs.map((d) => d.data() as ExtraClass)
 }

@@ -1,7 +1,7 @@
 {
-  "name": "Family Chores",
-  "short_name": "Chores",
-  "description": "Fun chore tracking app for families with AI Buddy",
+  "name": "Váu Váu AI",
+  "short_name": "Váu Váu AI",
+  "description": "Your family's AI assistant - chores, homework, drawings, and more",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

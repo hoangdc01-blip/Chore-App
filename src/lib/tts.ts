@@ -206,6 +206,33 @@ function findVoice(lang: string, voices: SpeechSynthesisVoice[]): SpeechSynthesi
       || voices.find(v => v.lang.startsWith('vi'))
       || null
   }
+  if (lang === 'ko-KR') {
+    // Prefer Yuna (Apple's premium Korean voice) — best quality
+    return voices.find(v => v.name === 'Yuna' && v.lang === 'ko_KR')
+      || voices.find(v => v.name === 'Yuna')
+      || voices.find(v => v.lang === 'ko_KR' && v.localService && !v.name.includes('Eddy') && !v.name.includes('Flo') && !v.name.includes('Grandma') && !v.name.includes('Grandpa') && !v.name.includes('Rocko'))
+      || voices.find(v => v.lang === 'ko_KR' && v.localService)
+      || voices.find(v => v.lang.startsWith('ko'))
+      || null
+  }
+  if (lang === 'ja-JP') {
+    // Prefer Kyoko (Apple's premium Japanese voice)
+    return voices.find(v => v.name === 'Kyoko' && v.lang === 'ja_JP')
+      || voices.find(v => v.name === 'Kyoko')
+      || voices.find(v => v.name === 'O-Ren' && v.lang === 'ja_JP')
+      || voices.find(v => v.lang === 'ja_JP' && v.localService && !v.name.includes('Eddy') && !v.name.includes('Flo') && !v.name.includes('Rocko'))
+      || voices.find(v => v.lang.startsWith('ja'))
+      || null
+  }
+  if (lang === 'zh-CN') {
+    // Prefer Ting-Ting or Lili (Apple's premium Chinese voices)
+    return voices.find(v => v.name === 'Ting-Ting' && v.lang === 'zh_CN')
+      || voices.find(v => v.name === 'Lili' && v.lang === 'zh_CN')
+      || voices.find(v => v.lang === 'zh_CN' && v.localService && !v.name.includes('Eddy') && !v.name.includes('Flo') && !v.name.includes('Rocko'))
+      || voices.find(v => v.lang === 'zh_CN' && v.localService)
+      || voices.find(v => v.lang.startsWith('zh'))
+      || null
+  }
   return voices.find(v => v.lang === lang && v.localService)
     || voices.find(v => v.lang === lang)
     || null
@@ -222,7 +249,9 @@ function speakNextChunk(): void {
   }
 
   const utterance = new SpeechSynthesisUtterance(chunk)
-  utterance.rate = 0.85  // slower for kids
+  // Slower rate for non-English (language learning) — helps kids hear each syllable
+  const isLanguageLearning = currentLang !== 'en-US'
+  utterance.rate = isLanguageLearning ? 0.7 : 0.85
   utterance.pitch = 1.05
   utterance.lang = currentLang
 
@@ -246,10 +275,14 @@ function speakNextChunk(): void {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
+let speakId = 0 // tracks current speak call to prevent overlapping
+
 export async function speak(text: string, lang?: string): Promise<void> {
   if (typeof window === 'undefined') return
 
   stopSpeaking()
+
+  const thisId = ++speakId // unique ID for this call
 
   const cleaned = cleanForSpeech(text)
   if (!cleaned || cleaned.length < 2) return
@@ -260,15 +293,18 @@ export async function speak(text: string, lang?: string): Promise<void> {
   // Language learning needs browser voices for precise pronunciation
   if (!lang) {
     const kokoroOk = await checkKokoroAvailable()
+    if (thisId !== speakId) return // another speak() was called while we were checking
     if (kokoroOk) {
       const success = await speakWithKokoro(cleaned)
-      if (success) return
+      if (success) return // Kokoro handled it, don't use Web Speech API
     }
+    if (thisId !== speakId) return // another speak() was called while Kokoro was trying
   }
 
   // Fallback: Web Speech API
   if (!window.speechSynthesis) return
   if (!voicesLoaded) await ensureVoices()
+  if (thisId !== speakId) return // another speak() was called while loading voices
 
   currentLang = detectedLang
   currentChunks = splitIntoChunks(cleaned)

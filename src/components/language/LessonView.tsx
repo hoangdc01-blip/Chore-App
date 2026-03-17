@@ -1,20 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Volume2 } from 'lucide-react'
+import { Volume2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getTopic } from '@/lib/language-data'
 import { speak } from '@/lib/tts'
+import { playCorrect, playWrong } from '@/games/sounds'
 import { useLanguageStore } from '@/store/language-store'
 
 interface Props {
   onComplete: () => void
+  onQuit: () => void
 }
 
-export function LessonView({ onComplete }: Props) {
-  const { quizState, answerQuestion } = useLanguageStore()
+export function LessonView({ onComplete, onQuit }: Props) {
+  const { quizState, answerQuestion, advanceQuestion } = useLanguageStore()
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
+  const [answeredWord, setAnsweredWord] = useState<{ word: string; romanization: string } | null>(null)
 
   const currentQ = quizState?.questions[quizState.currentIndex] ?? null
   const topicData = quizState ? getTopic(quizState.topicId) : null
@@ -44,16 +47,15 @@ export function LessonView({ onComplete }: Props) {
   const prevWordIndexRef = useRef<number | null>(null)
 
   // Auto-speak for 'listen' type questions when the question first appears
+  // Auto-speak word for 'listen' and 'meaning-to-word' questions
   useEffect(() => {
-    if (
-      currentQ?.type === 'listen' &&
-      currentWord &&
-      currentQ.wordIndex !== prevWordIndexRef.current
-    ) {
-      prevWordIndexRef.current = currentQ.wordIndex
+    if (!currentQ || !currentWord || currentQ.wordIndex === prevWordIndexRef.current) {
+      if (currentQ) prevWordIndexRef.current = currentQ.wordIndex
+      return
+    }
+    prevWordIndexRef.current = currentQ.wordIndex
+    if (currentQ.type === 'listen' || currentQ.type === 'meaning-to-word') {
       speak(currentWord.word, lang)
-    } else if (currentQ && currentQ.type !== 'listen') {
-      prevWordIndexRef.current = currentQ.wordIndex
     }
   }, [currentQ?.type, currentQ?.wordIndex, currentWord, lang])
 
@@ -65,15 +67,20 @@ export function LessonView({ onComplete }: Props) {
       setSelectedOption(null)
       setShowResult(false)
       setIsCorrect(false)
+      setAnsweredWord(null)
 
-      // Check if quiz is now complete
-      if (quizState?.isComplete) {
+      // Advance to next question (or complete)
+      advanceQuestion()
+
+      // Check if quiz is now complete after advancing
+      const state = useLanguageStore.getState().quizState
+      if (state?.isComplete) {
         onComplete()
       }
     }, 1800)
 
     return () => clearTimeout(timer)
-  }, [showResult, quizState?.isComplete, onComplete])
+  }, [showResult, advanceQuestion, onComplete])
 
   const handleAnswer = useCallback(
     (optionIndex: number) => {
@@ -84,21 +91,33 @@ export function LessonView({ onComplete }: Props) {
       setIsCorrect(correct)
       setShowResult(true)
 
+      // Capture the word BEFORE answerQuestion advances the index
+      const wordToSpeak = currentWord ? { word: currentWord.word, romanization: currentWord.romanization } : null
+      setAnsweredWord(wordToSpeak)
+
+      // Play sound effect
+      if (correct) {
+        playCorrect()
+      } else {
+        playWrong()
+      }
+
       // Update store
       answerQuestion(optionIndex)
 
       // Speak the correct word after answering so kids learn the pronunciation
-      if (currentWord) {
-        speak(currentWord.word, lang)
+      if (wordToSpeak) {
+        setTimeout(() => speak(wordToSpeak.word, lang), 400)
       }
     },
     [showResult, selectedOption, correctOptionIndex, answerQuestion, currentWord, lang],
   )
 
   const handleSpeak = useCallback(() => {
-    if (!currentWord) return
-    speak(currentWord.word, lang)
-  }, [currentWord, lang])
+    const wordToSpeak = answeredWord?.word || currentWord?.word
+    if (!wordToSpeak) return
+    speak(wordToSpeak, lang)
+  }, [currentWord, answeredWord, lang])
 
   const handleSpeakOption = useCallback(
     (optionText: string, e: React.MouseEvent) => {
@@ -124,13 +143,21 @@ export function LessonView({ onComplete }: Props) {
         showResult && !isCorrect && 'bg-red-50 dark:bg-red-900/20',
       )}
     >
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-          <span>
-            Question {currentIndex + 1} of {total}
+      {/* Header with quit + progress */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onQuit}
+            className="flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Quit lesson"
+          >
+            <X size={18} />
+            Quit
+          </button>
+          <span className="text-sm font-semibold text-muted-foreground">
+            {currentIndex + 1} / {total}
           </span>
-          <span>{progressPct}%</span>
+          <span className="text-sm font-medium text-muted-foreground">{progressPct}%</span>
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-muted">
           <div
@@ -147,16 +174,13 @@ export function LessonView({ onComplete }: Props) {
             <p className="text-base font-medium text-muted-foreground">
               What does this mean?
             </p>
-            <div className="flex items-center justify-center gap-3">
-              <p className="text-5xl font-bold text-foreground">{currentWord?.word}</p>
-              <button
-                onClick={handleSpeak}
-                className="p-3 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
-                aria-label="Listen to pronunciation"
-              >
-                <Volume2 size={20} />
-              </button>
-            </div>
+            <button
+              onClick={handleSpeak}
+              className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-primary/10 hover:bg-primary/20 transition-colors mx-auto"
+            >
+              <Volume2 size={22} className="text-primary shrink-0" />
+              <span className="text-4xl font-bold text-foreground">{currentWord?.word}</span>
+            </button>
             <p className="text-lg text-muted-foreground">
               ({currentWord?.romanization})
             </p>
@@ -174,6 +198,14 @@ export function LessonView({ onComplete }: Props) {
                 {currentWord?.meaning}
               </p>
             </div>
+            <button
+              onClick={handleSpeak}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors mx-auto"
+            >
+              <Volume2 size={18} className="text-primary shrink-0" />
+              <span className="text-lg font-bold text-primary">{currentWord?.word}</span>
+              <span className="text-sm text-muted-foreground">({currentWord?.romanization})</span>
+            </button>
           </>
         )}
 
@@ -184,9 +216,11 @@ export function LessonView({ onComplete }: Props) {
             </p>
             <button
               onClick={handleSpeak}
-              className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110 active:scale-95"
+              className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-primary/10 hover:bg-primary/20 transition-transform hover:scale-105 active:scale-95 mx-auto shadow-sm"
             >
-              <Volume2 className="h-10 w-10" />
+              <Volume2 size={28} className="text-primary shrink-0" />
+              <span className="text-3xl font-bold text-foreground">{currentWord?.word}</span>
+              <span className="text-lg text-muted-foreground">({currentWord?.romanization})</span>
             </button>
             <p className="text-sm text-muted-foreground">
               Tap to listen again

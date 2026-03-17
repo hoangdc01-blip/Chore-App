@@ -518,9 +518,13 @@ export default function DinoRun({ onScore, onGameOver, isPlaying, onStart, highS
     }
   }, [isPlaying, drawBackground, drawClouds, drawGround, drawObstacles, drawPlayer, drawScore, drawStartScreen, resetGame, spawnObstacle, onScore, onGameOver])
 
-  // Reset on new game
+  // Reset on new game + auto-focus canvas for keyboard input
   useEffect(() => {
-    if (isPlaying) resetGame()
+    if (isPlaying) {
+      resetGame()
+      // Focus canvas so keyboard events work immediately
+      setTimeout(() => canvasRef.current?.focus(), 100)
+    }
   }, [isPlaying, resetGame])
 
   // ── Input Handlers ──
@@ -528,45 +532,79 @@ export default function DinoRun({ onScore, onGameOver, isPlaying, onStart, highS
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault()
-        jump()
+        e.stopPropagation()
+        // Directly manipulate refs to avoid stale closure
+        if (gameOver.current) return
+        if (!started.current) {
+          started.current = true
+          onStart()
+        }
+        if (playerY.current === 0 && !isJumping.current) {
+          playerVelocity.current = JUMP_STRENGTH
+          isJumping.current = true
+          isDucking.current = false
+          playJump()
+        }
       }
       if (e.code === 'ArrowDown') {
         e.preventDefault()
-        duck(true)
+        if (gameOver.current) return
+        if (!started.current) {
+          started.current = true
+          onStart()
+        }
+        isDucking.current = true
       }
     }
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'ArrowDown') {
-        duck(false)
+        isDucking.current = false
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    window.addEventListener('keyup', handleKeyUp, { capture: true })
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('keydown', handleKeyDown, { capture: true })
+      window.removeEventListener('keyup', handleKeyUp, { capture: true })
     }
-  }, [jump, duck])
+  }, [onStart])
 
   // Touch handlers
   const touchStartY = useRef(0)
 
+  const doJump = useCallback(() => {
+    console.log('[DINO] doJump called', { gameOver: gameOver.current, started: started.current, playerY: playerY.current, isJumping: isJumping.current })
+    if (gameOver.current) { console.log('[DINO] blocked: game over'); return }
+    if (!started.current) {
+      started.current = true
+      onStart()
+      console.log('[DINO] game started')
+    }
+    if (playerY.current === 0 && !isJumping.current) {
+      playerVelocity.current = JUMP_STRENGTH
+      isJumping.current = true
+      isDucking.current = false
+      playJump()
+      console.log('[DINO] jumping!')
+    }
+  }, [onStart])
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault()
     touchStartY.current = e.touches[0].clientY
-    jump()
-  }, [jump])
+    doJump()
+  }, [doJump])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const dy = e.touches[0].clientY - touchStartY.current
     if (dy > 30) {
-      duck(true)
+      isDucking.current = true
     }
-  }, [duck])
+  }, [])
 
   const handleTouchEnd = useCallback(() => {
-    duck(false)
-  }, [duck])
+    isDucking.current = false
+  }, [])
 
   return (
     <div className="relative w-full h-full select-none" style={{ touchAction: 'none' }}>
@@ -576,7 +614,10 @@ export default function DinoRun({ onScore, onGameOver, isPlaying, onStart, highS
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onMouseDown={(e) => { e.preventDefault(); jump() }}
+        onClick={() => doJump()}
+        onMouseDown={(e) => { e.preventDefault(); doJump() }}
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); doJump() } }}
       />
     </div>
   )

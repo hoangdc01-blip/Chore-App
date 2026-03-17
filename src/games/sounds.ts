@@ -89,3 +89,16 @@ export function playMilestone() {
   setTimeout(() => playTone(1000, 0.1, 'sine', 0.12), 80)
   setTimeout(() => playTone(1200, 0.12, 'sine', 0.15), 160)
 }
+
+// ── Language lesson sounds ──
+
+export function playCorrect() {
+  playTone(523, 0.1, 'sine', 0.15)
+  setTimeout(() => playTone(659, 0.1, 'sine', 0.15), 100)
+  setTimeout(() => playTone(784, 0.15, 'sine', 0.18), 200)
+}
+
+export function playWrong() {
+  playTone(300, 0.15, 'triangle', 0.12)
+  setTimeout(() => playTone(250, 0.2, 'triangle', 0.1), 150)
+}

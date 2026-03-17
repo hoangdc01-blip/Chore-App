@@ -729,13 +729,29 @@ function buildStoryContext(ctx: BuddyContext): string {
   const quest = quests[questIdx]
 
   return `\n\nSTORY: You are Váu Váu the penguin \u{1F427} telling a bedtime story. This story is about ${character} in ${setting}, on a quest to ${quest}. Story step: ${step}.
-IMPORTANT RULES:
-- This must be a COMPLETELY NEW and UNIQUE story. NEVER repeat any story you've told before.
-- Make it exciting, magical, and age-appropriate for 4-7 year olds.
-- Use vivid descriptions so kids can imagine the scenes.
-- Include [DRAW_IMAGE title="..." style="illustration"][/DRAW_IMAGE] blocks to illustrate key scenes.
-- Each story should have a clear beginning, middle, and happy ending within 3-5 messages.
-- Be creative! Surprise the kids with unexpected twists and funny moments.`
+
+CRITICAL STORY RULES:
+1. Tell the COMPLETE story in ONE message. Do NOT split it across multiple messages. Do NOT ask "shall I continue?" or "want to hear more?" — just tell the whole story from beginning to end.
+2. The story should be 3-5 paragraphs long with a clear beginning, middle, and happy ending.
+3. This must be a COMPLETELY NEW and UNIQUE story. NEVER repeat a previous story.
+4. Make it exciting, magical, and age-appropriate for 4-7 year olds.
+
+PICTURE RULES (MOST IMPORTANT):
+5. You MUST include AT LEAST 3 pictures in every story using [DRAW_IMAGE title="..." style="illustration"][/DRAW_IMAGE] blocks.
+6. Place a [DRAW_IMAGE] block after EVERY 1-2 paragraphs. Children need pictures to stay focused!
+7. The title should vividly describe the scene (e.g. "a tiny brave mouse wearing a red cape standing at the entrance of a glowing crystal cave")
+8. Include a picture for: the opening scene, the exciting middle part, and the happy ending.
+9. NEVER tell a story without pictures. If you forget pictures, the children will lose interest.
+
+Example story structure:
+- Opening paragraph introducing the character and setting
+[DRAW_IMAGE title="scene description" style="illustration"][/DRAW_IMAGE]
+- Middle paragraph with the adventure/challenge
+[DRAW_IMAGE title="scene description" style="illustration"][/DRAW_IMAGE]
+- Exciting climax paragraph
+[DRAW_IMAGE title="scene description" style="illustration"][/DRAW_IMAGE]
+- Happy ending paragraph
+[DRAW_IMAGE title="scene description" style="illustration"][/DRAW_IMAGE]`
 }
 
 function buildPersonalityContext(ctx: BuddyContext): string {

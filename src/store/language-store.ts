@@ -58,6 +58,7 @@ interface LanguageState {
   setActiveTopic: (topicId: string | null) => void
   startQuiz: (topicId: string, languageCode: LanguageCode) => void
   answerQuestion: (optionIndex: number) => void
+  advanceQuestion: () => void
   finishQuiz: () => number
   resetProgress: (topicId?: string) => void
 }
@@ -178,9 +179,24 @@ export const useLanguageStore = create<LanguageState>()(
           quizState: {
             ...quizState,
             answers: newAnswers,
-            currentIndex: allAnswered ? currentIndex : nextIndex,
+            // DON'T advance index here — wait for advanceQuestion()
+            pointsEarned: allAnswered ? pointsEarned : 0,
+          },
+        })
+      },
+
+      advanceQuestion: () => {
+        const { quizState } = get()
+        if (!quizState || quizState.isComplete) return
+
+        const nextIndex = quizState.currentIndex + 1
+        const allAnswered = nextIndex >= quizState.questions.length
+
+        set({
+          quizState: {
+            ...quizState,
+            currentIndex: allAnswered ? quizState.currentIndex : nextIndex,
             isComplete: allAnswered,
-            pointsEarned,
           },
         })
       },

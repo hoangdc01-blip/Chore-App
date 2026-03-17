@@ -131,16 +131,16 @@ export function LanguageHome({ onStartLesson, onStartPronunciation, onStartListe
                   <div className="flex gap-2">
                     <button
                       onClick={() => onStartPronunciation(topic.id)}
-                      className="flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300"
+                      className="flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-orange-600 transition-colors"
                     >
-                      <Mic size={12} />
+                      <Mic size={14} />
                       Speak
                     </button>
                     <button
                       onClick={() => onStartListening(topic.id)}
-                      className="flex items-center gap-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300"
+                      className="flex items-center gap-1.5 rounded-full bg-teal-500 px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-teal-600 transition-colors"
                     >
-                      <Headphones size={12} />
+                      <Headphones size={14} />
                       Listen
                     </button>
                   </div>

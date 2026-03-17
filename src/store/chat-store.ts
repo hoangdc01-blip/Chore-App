@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
 import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
@@ -175,7 +176,7 @@ async function resolvePresentationFile(
   }
 }
 
-export const useChatStore = create<ChatState>()((set, get) => ({
+export const useChatStore = create<ChatState>()(persist((set, get) => ({
   messages: [],
   isOpen: false,
   isLoading: false,
@@ -560,4 +561,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }
     set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawings: {}, presentations: {}, generatingPresentationIndex: null })
   },
+}), {
+  name: 'chat-storage',
+  version: 1,
+  partialize: (state) => ({
+    messages: state.messages.filter(m => !m.image).slice(-20), // Keep last 20 text messages, skip images (too large)
+    storyProgress: state.storyProgress,
+    lastGreetingDate: state.lastGreetingDate,
+    reminderVariety: state.reminderVariety,
+    autoReadAloud: state.autoReadAloud,
+    selectedMemberId: state.selectedMemberId,
+  }),
 }))

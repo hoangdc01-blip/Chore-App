@@ -85,6 +85,58 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['memberId', 'rewardId']);
     }
 
+    match /classes/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['name', 'assigneeId', 'startDate'])
+        && validString(request.resource.data.name, 200)
+        && validString(request.resource.data.assigneeId, 100)
+        && validString(request.resource.data.startDate, 10);
+    }
+
+    match /routines/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['id', 'name'])
+        && validString(request.resource.data.name, 200);
+    }
+
+    match /routineProgress/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['routineId', 'memberId', 'date'])
+        && validString(request.resource.data.routineId, 100)
+        && validString(request.resource.data.memberId, 100)
+        && validString(request.resource.data.date, 10);
+    }
+
+    match /quests/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['id']);
+    }
+
+    match /achievements/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['badgeIds'])
+        && request.resource.data.badgeIds is list;
+    }
+
+    match /stickers/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['stickerIds'])
+        && request.resource.data.stickerIds is list;
+    }
+
+    match /claimedBonuses/{docId} {
+      allow read: if isAuthed();
+      allow write: if isAuthed()
+        && request.resource.data.keys().hasAll(['claimed'])
+        && request.resource.data.claimed is bool;
+    }
+
     // Deny everything else by default
     match /{document=**} {
       allow read, write: if false;

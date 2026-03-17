@@ -10,12 +10,16 @@ import type { FamilyMember } from '../../types'
 const MAX_ATTEMPTS = 5
 const LOCKOUT_MS = 2 * 60 * 1000
 
-// Muted avatar colors — desaturated, Netflix-style
+// Vibrant, distinct avatar colors
 const AVATAR_COLORS = [
-  'bg-[#5b7a6f]', // sage
-  'bg-[#7a5b6f]', // mauve
-  'bg-[#5b6f7a]', // steel
-  'bg-[#7a6f5b]', // tan
+  'bg-blue-500',    // blue
+  'bg-emerald-500', // green
+  'bg-orange-500',  // orange
+  'bg-violet-500',  // purple
+  'bg-pink-500',    // pink
+  'bg-teal-500',    // teal
+  'bg-rose-500',    // rose
+  'bg-amber-500',   // amber
 ]
 
 export default function ProfileSelectScreen() {
@@ -244,11 +248,11 @@ export default function ProfileSelectScreen() {
           </button>
 
           {/* Kid avatar */}
-          <div className={`w-20 h-20 rounded-full ${avatarColor} flex items-center justify-center overflow-hidden mb-4`}>
+          <div className={`w-24 h-24 rounded-full ${avatarColor} flex items-center justify-center overflow-hidden mb-4`}>
             {selectedKid.avatar ? (
               <img src={selectedKid.avatar} alt={selectedKid.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl font-normal" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              <span className="text-3xl font-normal" style={{ color: 'rgba(255,255,255,0.85)' }}>
                 {selectedKid.name.charAt(0).toUpperCase()}
               </span>
             )}
@@ -467,12 +471,12 @@ export default function ProfileSelectScreen() {
                 hover:bg-muted hover:border-muted-foreground/30 hover:scale-[1.03]"
               style={{ animationDelay: `${150 + i * 60}ms` }}
             >
-              <div className={`w-14 h-14 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center overflow-hidden
+              <div className={`w-20 h-20 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center overflow-hidden
                 transition-all duration-300`}>
                 {member.avatar ? (
                   <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-lg font-normal" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                  <span className="text-2xl font-normal" style={{ color: 'rgba(255,255,255,0.85)' }}>
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 )}

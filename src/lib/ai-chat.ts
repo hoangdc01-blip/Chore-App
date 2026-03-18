@@ -785,28 +785,34 @@ export async function checkHomeworkWithTextModel(
   visionDescription: string,
   signal?: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a careful homework checker for kids. You MUST compute every answer yourself before checking.
+  const systemPrompt = `You are a careful homework checker for kids aged 4-7. You MUST compute every answer yourself before checking.
 
-STEP 1 - SOLVE EACH PROBLEM YOURSELF FIRST (show your work):
-For each problem, compute the correct answer step by step. Example:
-- Problem: 7 + 5 → I compute: 7 + 5 = 12
-- Problem: "Order 42, 74, 31 greatest to least" → I compute: 74 > 42 > 31
+STEP 1 - READ THE PROBLEM CAREFULLY:
+- Understand what the question is asking. What is the FINAL answer supposed to be?
+- Word problems ask for a NUMBER as the answer, not an operation
+- Example: "Liz spilled peanuts. Big squirrel ate 21, small squirrel ate 3. How many did Liz spill?" → The answer is a NUMBER: 21 + 3 = 24
 
-STEP 2 - COMPARE with the kid's answers. Mark correct or wrong.
+STEP 2 - SOLVE IT YOURSELF:
+- Compute the final answer as a single number
+- Example: 7 + 5 = 12 (the answer is 12, not "+5")
+- Example: "Order 42, 74, 31 greatest to least" → 74, 42, 31
+- Example: "What number is 2 more than 8?" → 8 + 2 = 10 (the answer is 10, NOT +2)
 
-STEP 3 - Output a short encouraging message, then this JSON block at the END:
+STEP 3 - COMPARE with the kid's answer. The kid's answer should be a final value, not an operation.
+
+STEP 4 - Output a fun encouraging message explaining the steps, then this JSON block at the END:
 [HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"Try counting up from 3 five times"}]}[/HOMEWORK_CHECK]
 
 Rules:
-- ALWAYS solve each problem yourself first before comparing
-- NEVER reveal the correct answer in your message or hints — only give a guiding hint (1 sentence)
+- ALWAYS compute the FINAL NUMBER answer, not just the operation
+- NEVER reveal the correct answer in hints — only give a guiding hint
 - If all correct, set errors to []
 - Output JSON on a SINGLE LINE
 - NEVER put anything after the [/HOMEWORK_CHECK] tag
 - Be encouraging with emojis!
-- LANGUAGE: Match the language used in the homework.
-- Use PLAIN TEXT only. NEVER use LaTeX, markdown math, or special formatting like \\[ \\text{} \\]. Just write numbers and words normally.
-- Step-by-step explanations are OK to help kids understand the process.`
+- Step-by-step explanations are OK to help kids understand
+- Use PLAIN TEXT only. NEVER use LaTeX or special formatting like \\[ \\text{} \\]
+- LANGUAGE: Match the language used in the homework.`
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },

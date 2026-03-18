@@ -31,7 +31,24 @@
       "Bash(cd \"/c/AI APP/CHORES APP\" && firebase deploy --only firestore:rules,hosting 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && firebase deploy --only firestore 2>&1)",
       "Bash(cd \"/c/AI APP/CHORES APP\" && npm run build 2>&1 && firebase deploy --only hosting 2>&1)",
-      "Bash(cd \"/c/AI APP/CHORES APP\" && find src -name '*.tsx' -exec sed -i 's/\\\\blg:/xl:/g' {} +)"
+      "Bash(cd \"/c/AI APP/CHORES APP\" && find src -name '*.tsx' -exec sed -i 's/\\\\blg:/xl:/g' {} +)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(sips:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -r print: /Users/hoangnm/Desktop/Chore-App/src --include=*.tsx --include=*.ts --include=*.css)",
+      "Bash(npx tsc:*)",
+      "Bash(git commit:*)",
+      "Bash(npx firebase:*)",
+      "Bash(npm ls:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(to make a presentation!\"\\) instead of asking what to draw/present first.:*)",
+      "Bash(ollama pull:*)",
+      "Bash(ls /Users/hoangnm/Desktop/Screenshot*07.42*)",
+      "Bash(ls /Users/hoangnm/Desktop/Chore-App/Screenshot*07.42*)",
+      "Bash(node:*)",
+      "Bash(git revert:*)"
     ]
   }
 }

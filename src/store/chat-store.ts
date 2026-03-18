@@ -15,6 +15,14 @@ import { speak } from '../lib/tts'
 
 const MAX_CONTEXT_MESSAGES = 10
 
+export interface ChatSession {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  createdAt: string
+  memberId: string | null
+}
+
 interface ChatState {
   messages: ChatMessage[]
   isOpen: boolean
@@ -46,6 +54,9 @@ interface ChatState {
   reminderVariety: number
   autoReadAloud: boolean
 
+  chatHistory: ChatSession[]
+  activeSessionId: string | null
+
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
   sendMessage: (content: string, image?: string) => Promise<void>
@@ -61,6 +72,9 @@ interface ChatState {
   dismissPresentation: (messageIndex: number) => void
   advanceStory: (memberId: string) => void
   toggleAutoReadAloud: () => void
+  startNewChat: () => void
+  loadSession: (id: string) => void
+  deleteSession: (id: string) => void
 }
 
 function buildBuddyCtx(state: ChatState): BuddyContext {
@@ -176,6 +190,30 @@ async function resolvePresentationFile(
   }
 }
 
+function saveCurrentToHistory(get: () => ChatState, set: (partial: Partial<ChatState>) => void) {
+  const { messages, activeSessionId, selectedMemberId, chatHistory } = get()
+  const userMessages = messages.filter(m => m.role === 'user')
+  if (userMessages.length === 0) return
+
+  const title = (userMessages[0]?.content ?? 'New Chat').slice(0, 40)
+  const sessionId = activeSessionId ?? crypto.randomUUID()
+
+  const existing = chatHistory.findIndex(s => s.id === sessionId)
+  const session: ChatSession = {
+    id: sessionId,
+    title,
+    messages: [...messages],
+    createdAt: existing >= 0 ? chatHistory[existing].createdAt : new Date().toISOString(),
+    memberId: selectedMemberId,
+  }
+
+  const updated = existing >= 0
+    ? chatHistory.map(s => s.id === sessionId ? session : s)
+    : [session, ...chatHistory]
+
+  set({ chatHistory: updated, activeSessionId: sessionId })
+}
+
 export const useChatStore = create<ChatState>()(persist((set, get) => ({
   messages: [],
   isOpen: false,
@@ -204,6 +242,9 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
   lastGreetingDate: {},
   reminderVariety: 0,
   autoReadAloud: false,
+
+  chatHistory: [],
+  activeSessionId: null,
 
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
@@ -455,6 +496,9 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
           speak(textToRead)
         }
       }
+
+      // Auto-save current session to chat history
+      saveCurrentToHistory(get, set)
     } catch (err) {
       clearTimeout(timeoutId)
 
@@ -537,6 +581,9 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
             speak(fallbackTextToRead)
           }
         }
+
+        // Auto-save current session to chat history (fallback path)
+        saveCurrentToHistory(get, set)
       } catch (fallbackErr) {
         const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong'
         set({ isLoading: false, isStreaming: false, error: errorMsg, abortController: null, lastResponseTimeMs: null })
@@ -600,6 +647,92 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
 
   toggleAutoReadAloud: () => set({ autoReadAloud: !get().autoReadAloud }),
 
+  startNewChat: () => {
+    // Save current messages to history if there are any
+    saveCurrentToHistory(get, set)
+    // Revoke presentation blob URLs
+    const pres = get().presentations
+    for (const key of Object.keys(pres)) {
+      if (pres[Number(key)]?.pptxDataUrl) {
+        URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+      }
+    }
+    set({
+      messages: [],
+      activeSessionId: crypto.randomUUID(),
+      error: null,
+      pendingChoreAction: null,
+      pendingChoreMessageIndex: null,
+      pendingRewardAction: null,
+      pendingRewardMessageIndex: null,
+      homeworkCheckResult: null,
+      homeworkCheckMessageIndex: null,
+      drawings: {},
+      presentations: {},
+      generatingPresentationIndex: null,
+    })
+  },
+
+  loadSession: (id: string) => {
+    // Save current session first
+    saveCurrentToHistory(get, set)
+    // Revoke presentation blob URLs
+    const pres = get().presentations
+    for (const key of Object.keys(pres)) {
+      if (pres[Number(key)]?.pptxDataUrl) {
+        URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+      }
+    }
+    const session = get().chatHistory.find(s => s.id === id)
+    if (!session) return
+    set({
+      messages: [...session.messages],
+      activeSessionId: session.id,
+      selectedMemberId: session.memberId,
+      error: null,
+      pendingChoreAction: null,
+      pendingChoreMessageIndex: null,
+      pendingRewardAction: null,
+      pendingRewardMessageIndex: null,
+      homeworkCheckResult: null,
+      homeworkCheckMessageIndex: null,
+      drawings: {},
+      presentations: {},
+      generatingPresentationIndex: null,
+    })
+  },
+
+  deleteSession: (id: string) => {
+    const { chatHistory, activeSessionId } = get()
+    const updated = chatHistory.filter(s => s.id !== id)
+    if (id === activeSessionId) {
+      // Revoke presentation blob URLs
+      const pres = get().presentations
+      for (const key of Object.keys(pres)) {
+        if (pres[Number(key)]?.pptxDataUrl) {
+          URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+        }
+      }
+      set({
+        chatHistory: updated,
+        messages: [],
+        activeSessionId: crypto.randomUUID(),
+        error: null,
+        pendingChoreAction: null,
+        pendingChoreMessageIndex: null,
+        pendingRewardAction: null,
+        pendingRewardMessageIndex: null,
+        homeworkCheckResult: null,
+        homeworkCheckMessageIndex: null,
+        drawings: {},
+        presentations: {},
+        generatingPresentationIndex: null,
+      })
+    } else {
+      set({ chatHistory: updated })
+    }
+  },
+
   clearMessages: () => {
     // Revoke all presentation blob URLs
     const pres = get().presentations
@@ -620,5 +753,10 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
     reminderVariety: state.reminderVariety,
     autoReadAloud: state.autoReadAloud,
     selectedMemberId: state.selectedMemberId,
+    chatHistory: state.chatHistory.slice(0, 50).map(s => ({
+      ...s,
+      messages: s.messages.filter(m => !m.image).slice(-20),
+    })),
+    activeSessionId: state.activeSessionId,
   }),
 }))

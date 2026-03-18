@@ -15,6 +15,14 @@ import { speak } from '../lib/tts'
 
 const MAX_CONTEXT_MESSAGES = 10
 
+export interface ChatSession {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  createdAt: string
+  memberId: string | null
+}
+
 interface ChatState {
   messages: ChatMessage[]
   isOpen: boolean
@@ -46,12 +54,18 @@ interface ChatState {
   reminderVariety: number
   autoReadAloud: boolean
 
+  chatHistory: ChatSession[]
+  activeSessionId: string | null
+
   setOpen: (open: boolean) => void
   setSelectedMemberId: (id: string | null) => void
   sendMessage: (content: string, image?: string) => Promise<void>
   sendMessageStreaming: (content: string, image?: string) => Promise<void>
   cancelGeneration: () => void
   clearMessages: () => void
+  startNewChat: () => void
+  loadSession: (id: string) => void
+  deleteSession: (id: string) => void
   acceptChoreAction: () => void
   cancelChoreAction: () => void
   acceptRewardAction: () => void
@@ -176,6 +190,38 @@ async function resolvePresentationFile(
   }
 }
 
+function generateId(): string {
+  return crypto.randomUUID()
+}
+
+function deriveSessionTitle(messages: ChatMessage[]): string {
+  const firstUserMsg = messages.find(m => m.role === 'user')
+  if (!firstUserMsg) return 'New Chat'
+  const text = firstUserMsg.content.replace(/\[Attached document:[^\]]*\]\n[\s\S]*?---\n\n/g, '').trim()
+  if (!text) return 'New Chat'
+  return text.length > 40 ? text.slice(0, 40) + '...' : text
+}
+
+function saveCurrentToHistory(state: ChatState): ChatSession[] {
+  const { activeSessionId, messages, chatHistory, selectedMemberId } = state
+  const userMessages = messages.filter(m => m.role !== 'system')
+  if (!activeSessionId || userMessages.length === 0) return chatHistory
+
+  const existing = chatHistory.find(s => s.id === activeSessionId)
+  const session: ChatSession = {
+    id: activeSessionId,
+    title: deriveSessionTitle(messages),
+    messages: messages.filter(m => !m.image).slice(-20),
+    createdAt: existing?.createdAt ?? new Date().toISOString(),
+    memberId: selectedMemberId,
+  }
+
+  if (existing) {
+    return chatHistory.map(s => s.id === activeSessionId ? session : s)
+  }
+  return [...chatHistory, session]
+}
+
 export const useChatStore = create<ChatState>()(persist((set, get) => ({
   messages: [],
   isOpen: false,
@@ -205,6 +251,9 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
   reminderVariety: 0,
   autoReadAloud: false,
 
+  chatHistory: [],
+  activeSessionId: null,
+
   setOpen: (open) => {
     // Cancel any in-flight generation when closing
     if (!open && get().abortController) {
@@ -218,6 +267,11 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
 
   // Batch fallback (non-streaming)
   sendMessage: async (content, image) => {
+    // Ensure we have an active session ID
+    if (!get().activeSessionId) {
+      set({ activeSessionId: generateId() })
+    }
+
     const userMsg: ChatMessage = { role: 'user', content, ...(image ? { image } : {}) }
     const messages = [...get().messages, userMsg]
     set({ messages, isLoading: true, error: null })
@@ -286,6 +340,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
           speak(batchTextToRead)
         }
       }
+      // Auto-save session to history
+      set({ chatHistory: saveCurrentToHistory(get()) })
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Something went wrong'
       set({ isLoading: false, error: errorMsg })
@@ -294,6 +350,11 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
 
   // Streaming (primary) — falls back to batch on error
   sendMessageStreaming: async (content, image) => {
+    // Ensure we have an active session ID
+    if (!get().activeSessionId) {
+      set({ activeSessionId: generateId() })
+    }
+
     const userMsg: ChatMessage = { role: 'user', content, ...(image ? { image } : {}) }
     const allMessages = [...get().messages, userMsg]
 
@@ -455,6 +516,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
           speak(textToRead)
         }
       }
+      // Auto-save session to history
+      set({ chatHistory: saveCurrentToHistory(get()) })
     } catch (err) {
       clearTimeout(timeoutId)
 
@@ -537,6 +600,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
             speak(fallbackTextToRead)
           }
         }
+        // Auto-save session to history
+        set({ chatHistory: saveCurrentToHistory(get()) })
       } catch (fallbackErr) {
         const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Something went wrong'
         set({ isLoading: false, isStreaming: false, error: errorMsg, abortController: null, lastResponseTimeMs: null })
@@ -601,6 +666,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
   toggleAutoReadAloud: () => set({ autoReadAloud: !get().autoReadAloud }),
 
   clearMessages: () => {
+    // Save current messages to history before clearing
+    const updatedHistory = saveCurrentToHistory(get())
     // Revoke all presentation blob URLs
     const pres = get().presentations
     for (const key of Object.keys(pres)) {
@@ -608,7 +675,106 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
         URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
       }
     }
-    set({ messages: [], error: null, pendingChoreAction: null, pendingChoreMessageIndex: null, pendingRewardAction: null, pendingRewardMessageIndex: null, homeworkCheckResult: null, homeworkCheckMessageIndex: null, drawings: {}, presentations: {}, generatingPresentationIndex: null })
+    set({
+      chatHistory: updatedHistory,
+      messages: [],
+      activeSessionId: generateId(),
+      error: null,
+      pendingChoreAction: null,
+      pendingChoreMessageIndex: null,
+      pendingRewardAction: null,
+      pendingRewardMessageIndex: null,
+      homeworkCheckResult: null,
+      homeworkCheckMessageIndex: null,
+      drawings: {},
+      presentations: {},
+      generatingPresentationIndex: null,
+    })
+  },
+
+  startNewChat: () => {
+    const updatedHistory = saveCurrentToHistory(get())
+    // Revoke all presentation blob URLs
+    const pres = get().presentations
+    for (const key of Object.keys(pres)) {
+      if (pres[Number(key)]?.pptxDataUrl) {
+        URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+      }
+    }
+    set({
+      chatHistory: updatedHistory,
+      messages: [],
+      activeSessionId: generateId(),
+      error: null,
+      pendingChoreAction: null,
+      pendingChoreMessageIndex: null,
+      pendingRewardAction: null,
+      pendingRewardMessageIndex: null,
+      homeworkCheckResult: null,
+      homeworkCheckMessageIndex: null,
+      drawings: {},
+      presentations: {},
+      generatingPresentationIndex: null,
+    })
+  },
+
+  loadSession: (id: string) => {
+    const updatedHistory = saveCurrentToHistory(get())
+    const session = updatedHistory.find(s => s.id === id)
+    if (!session) return
+    // Revoke all presentation blob URLs
+    const pres = get().presentations
+    for (const key of Object.keys(pres)) {
+      if (pres[Number(key)]?.pptxDataUrl) {
+        URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+      }
+    }
+    set({
+      chatHistory: updatedHistory,
+      messages: session.messages,
+      activeSessionId: id,
+      error: null,
+      pendingChoreAction: null,
+      pendingChoreMessageIndex: null,
+      pendingRewardAction: null,
+      pendingRewardMessageIndex: null,
+      homeworkCheckResult: null,
+      homeworkCheckMessageIndex: null,
+      drawings: {},
+      presentations: {},
+      generatingPresentationIndex: null,
+    })
+  },
+
+  deleteSession: (id: string) => {
+    const { chatHistory, activeSessionId } = get()
+    const updated = chatHistory.filter(s => s.id !== id)
+    if (id === activeSessionId) {
+      // Revoke all presentation blob URLs
+      const pres = get().presentations
+      for (const key of Object.keys(pres)) {
+        if (pres[Number(key)]?.pptxDataUrl) {
+          URL.revokeObjectURL(pres[Number(key)].pptxDataUrl!)
+        }
+      }
+      set({
+        chatHistory: updated,
+        messages: [],
+        activeSessionId: generateId(),
+        error: null,
+        pendingChoreAction: null,
+        pendingChoreMessageIndex: null,
+        pendingRewardAction: null,
+        pendingRewardMessageIndex: null,
+        homeworkCheckResult: null,
+        homeworkCheckMessageIndex: null,
+        drawings: {},
+        presentations: {},
+        generatingPresentationIndex: null,
+      })
+    } else {
+      set({ chatHistory: updated })
+    }
   },
 }), {
   name: 'chat-storage',
@@ -620,5 +786,7 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
     reminderVariety: state.reminderVariety,
     autoReadAloud: state.autoReadAloud,
     selectedMemberId: state.selectedMemberId,
+    chatHistory: state.chatHistory,
+    activeSessionId: state.activeSessionId,
   }),
 }))

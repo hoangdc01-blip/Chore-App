@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Trash2, ImagePlus, Volume2, VolumeX, X, Palette, Presentation, PencilLine, BookOpen, FileText, Mic, MicOff } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Send, Trash2, ImagePlus, Volume2, VolumeX, X, Palette, Presentation, PencilLine, BookOpen, FileText, Mic, MicOff, Plus, MessageSquare, Menu } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -140,6 +140,7 @@ export default function ChatPage() {
   const [speakingMsgIndex, setSpeakingMsgIndex] = useState<number | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const dragCounterRef = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -177,6 +178,11 @@ export default function ChatPage() {
     dismissPresentation,
     autoReadAloud,
     toggleAutoReadAloud,
+    chatHistory,
+    activeSessionId,
+    startNewChat,
+    loadSession,
+    deleteSession,
   } = useChatStore()
 
   const members = useMemberStore((s) => s.members)
@@ -187,6 +193,23 @@ export default function ChatPage() {
   const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
   const buddyName = BUDDY_CHARACTER.name
   // storyStep/storyChapter can be derived from useChatStore().storyProgress if needed
+
+  // Filter sessions by current member context
+  const filteredSessions = useMemo(() => {
+    return chatHistory
+      .filter(s => s.memberId === effectiveMemberId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  }, [chatHistory, effectiveMemberId])
+
+  const formatSessionDate = useCallback((isoDate: string) => {
+    const date = new Date(isoDate)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }, [])
 
   // Sync chat store member
   useEffect(() => {
@@ -409,17 +432,82 @@ export default function ChatPage() {
 
   const hasMessages = messages.filter((m) => m.role !== 'system').length > 0
 
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      <button
+        onClick={() => { startNewChat(); setSidebarOpen(false) }}
+        className="flex items-center gap-2 m-3 p-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+      >
+        <Plus size={16} /> New Chat
+      </button>
+      <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+        {filteredSessions.map(session => (
+          <button
+            key={session.id}
+            onClick={() => { loadSession(session.id); setSidebarOpen(false) }}
+            className={cn(
+              'w-full text-left px-3 py-2 rounded-lg text-sm truncate group flex items-center gap-2 transition-colors',
+              session.id === activeSessionId
+                ? 'bg-primary/15 text-foreground'
+                : 'text-muted-foreground hover:bg-muted'
+            )}
+          >
+            <MessageSquare size={14} className="shrink-0" />
+            <div className="truncate flex-1 min-w-0">
+              <div className="truncate">{session.title}</div>
+              <div className="text-[10px] text-muted-foreground/70">{formatSessionDate(session.createdAt)}</div>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
+              className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 rounded hover:bg-destructive/20 hover:text-destructive transition-all"
+              aria-label="Delete session"
+            >
+              <X size={12} />
+            </button>
+          </button>
+        ))}
+        {filteredSessions.length === 0 && (
+          <p className="text-xs text-muted-foreground/50 text-center py-4">No chat history yet</p>
+        )}
+      </div>
+    </div>
+  )
+
   return (
-    <div
-      className="flex-1 flex flex-col min-h-0 bg-background"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
+    <div className="flex-1 flex min-h-0 bg-background">
+      {/* Desktop sidebar */}
+      <div className="hidden xl:flex xl:flex-col xl:w-[250px] border-r border-border bg-muted/30 shrink-0">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="xl:hidden fixed inset-0 z-50 flex">
+          <div className="w-[280px] bg-background border-r border-border shadow-xl flex flex-col">
+            {sidebarContent}
+          </div>
+          <div className="flex-1 bg-black/40" onClick={() => setSidebarOpen(false)} />
+        </div>
+      )}
+
+      {/* Main chat area */}
+      <div
+        className="flex-1 flex flex-col min-h-0 min-w-0"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
       {/* Top bar: kid selector (parent mode) + actions */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="xl:hidden rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Open chat history"
+          >
+            <Menu size={18} />
+          </button>
           <AiAvatar size="sm" className="shadow-sm" />
           <div>
             <h3 className="font-extrabold text-foreground text-sm">{buddyName}</h3>
@@ -763,6 +851,7 @@ export default function ChatPage() {
             <Send size={16} />
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

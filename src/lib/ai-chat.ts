@@ -764,23 +764,63 @@ function buildFirstMessageContext(ctx: BuddyContext): string {
   return `\n\nFIRST_MESSAGE_TODAY: true`
 }
 
-/** System prompt for the vision model — kept simple so the model focuses on reading the image accurately */
+/** System prompt for the vision model — only reads/describes images, no reasoning */
 function buildVisionSystemPrompt(): string {
-  return `You are a helpful assistant that reads images for kids.
+  return `You read images and describe exactly what you see. Be precise and thorough.
 
-HOMEWORK IMAGE: Read the image carefully and list what you see.
-- List each problem and the kid's written answer, like: "1) 3 + 5 = 8" or "2) 12 - 4 = 7"
-- Read every number and symbol very carefully. Take your time.
-- Then check each answer. For wrong answers, give a short hint (do NOT give the correct answer).
-- Format your response as:
-  [HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"Try counting up from 3 five times"}]}[/HOMEWORK_CHECK]
-- If ALL answers are correct, set "errors" to []
-- NEVER reveal the correct answer. Only give a hint.
+For homework/worksheet images:
+- List EVERY problem and the written answer exactly as shown
+- Format: "1) 3 + 5 = 8" or "2) 12 - 4 = 7"
+- Include the full question text if visible (e.g. "Put these numbers in order from greatest to least: 42, 74, 31")
+- Do NOT solve, check, or comment on correctness — just read what's on the page
+- If you're unsure about a number, write your best guess
 
-OTHER IMAGES: Describe what you see in 1-2 fun sentences.
+For other images: Describe what you see in detail.`
+}
 
-Keep responses short. Use emojis. Be encouraging!
-LANGUAGE: Match the kid's language (English or Vietnamese).`
+/** Two-step homework check: vision model reads, text model checks */
+export async function checkHomeworkWithTextModel(
+  visionDescription: string,
+  signal?: AbortSignal
+): Promise<string> {
+  const systemPrompt = `You are a fun homework checker for kids.
+
+You will receive a transcription of a homework image. Your job:
+1. Identify each problem and the kid's answer
+2. Check if each answer is correct
+3. For wrong answers, give a SHORT hint (1 sentence) using the Socratic method — do NOT give the correct answer
+4. Output this JSON block at the END of your response:
+[HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"Try counting up from 3 five times"}]}[/HOMEWORK_CHECK]
+
+Rules:
+- NEVER reveal the correct answer — only hints
+- Write a short encouraging message BEFORE the JSON block
+- If all correct, set errors to []
+- Output JSON on a SINGLE LINE
+- NEVER put anything after the [/HOMEWORK_CHECK] tag
+- Use emojis. Be encouraging!
+- LANGUAGE: Match the language used in the homework (English or Vietnamese).`
+
+  const messages = [
+    { role: 'system' as const, content: systemPrompt },
+    { role: 'user' as const, content: `Here is what the homework page shows:\n\n${visionDescription}\n\nPlease check this homework.` },
+  ]
+
+  const res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      model: TEXT_MODEL,
+      messages,
+      stream: false,
+      options: { temperature: 0.3, num_predict: 2000 },
+    }),
+  })
+
+  if (!res.ok) throw new Error(`Text model error: ${res.status}`)
+  const data = await res.json()
+  return data.message?.content ?? ''
 }
 
 export function buildSystemPrompt(memberId: string | null, buddyCtx?: BuddyContext, hasImages = false): string {

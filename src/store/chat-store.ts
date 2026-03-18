@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ChatMessage, BuddyContext } from '../lib/ai-chat'
-import { sendToOllama, streamFromOllama, buildSystemPrompt } from '../lib/ai-chat'
+import { sendToOllama, streamFromOllama, buildSystemPrompt, checkHomeworkWithTextModel } from '../lib/ai-chat'
 import { parseChatResponse } from '../lib/chat-actions'
 import { generateImage } from '../lib/image-gen'
 
@@ -370,6 +370,45 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
       // Flush any remaining buffered tokens
       if (tokenBuffer) flushTokens()
       if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+
+      // Two-step homework check: vision reads image -> text model checks answers
+      if (hasImages) {
+        const msgs = get().messages
+        const visionResponse = msgs[msgs.length - 1]
+        const lastUserMsg = allMessages.slice().reverse().find(m => m.role === 'user')
+        const isHomeworkRequest = lastUserMsg && (
+          lastUserMsg.content.toLowerCase().includes('homework') ||
+          lastUserMsg.content.toLowerCase().includes('check') ||
+          lastUserMsg.content.toLowerCase().includes('bài tập') ||
+          lastUserMsg.content.toLowerCase().includes('kiểm tra')
+        )
+
+        if (isHomeworkRequest && visionResponse?.role === 'assistant' && visionResponse.content) {
+          try {
+            // Show status while text model checks
+            const currentMsgs = get().messages
+            const updatedWithStatus = [
+              ...currentMsgs.slice(0, -1),
+              { ...visionResponse, content: visionResponse.content + '\n\n⏳ Checking answers...' }
+            ]
+            set({ messages: updatedWithStatus })
+
+            const checkResult = await checkHomeworkWithTextModel(visionResponse.content, controller.signal)
+
+            // Replace with the text model's response (which has the HOMEWORK_CHECK block)
+            const msgs3 = get().messages
+            set({ messages: [...msgs3.slice(0, -1), { ...msgs3[msgs3.length - 1], content: checkResult }] })
+          } catch {
+            // Keep vision response as fallback (remove the status message)
+            const msgs4 = get().messages
+            const lastM = msgs4[msgs4.length - 1]
+            if (lastM?.content.endsWith('\n\n⏳ Checking answers...')) {
+              const cleaned = lastM.content.replace('\n\n⏳ Checking answers...', '')
+              set({ messages: [...msgs4.slice(0, -1), { ...lastM, content: cleaned }] })
+            }
+          }
+        }
+      }
 
       clearTimeout(timeoutId)
       set({ isLoading: false, isStreaming: false, abortController: null, lastResponseTimeMs: Date.now() - startTime })

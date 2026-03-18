@@ -255,7 +255,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
       const batchFinalMessages = get().messages
       const batchLastMsg = batchFinalMessages[batchFinalMessages.length - 1]
       if (batchLastMsg?.role === 'assistant' && batchLastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(batchLastMsg.content)
+        const lastUserMsg = get().messages.slice().reverse().find(m => m.role === 'user')?.content ?? ''
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(batchLastMsg.content, lastUserMsg)
         if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== batchLastMsg.content) {
           const updatedMessages = [
             ...batchFinalMessages.slice(0, -1),
@@ -377,7 +378,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
       const finalMessages = get().messages
       const lastMsg = finalMessages[finalMessages.length - 1]
       if (lastMsg?.role === 'assistant' && lastMsg.content) {
-        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(lastMsg.content)
+        const streamLastUserMsg = get().messages.slice().reverse().find(m => m.role === 'user')?.content ?? ''
+        const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(lastMsg.content, streamLastUserMsg)
         if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== lastMsg.content) {
           const updatedMessages = [
             ...finalMessages.slice(0, -1),
@@ -458,7 +460,8 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
         const fallbackFinalMessages = get().messages
         const fallbackLastMsg = fallbackFinalMessages[fallbackFinalMessages.length - 1]
         if (fallbackLastMsg?.role === 'assistant' && fallbackLastMsg.content) {
-          const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(fallbackLastMsg.content)
+          const fallbackLastUserMsg = get().messages.slice().reverse().find(m => m.role === 'user')?.content ?? ''
+          const { displayText, choreAction, rewardAction, homeworkResult, drawingResults, presentationAction } = parseChatResponse(fallbackLastMsg.content, fallbackLastUserMsg)
           if (choreAction || rewardAction || homeworkResult || drawingResults.length > 0 || presentationAction || displayText !== fallbackLastMsg.content) {
             const updatedMessages = [
               ...fallbackFinalMessages.slice(0, -1),

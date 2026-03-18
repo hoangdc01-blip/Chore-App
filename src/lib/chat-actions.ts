@@ -22,7 +22,20 @@ export interface ParsedChatAction {
   presentationAction: PresentationAction | null
 }
 
-export function parseChatResponse(rawText: string): ParsedChatAction {
+export function parseChatResponse(rawText: string, userMessage?: string): ParsedChatAction {
+  // Strip premature action tags when user sent a generic quick-action message
+  // The model should ask what to draw/present first, not generate immediately
+  const GENERIC_DRAW = 'i want to draw something!'
+  const GENERIC_PRESENT = 'i want to make a presentation!'
+  const userLower = (userMessage ?? '').trim().toLowerCase()
+  if (userLower === GENERIC_DRAW || userLower === GENERIC_PRESENT) {
+    rawText = rawText
+      .replace(/\[DRAW_IMAGE\s+title="[^"]*?"(?:\s+style="[^"]*?")?\]\s*\[?\/?DRAW_IMAGE\]?/g, '')
+      .replace(/\[GENERATE_PRESENTATION\][\s\S]*?\[\/GENERATE_PRESENTATION\]/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  }
+
   const choreMatch = rawText.match(ACTION_REGEX)
   const rewardMatch = rawText.match(REDEEM_REGEX)
   const homeworkMatch = rawText.match(HOMEWORK_REGEX)

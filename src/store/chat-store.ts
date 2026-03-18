@@ -13,7 +13,7 @@ import { useMemberStore } from './member-store'
 import { format } from 'date-fns'
 import { speak } from '../lib/tts'
 
-const MAX_CONTEXT_MESSAGES = 8
+const MAX_CONTEXT_MESSAGES = 10
 
 interface ChatState {
   messages: ChatMessage[]

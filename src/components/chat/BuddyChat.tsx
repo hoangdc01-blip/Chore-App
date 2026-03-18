@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText, Palette, Presentation, PencilLine, BookOpen, GraduationCap, Mic, MicOff } from 'lucide-react'
+import { X, Send, Trash2, ImagePlus, Volume2, VolumeX, FileText, Palette, Presentation, PencilLine, BookOpen, Mic, MicOff } from 'lucide-react'
 import { speak, stopSpeaking, isSpeaking, isTTSAvailable } from '../../lib/tts'
 import { useChatStore } from '../../store/chat-store'
 import { useMemberStore } from '../../store/member-store'
@@ -48,7 +48,6 @@ const TOOL_CARDS = [
   { label: 'Draw a picture', icon: Palette, text: 'I want to draw something!' },
   { label: 'Make a presentation', icon: Presentation, text: 'I want to make a presentation!' },
   { label: 'Check my homework', icon: PencilLine, text: 'Can you check my homework?' },
-  { label: 'Help me study', icon: GraduationCap, text: 'Help me study!' },
   { label: 'Tell me a story', icon: BookOpen, text: 'Tell me a bedtime story' },
 ]
 

@@ -806,7 +806,7 @@ Rules:
 - Be encouraging with emojis!
 - LANGUAGE: Match the language used in the homework.
 - Use PLAIN TEXT only. NEVER use LaTeX, markdown math, or special formatting like \\[ \\text{} \\]. Just write numbers and words normally.
-- Keep your response SHORT — 2-3 sentences max before the JSON block. Do NOT write long explanations.`
+- Step-by-step explanations are OK to help kids understand the process.`
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },

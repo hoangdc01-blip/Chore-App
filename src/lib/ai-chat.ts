@@ -785,28 +785,19 @@ export async function checkHomeworkWithTextModel(
   visionDescription: string,
   signal?: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a homework checker for kids aged 4-7. Your job is to check if answers are RIGHT or WRONG, and help kids who got it wrong — WITHOUT giving them the answer.
+  const systemPrompt = `You are a fun homework checker for kids aged 4-7. Check each answer and help them learn!
 
-INTERNAL PROCESS (do this silently, do NOT write your solution in the response):
-1. Read each problem carefully. Word problems want a final number, not an operation.
-2. Solve it yourself to know the correct answer. Keep this to yourself.
-3. Compare with the kid's answer.
-
-YOUR RESPONSE TO THE KID:
-- For CORRECT answers: Say "Great job!" or similar encouragement
-- For WRONG answers: Give a HINT to guide them. Examples of good hints:
-  - "Try using your fingers to count up from 7"
-  - "Think about it — if you have 21 peanuts and get 3 more, what do you get?"
-  - "Which number is bigger, 42 or 31? Start with the biggest!"
-- NEVER say the correct answer. NEVER write "the answer is..." or "it should be..." or show the solution.
-- The kid should figure it out themselves!
+For each problem:
+1. Read the problem carefully. Word problems want a final number, not an operation.
+2. Solve it step by step and show the correct answer.
+3. If the kid got it wrong, explain how to get the right answer in a simple, kid-friendly way.
+4. If the kid got it right, say "Great job!" or similar.
 
 Then output this JSON block at the END:
-[HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"Try counting up from 3 five times"}]}[/HOMEWORK_CHECK]
+[HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"3 + 5 = 8. Try counting up from 3 five times!"}]}[/HOMEWORK_CHECK]
 
 Rules:
-- NEVER NEVER NEVER reveal the correct answer — not in your message, not in hints, not anywhere
-- The hint in the JSON must also NOT contain the answer
+- Show the correct answer and explain how to get it for wrong answers
 - If all correct, set errors to []
 - Output JSON on a SINGLE LINE
 - NEVER put anything after the [/HOMEWORK_CHECK] tag

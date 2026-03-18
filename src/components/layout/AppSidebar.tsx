@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
   MessageCircle,
-  MessageSquare,
   Calendar,
   GraduationCap,
   BarChart3,
@@ -22,7 +21,6 @@ import type { AppView } from '../../types'
 import { useAppStore } from '../../store/app-store'
 import { useMemberStore, getMemberColor } from '../../store/member-store'
 import { useChatStore } from '../../store/chat-store'
-import { cn } from '../../lib/utils'
 import AiAvatar from '../chat/AiAvatar'
 
 interface AppSidebarProps {
@@ -67,21 +65,11 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
   const switchProfile = useAppStore((s) => s.switchProfile)
   const members = useMemberStore((s) => s.members)
 
-  const chatHistory = useChatStore(s => s.chatHistory)
-  const activeSessionId = useChatStore(s => s.activeSessionId)
   const startNewChat = useChatStore(s => s.startNewChat)
-  const loadSession = useChatStore(s => s.loadSession)
-  const deleteSession = useChatStore(s => s.deleteSession)
-  const selectedMemberId = useChatStore(s => s.selectedMemberId)
 
   const isKidMode = mode === 'kid'
   const activeMember = isKidMode ? members.find((m) => m.id === activeKidId) : null
   const activeColor = activeMember ? getMemberColor(activeMember) : null
-
-  const effectiveMemberId = isKidMode ? activeKidId : selectedMemberId
-  const filteredSessions = chatHistory
-    .filter(s => s.memberId === effectiveMemberId || s.memberId === null)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
@@ -165,41 +153,14 @@ export default function AppSidebar({ activeView, onActiveViewChange, open, onClo
               {label}
             </button>
           ))}
-
-          {/* Chat History */}
-          {activeView === 'chat' && (
-            <div className="ml-2 mt-0.5 space-y-0.5">
-              <button
-                onClick={() => { startNewChat(); onActiveViewChange('chat'); onClose() }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-primary hover:bg-primary/10 transition-colors w-full text-left"
-              >
-                <Plus size={13} />
-                New Chat
-              </button>
-              {filteredSessions.slice(0, 10).map(session => (
-                <button
-                  key={session.id}
-                  onClick={() => { loadSession(session.id); onActiveViewChange('chat'); onClose() }}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs transition-colors w-full text-left group',
-                    session.id === activeSessionId
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  <MessageSquare size={12} className="shrink-0" />
-                  <span className="truncate flex-1">{session.title}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
-                    className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 rounded hover:bg-destructive/20 hover:text-destructive transition-all"
-                    aria-label="Delete"
-                  >
-                    <X size={10} />
-                  </button>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* New Chat button */}
+          <button
+            onClick={() => { startNewChat(); onActiveViewChange('chat'); onClose() }}
+            className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-xl text-xs font-medium text-primary hover:bg-primary/10 transition-colors w-full text-left"
+          >
+            <Plus size={13} />
+            New Chat
+          </button>
 
           <div className="border-t border-border my-3" />
 

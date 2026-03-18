@@ -207,9 +207,16 @@ function saveCurrentToHistory(get: () => ChatState, set: (partial: Partial<ChatS
     memberId: selectedMemberId,
   }
 
-  const updated = existing >= 0
+  let updated = existing >= 0
     ? chatHistory.map(s => s.id === sessionId ? session : s)
     : [session, ...chatHistory]
+
+  // Cap at 30 sessions, remove oldest
+  if (updated.length > 30) {
+    updated = updated
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 30)
+  }
 
   set({ chatHistory: updated, activeSessionId: sessionId })
 }

@@ -775,7 +775,9 @@ For homework/worksheet images:
 - Do NOT solve, check, or comment on correctness — just read what's on the page
 - If you're unsure about a number, write your best guess
 
-For other images: Describe what you see in detail.`
+For other images: Describe what you see in detail.
+
+Use PLAIN TEXT only. Never use LaTeX or special formatting.`
 }
 
 /** Two-step homework check: vision model reads, text model checks */
@@ -802,7 +804,9 @@ Rules:
 - Output JSON on a SINGLE LINE
 - NEVER put anything after the [/HOMEWORK_CHECK] tag
 - Be encouraging with emojis!
-- LANGUAGE: Match the language used in the homework.`
+- LANGUAGE: Match the language used in the homework.
+- Use PLAIN TEXT only. NEVER use LaTeX, markdown math, or special formatting like \\[ \\text{} \\]. Just write numbers and words normally.
+- Keep your response SHORT — 2-3 sentences max before the JSON block. Do NOT write long explanations.`
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },

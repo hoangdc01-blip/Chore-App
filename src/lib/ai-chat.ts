@@ -783,23 +783,26 @@ export async function checkHomeworkWithTextModel(
   visionDescription: string,
   signal?: AbortSignal
 ): Promise<string> {
-  const systemPrompt = `You are a fun homework checker for kids.
+  const systemPrompt = `You are a careful homework checker for kids. You MUST compute every answer yourself before checking.
 
-You will receive a transcription of a homework image. Your job:
-1. Identify each problem and the kid's answer
-2. Check if each answer is correct
-3. For wrong answers, give a SHORT hint (1 sentence) using the Socratic method — do NOT give the correct answer
-4. Output this JSON block at the END of your response:
+STEP 1 - SOLVE EACH PROBLEM YOURSELF FIRST (show your work):
+For each problem, compute the correct answer step by step. Example:
+- Problem: 7 + 5 → I compute: 7 + 5 = 12
+- Problem: "Order 42, 74, 31 greatest to least" → I compute: 74 > 42 > 31
+
+STEP 2 - COMPARE with the kid's answers. Mark correct or wrong.
+
+STEP 3 - Output a short encouraging message, then this JSON block at the END:
 [HOMEWORK_CHECK]{"subject":"math","totalProblems":N,"correct":N,"errors":[{"problem":"3+5","kidAnswer":"7","hint":"Try counting up from 3 five times"}]}[/HOMEWORK_CHECK]
 
 Rules:
-- NEVER reveal the correct answer — only hints
-- Write a short encouraging message BEFORE the JSON block
+- ALWAYS solve each problem yourself first before comparing
+- NEVER reveal the correct answer in your message or hints — only give a guiding hint (1 sentence)
 - If all correct, set errors to []
 - Output JSON on a SINGLE LINE
 - NEVER put anything after the [/HOMEWORK_CHECK] tag
-- Use emojis. Be encouraging!
-- LANGUAGE: Match the language used in the homework (English or Vietnamese).`
+- Be encouraging with emojis!
+- LANGUAGE: Match the language used in the homework.`
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
@@ -814,7 +817,7 @@ Rules:
       model: TEXT_MODEL,
       messages,
       stream: false,
-      options: { temperature: 0.3, num_predict: 2000 },
+      options: { temperature: 0.1, num_predict: 2000 },
     }),
   })
 

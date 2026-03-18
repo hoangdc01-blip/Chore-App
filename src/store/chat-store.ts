@@ -335,7 +335,14 @@ export const useChatStore = create<ChatState>()(persist((set, get) => ({
       // Increment reminder variety for next message
       set({ reminderVariety: get().reminderVariety + 1 })
 
-      const windowed = allMessages.slice(-MAX_CONTEXT_MESSAGES)
+      // Vision models (minicpm-v) get confused by old conversation context
+      // and repeat previous answers instead of reading new images.
+      // When the last message has an image, send only that message to keep vision isolated.
+      const lastUserMsg = allMessages[allMessages.length - 1]
+      const lastMsgHasImage = lastUserMsg?.role === 'user' && !!lastUserMsg.image
+      const windowed = lastMsgHasImage
+        ? [lastUserMsg]
+        : allMessages.slice(-MAX_CONTEXT_MESSAGES)
       const messagesForApi: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
         ...windowed,
